@@ -1,0 +1,87 @@
+name: Publish the single existing Banya PWA after main CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - styles.css
+      - app.js
+      - cloud-sync.js
+      - sw.js
+      - manifest.webmanifest
+      - _headers
+      - .assetsignore
+      - wrangler.jsonc
+      - plan.json
+      - plan-data.js
+      - politics-plan.json
+      - politics-plan-data.js
+      - politics-core.js
+      - politics-ui.js
+      - planner-core.js
+      - study-intelligence.js
+      - scripts/**
+      - .github/workflows/publish-existing-worker.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: banya-existing-worker-production
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All Node syntax, plans, offline, and both-subject tests
+        run: |
+          set -euo pipefail
+          for f in app.js cloud-sync.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
+          node scripts/check.mjs
+          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run server regression tests (without access to production database)
+        run: |
+          python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py
+      - name: Verify intended existing Worker identity and public allowlist
+        run: |
+          set -euo pipefail
+          test "$(node -p "JSON.parse(require('fs').readFileSync('wrangler.jsonc','utf8')).name")" = 'english-ii-plan'
+          grep -Fxq '*' .assetsignore
+          grep -Fxq 'server/' .assetsignore
+          grep -Fq "connect-src 'self' https://124.70.128.201;" _headers
+          npx --yes wrangler@4 deploy --dry-run --outdir /tmp/banya-verification
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 5252fd1b762803460b0f452f8d7f128c
+      BANYA_PWA_URL: https://english-ii-plan.kopdabanya.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Publish to the existing english-ii-plan Worker, never create another app
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          npx --yes wrangler@4 deploy
+      - name: Check published PWA identity, CSP and private-file exclusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 20 "$BANYA_PWA_URL/index.html" | grep -Fq './cloud-sync.js'
+          headers="$(curl -fsSI --max-time 20 "$BANYA_PWA_URL/index.html")"
+          printf '%s\n' "$headers" | tr -d '\r' | grep -Ei '^content-security-policy:.*connect-src.*124.70.128.201' >/dev/null
+          status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$BANYA_PWA_URL/server/banya-sync/app.py")"
+          test "$status" = 404
+          echo 'One PWA production HTTP smoke passed; ECS backend source is not publicly accessible.'
+          echo 'Android Edge real-device validation and user local backups are separate requirements.'
