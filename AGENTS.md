@@ -22,3 +22,5 @@
 - 原始任务改期和标题/分钟编辑须保留稳定ID；未完成未来任务被新版移出时不继续占待办预算，记录仍保留。已完成单词任务时长不随设置追溯变动。
 - 文档、测试、新增工具脚本不得被发布到静态网站；新增开发目录同时更新.assetsignore。不得把GitHub token或Cloudflare token放进前端。
 - 发布保护闸门：当前 `wrangler.jsonc` 将workers_dev和preview_urls设为false，防止自动部署意外开放。只有在该Worker的All traffic Access邮箱白名单验证后，才能把workers_dev改为true；预览无需求继续关闭。
+- Cloudflare浏览器登录已出现403，停止重复尝试。替代流程见docs/ACCESS_AUTOMATION.md，手动触发configure-access.yml；令牌仅GitHub Actions Secret，禁止让用户贴到聊天。
+- 自动配置通过API回读单邮箱政策及四入口无凭证Access重定向后，才提交workers_dev=true和.cloudflare/access-state.json。预览保持false。配置未完成不得宣称Access有效或Android验收通过。
