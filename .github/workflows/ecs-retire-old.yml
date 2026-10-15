@@ -1,0 +1,55 @@
+name: Retire authorized old NJFU deployment
+
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-retire-old.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove only the old NJFU deployment after Banya health check
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          bash -n server/banya-sync/retire-njfu.sh
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -p 22 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 \
+            -o ConnectTimeout=12 \
+            "$BANYA_SSH_USER@124.70.128.201" 'bash -s' \
+            < server/banya-sync/retire-njfu.sh
+          curl --noproxy '*' -fsS --max-time 10 https://124.70.128.201/health | \
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["service"]=="banya-study-sync"'
+          echo 'Public Banya HTTPS health remains valid after NJFU retirement.'
+      - name: Record retirement
+        run: |
+          cat > docs/ECS_RETIREMENT.md <<EOF
+          # 旧 NJFU 部署退役
+
+          用户明确授权清空旧部署。GitHub Actions 作业执行自提交 $GITHUB_SHA。
+
+          - 已停用旧 njfu-seat 服务，移除旧 Nginx 站点、systemd 单元和 /opt/NJFU--main。
+          - 删除前验证板牙考研服务与本机 HTTPS 健康；删除后 Nginx 配置和公网 HTTPS 健康再次通过。
+          - 保留板牙考研目录、数据目录、IP 证书和证书自动续期；未记录或更改凭据。
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/ECS_RETIREMENT.md
+          git commit -m 'docs: record retired NJFU server deployment'
+          git push origin HEAD:feat/huawei-ecs-cloud-sync-m29
