@@ -102,3 +102,9 @@ body{background:linear-gradient(180deg,#f8f8fd 0%,#f9fafc 50%,#f8f9fb 100%)}
 @keyframes checkDone{0%{transform:scale(.78)}65%{transform:scale(1.12)}100%{transform:scale(1)}}
 @media(max-width:375px){.record-actions{grid-template-columns:1fr}.page-title{font-size:26px}.bottom-nav{gap:3px;padding-inline:8px}}
 @media(prefers-reduced-motion:reduce){.view-content.entering,.task-card.just-done .check,.modal:not(.hidden) .modal-card{animation:none!important}html{scroll-behavior:auto}.nav-tab,.day-chip,.cal-day,.check,.task-card,.task-main,.cta,.task-more,.hero-bar span,.track span,#toast{transition:none!important}}
+
+/* M2.4 · 学习流程说明：醒目但不占据主界面 */
+.usage-steps{display:grid;gap:8px}
+.usage-steps p{font-size:12px;line-height:1.7;color:#6f7b91;margin:0}
+.usage-steps b{color:#414e66}
+.setting-section h2{line-height:1.45}
