@@ -30,8 +30,14 @@ install -m 0644 "$SRC/backup_db.py" /opt/banya-sync/backup_db.py
 install -m 0644 "$SRC/requirements.txt" /opt/banya-sync/requirements.txt
 python3 -m venv /opt/banya-sync/.venv
 /opt/banya-sync/.venv/bin/python -m pip install --disable-pip-version-check -r /opt/banya-sync/requirements.txt
-SECRET="$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))')"
-DIGEST="$(printf '%s' "$SECRET" | sha256sum | cut -d' ' -f1)"
+SECRET=""
+if [[ -n "${BANYA_SYNC_TOKEN_SHA256:-}" ]]; then
+  [[ "$BANYA_SYNC_TOKEN_SHA256" =~ ^[0-9a-fA-F]{64}$ ]] || die "BANYA_SYNC_TOKEN_SHA256 格式不正确"
+  DIGEST="${BANYA_SYNC_TOKEN_SHA256,,}"
+else
+  SECRET="$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))')"
+  DIGEST="$(printf '%s' "$SECRET" | sha256sum | cut -d' ' -f1)"
+fi
 {
   printf 'BANYA_DB_PATH=/var/lib/banya-sync/sync.sqlite3\n'
   printf 'BANYA_ALLOWED_ORIGIN=https://english-ii-plan.kopdabanya.workers.dev\n'
@@ -99,7 +105,11 @@ if curl -fsS --max-time 6 http://127.0.0.1:8765/health; then
 else
   echo "本机服务健康检查失败，请查看 sudo systemctl status banya-sync --no-pager"
 fi
-echo "请在自己的安全位置保存以下同步密钥，绝不可发到聊天/GitHub："
-printf '%s\n' "$SECRET"
+if [[ -n "$SECRET" ]]; then
+  echo "请在自己的安全位置保存以下同步密钥，绝不可发到聊天/GitHub："
+  printf '%s\n' "$SECRET"
+else
+  echo "同步密钥由部署方提供；仅保存哈希，安装日志未输出密钥。"
+fi
 unset SECRET DIGEST
 echo "请勿向公网开放8765端口。旧项目完全不需要启动。"

@@ -1,0 +1,74 @@
+name: Deploy Banya sync backend to authorized ECS
+
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-deploy.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+      BANYA_SYNC_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deploy prerequisites
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          bash -n server/banya-sync/install-ecs.sh
+          bash -n server/banya-sync/deploy-ecs.sh
+          if [ -z "$BANYA_SYNC_TOKEN" ]; then
+            BANYA_SYNC_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+            echo "BANYA_SYNC_TOKEN=$BANYA_SYNC_TOKEN" >> "$GITHUB_ENV"
+          fi
+          test "${#BANYA_SYNC_TOKEN}" -ge 32
+          echo "::add-mask::$BANYA_SYNC_TOKEN"
+      - name: Install backend and switch the existing IP HTTPS route
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          umask 077
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          ssh_opts=(-p 22 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=12)
+          remote="$BANYA_SSH_USER@124.70.128.201"
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-stage'
+          tar -C server/banya-sync -cf - app.py backup_db.py requirements.txt install-ecs.sh deploy-ecs.sh nginx-ip.conf | \
+            sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-stage -xf -'
+          digest="$(printf '%s' "$BANYA_SYNC_TOKEN" | sha256sum | cut -d' ' -f1)"
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" "BANYA_SYNC_TOKEN_SHA256=$digest bash /root/banya-stage/deploy-ecs.sh"
+          printf '%s\n' "$BANYA_SYNC_TOKEN" | sshpass -e ssh "${ssh_opts[@]}" "$remote" \
+            'IFS= read -r token; curl -fsS --max-time 8 -H "Authorization: Bearer $token" http://127.0.0.1:8765/v1/snapshot/english' \
+            | python3 -c 'import json,sys; x=json.load(sys.stdin); assert x["subject"]=="english" and x["revision"]==0; print("Authenticated English empty snapshot verified")'
+          code="$(sshpass -e ssh "${ssh_opts[@]}" "$remote" \
+            "curl --noproxy '*' --resolve 124.70.128.201:443:127.0.0.1 -sS -o /dev/null -w '%{http_code}' --max-time 8 https://124.70.128.201/v1/snapshot/politics")"
+          test "$code" = 401
+          printf 'Production unauthenticated politics request: HTTP %s\n' "$code"
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" \
+            'certbot renew --dry-run --cert-name 124.70.128.201 --non-interactive --quiet'
+          echo 'Existing IP certificate renewal dry-run passed.'
+      - name: Record deployment stage
+        run: |
+          cat > docs/ECS_DEPLOYMENT.md <<EOF
+          # 板牙考研华为云部署阶段
+
+          来源：GitHub Actions，代码提交 $GITHUB_SHA。
+
+          - 后端已安装到原华为云 ECS 的独立目录，监听 127.0.0.1:8765。
+          - 原 IP 证书和 Nginx 现用于板牙考研 API；HTTPS /health、授权读取、未授权 401 及证书续期演练已验证。
+          - 英语、政治生产库当前均未导入用户学习数据；前端 CSP 与 Cloudflare 生产发布仍待完成。
+          - 旧 NJFU 服务此前已停用；旧文件尚未清理，待新入口复核后执行退役。
+          - 临时同步令牌未输出到日志。用户启用手机同步前需设置自己保存的长期令牌并轮换服务端摘要。
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/ECS_DEPLOYMENT.md
+          git commit -m 'docs: record ECS backend deployment verification'
+          git push origin HEAD:feat/huawei-ecs-cloud-sync-m29
