@@ -60,3 +60,9 @@ test('branding changes only UI; old backup format stays distinct and storage iso
  assert.notEqual(politicsCore.key,'yantu_english_2026_m1');
  assert(!html.includes('研途')&&!manifestText.includes('研途'));
 });
+
+test('deployment never publishes backend source or secrets as static assets',()=>{
+ const ignore=txt('.assetsignore'),headers=txt('_headers');
+ assert(ignore.split(/\\r?\\n/).includes('server/'),'never expose ECS backend through public Worker static assets');
+ assert(headers.includes("connect-src 'self'"),'do not broadly permit arbitrary HTTPS sync endpoints before production host verification');
+});
