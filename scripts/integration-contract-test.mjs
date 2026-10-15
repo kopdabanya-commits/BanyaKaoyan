@@ -63,7 +63,10 @@ test('branding changes only UI; old backup format stays distinct and storage iso
 
 test('deployment never publishes backend source or secrets as static assets',()=>{
  const ignore=txt('.assetsignore'),headers=txt('_headers');
- assert(ignore.split(String.fromCharCode(10)).map(x=>x.trim()).includes('server/'),'never expose ECS backend through public Worker static assets');
+ const patterns=ignore.split(String.fromCharCode(10)).map(x=>x.trim());
+ assert(patterns.includes('*'),'deny all undeclared public assets by default');
+ for(const file of ['!index.html','!sw.js','!cloud-sync.js','!plan.json','!politics-plan.json','!_headers','!icons/']) assert(patterns.includes(file),'missing public allowlist entry: '+file);
+ assert(patterns.includes('server/'),'never expose ECS backend through public Worker static assets');
  assert(headers.includes("connect-src 'self' https://124.70.128.201;"),'CSP must allow exactly the verified ECS HTTPS origin');
  assert(!headers.includes('https:;')&&!headers.includes('https://*'),'never allow wildcard API destinations');
  assert(txt('cloud-sync.js').includes("const API_ORIGIN = 'https://124.70.128.201'"),'client must pin the same origin');
