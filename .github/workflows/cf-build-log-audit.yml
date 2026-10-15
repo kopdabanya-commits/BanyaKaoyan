@@ -1,0 +1,61 @@
+name: Diagnose actual Cloudflare Workers Build failure
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/cf-build-log-audit.yml]
+permissions:
+  contents: read
+jobs:
+  read-existing-build:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact existing build metadata and sanitized error lines
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$CLOUDFLARE_TOKEN" ]; then
+            echo "Cloudflare token unavailable in Actions; cannot read build logs"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os,json,re,urllib.request,urllib.error
+          account='5252fd1b762803460b0f452f8d7f128c'
+          build='065a5292-5b9c-44a0-a12d-dbcb39b6622f'
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/builds/builds/'+build
+          token=os.environ['CLOUDFLARE_TOKEN']
+          def request(url):
+            req=urllib.request.Request(url,headers={'Authorization':'Bearer '+token})
+            try:
+              with urllib.request.urlopen(req,timeout=20) as r: return json.load(r)
+            except urllib.error.HTTPError as e:
+              print('Cloudflare REST denied: HTTP',e.code,'(Builds API may require Workers CI Read permission)')
+              return None
+          def redact(s):
+            s=str(s)
+            s=s.replace(token,'[REDACTED]')
+            s=re.sub(r'(?i)(authorization|token|password|secret|api[_-]?key|cookie)([=: ]+)\S+',r'\1\2[REDACTED]',s)
+            return s[:430]
+          metadata=request(base)
+          if metadata and metadata.get('success'):
+            d=metadata.get('result') or {}
+            t=d.get('build_trigger_metadata') or {}
+            print('Cloudflare build status:',redact(d.get('status')),'outcome:',redact(d.get('build_outcome')))
+            for k in ['branch','root_directory','build_command','deploy_command','build_trigger_source']:
+              print(k+':',redact(t.get(k)))
+          response=request(base+'/logs')
+          if not response or not response.get('success'):
+            print('Build logs unavailable with current token permissions')
+          else:
+            r=response.get('result') or {}
+            lines=[str(x[-1]) if isinstance(x,list) and x else str(x) for x in r.get('lines',[])]
+            pattern=re.compile(r'fail|error|exception|unknown|denied|not found|not allowed|not support|could not|invalid',re.I)
+            candidates=[(i,x) for i,x in enumerate(lines) if pattern.search(x)]
+            print('Build log line count:',len(lines),'candidate error lines:',len(candidates))
+            for i,x in candidates[-16:]:
+              print('BUILD ERROR',i,redact(x))
+            if not candidates:
+              for x in lines[-10:]:print('BUILD TAIL',redact(x))
+          PY
