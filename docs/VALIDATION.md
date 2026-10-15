@@ -1,3 +1,5 @@
+> ⚠️ **历史验证记录（M2.1—M2.2）：下文的“必须先启用Access/关闭workers.dev”、旧任务总数和“Cloudflare尚未启用域名”是当时快照，现已被2026-10-15的用户新决定取代。最新实际状态与待验收项目见 [PROJECT_STATUS.md](PROJECT_STATUS.md)，代码为M2.3/65天/99项专项任务，用户选用免费公开workers.dev且不绑卡。Node模拟通过不能替代真实Edge安卓测试。**
+
 # M2.1 验证与交付记录
 
 日期：2026-10-15。基线：`ef8bfdc0a2a43aa0cfd5a39b2e43e081ff72588e`，仓库检查确认为Private。

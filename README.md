@@ -1,43 +1,54 @@
-# 研途英语二 · M2.3
+# 研途英语二 · English-II-Plan
 
-私人考研英语二 PWA，沿用 `english-ii-plan` Cloudflare Worker Static Assets；不是 Pages。GitHub 仓库必须保持 Private。计划截止日 2026-12-18，考试日按用户指定为 2026-12-19。
+2027年考研英语二的**65天复习计划 + 本地打卡 PWA**。用户希望尽量少操作代码和部署，保留真实学习进度，优先提高英语成绩。
 
-## 学习安排
+> **新ChatGPT / Codex / Work从这里进入：[项目知识库 docs/index.md](docs/index.md)。当前真实状态见 [PROJECT_STATUS.md](docs/PROJECT_STATUS.md)，协作流程见 [WORKFLOW.md](docs/WORKFLOW.md)。**
 
-2026-10-15 至 12-18 共65天，98项主任务，另有每天单词。默认每天95—100分钟；单词30—40分钟时总计90—105分钟。保留原有任务ID，短日加入作文表达回忆。2024—2026卷仅在预定窗口分四天计时作答，不安排超120分钟的单日模考。
+## 项目入口
+- GitHub：`https://github.com/kopdabanya-commits/English-II-Plan`（**Private**，`main`）
+- 部署：现有Cloudflare Worker `english-ii-plan`（Workers Static Assets，**不是Pages**）
+- 网站：`https://english-ii-plan.kopdabanya.workers.dev`（用户已手动启用；当前**公开网页，不设置Access鉴权**）
+- 手机：荣耀Android 16，经微软Edge安装PWA；具体实机回归状态见项目状态文档
+- 原则：**永久免费、不绑银行卡、不购买额外套餐**；不删除/重建现有项目
 
-## 数据与更新
+## 当前学习计划（M2.3）
+- 版本 `2026.10.15-m2.3`，`revision=5`；2026-10-15至12-18共65天，**99项专项任务**（不包括单词）。
+- 用户最新要求：每天专项**60—80分钟**，背单词自己单独安排，**不显示在每日任务/打卡统计中**。预留约30—40分钟另学单词。
+- 10月15日：2010年小作文30分钟 + 2014年新题型30分钟 + 5分钟作文回忆 = **65分钟**。原10月17日的2014新题型改为错题复盘。
+- 目标按用户安排2026-12-19考试，冲刺80分；75分是努力争取的基础目标，不是成绩保证。
+- 2024—2026真题预留后期弹性模拟，未确认做完前不能先记作已完成。
 
-`plan.json` 是权威计划，`plan-data.js` 是完全一致的离线初始快照；`planner-core.js` 提供共用校验、任务组装和历史迁移。记录只保存在当前来源的 localStorage，不上传服务器。原版 `yantu_english_2026_m1` 存储键保留。
+## 数据怎样运作
+- `plan.json`：唯一权威日程；`plan-data.js`：完全同步的离线初始副本。
+- `planner-core.js`：任务构建、数据校验、历史迁移；`app.js`：页面、打卡、错题、记录、计划更新；`sw.js`：离线静态资源缓存。
+- 个人打卡、错题和笔记通过`localStorage`只保存在当前网站来源和浏览器，不在仓库或云端，不跨设备自动同步。存储键`yantu_english_2026_m1`须保持迁移兼容。
+- 新计划发布后，手机在“设置 → 检查计划更新”手动确认并应用；已有记录、个人改期和笔记应保留。建议先导出备份。
+- **私人GitHub不等于私人PWA网址**。当前网站公开访问，预设计划和前端代码不能当作秘密；不能提交凭据、个人笔记或身份信息。
 
-检查计划更新只获取同源受 Access 保护的 `plan.json`，不直接读取 GitHub Private API，不在前端放令牌。新版先展示版本、数量和变化，再由用户应用；计划持久化后重启可继续使用。历史、已完成、错题、笔记、个人修改和改期保留，移出的未来未完成任务退出待办并在进度页保留。个人安排造成未来剩余任务超出预算时，拒绝应用并提示调整。
+## 开发与发布
+- `AGENTS.md`：AI工程师快速规则；`docs/WORKFLOW.md`：完整协作与发布流程。
+- 代码合并 `main` 后通过现有 GitHub→Cloudflare Workers 集成部署；任何一次提交是否真实上线须单独核实。
+- `wrangler.jsonc` 保持 `workers_dev=true`、`preview_urls=false`。`.assetsignore` 排除文档、脚本和工作流，禁止公开发布内部开发材料。
+- `.github/workflows/validate.yml`：提交和PR自动执行校验；`configure-access.yml`：旧Access实验流程，**已归档停用**，不得触发，也不要求用户绑卡。
 
-备份v2包含记录与计划；兼容原版v1备份。恢复前严格校验并保留本机恢复前副本，可在设置导出。清除浏览器数据、改变域名或设备不会自动迁移记录。损坏记录不会被静默重置覆盖；写入失败回滚当前操作。
-
-## 部署与保护
-
-沿用控制台现有 GitHub main 触发器及静态资源根目录。`.assetsignore` 排除文档、脚本与测试，`_headers` 设置内容类型保护、CSP、禁止嵌入、禁止索引及更新资源的缓存策略。不要删建项目，不要为运行PWA绕过 Access，不要提交记录或账户令牌。
-
-发布域名前，先在 Worker Access 中为该 Worker 的 All traffic 配置仅当前账户邮箱允许访问。必须验证生产及预览均被保护；如未配置好则保持 workers.dev Disabled。Zero Trust 开通若要求本人接受条款、输入付款信息或付费，则停在该步骤交给用户。
-
-Service Worker 只缓存完整且类型正确的App静态资源，不缓存计划检查、Access接口或登录跳转。新版等旧标签页全部关闭后激活，防止混用版本。设置中的重新验证访问链接绕过离线缓存并到达 Access。离线副本是已登录设备的本机副本，网络访问限制仍由 Access 执行；Access不能远程收回已下载的离线内容。
-
-## 检查
-
-```
-node --check app.js
+## 基本检查（Node 22）
+```sh
 node --check planner-core.js
+node --check app.js
+node --check plan-data.js
 node --check sw.js
 node scripts/check.mjs
-node --test scripts/test.mjs scripts/sw-test.mjs
+node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs
 ```
 
-测试为 Node VM 集成与逻辑模拟，不代替真实浏览器布局、Cloudflare登录或Android安装验收。实际执行范围和待办见 `docs/VALIDATION.md`，后续开发从 `AGENTS.md` 开始。
+Node模拟检查不等于真实Edge安卓PWA验收。每次更新版本需同步测试中的特定版本号、任务数量等断言，而不是简单删除保护性检查。
 
-用户已在2026-10-15明确选择无须绑卡的免费方案，并自行启用 workers.dev、确认本人能打开。`wrangler.jsonc` 现设置 workers_dev=true，避免以后推送覆盖后台设置而关闭网址；preview_urls=false 保持不变。GitHub仓库 Private，但网页本身公开访问；打卡、错题与笔记仅存在本机，不会自动上传。
-
-## M2.2 学习内容与手机体验优化
-为53项缺少操作步骤的任务补充限时做题、错题定位、作文修改与翻译润色指引；保持65天、98项任务原有日期、ID和分钟数。首页展示未完成任务剩余预计用时；错题填写提示按题型区分；计划变化超过6项时可折叠浏览；设置页增加Edge/荣耀桌面安装提醒并删除旧Access叙述。
-
-## M2.3（2026-10-15）复习任务调整
-用户希望App只显示每天60—80分钟的专项任务，不在每日打卡中列背单词；单词仍按个人习惯另学，内部保留35分钟预算以防总量超出既定90—120分钟。2026-10-15调整为小作文30分钟＋2014年新题型30分钟＋5分钟表达回忆（专项65分钟）。原17日2014新题型转移到15日，原位置改为新题型错题复盘，避免重复刷卷。历史打卡数据键、原任务ID保留，新增复盘任务使用新ID。手机首页/日历/进度页只统计专项训练，版本 `2026.10.15-m2.3`。
+## 长期文档导航
+- [docs/index.md](docs/index.md)：唯一入口、阅读顺序和来源优先级。
+- [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)：最新确认状态与待验收。
+- [docs/DECISIONS.md](docs/DECISIONS.md)：用户长期决定、旧方案与新方案的取代关系。
+- [docs/WORKFLOW.md](docs/WORKFLOW.md)：ChatGPT、Codex、Work、GitHub、Cloudflare分工与操作步骤。
+- [docs/GPT_HANDOFF.md](docs/GPT_HANDOFF.md)：GPT项目指令与新聊天提示词。
+- [docs/OPERATIONS.md](docs/OPERATIONS.md)：手机打卡、更新和备份。
+- [docs/STUDY_BASELINE_2026-10-15.md](docs/STUDY_BASELINE_2026-10-15.md)：历史真实学习基线，需结合当前用户反馈。
+- [docs/VALIDATION.md](docs/VALIDATION.md)：历史测试日志（旧Access部署要求已过时）。

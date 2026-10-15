@@ -1,3 +1,5 @@
+> ⚠️ **归档资料：不执行！** 2026-10-15 用户已决定使用无需绑卡的免费公开workers.dev，明确不使用Cloudflare Access付费/要求付款信息的开通流程。以下为此前探索的技术试验，并非当前部署指南。旧GitHub Actions `configure-access.yml` 已停用；除非用户未来另行明确授权和讨论新的免费访问控制方案，禁止要求用户创建Token、进入Zero Trust或执行此流程。当前操作看 [OPERATIONS.md](OPERATIONS.md) 和 [DECISIONS.md](DECISIONS.md)。
+
 # 手机一次授权，GitHub执行配置
 
 使用者在Cloudflare手机控制台创建一天有效的Custom API Token，账户范围仅当前账户，权限仅：Workers Scripts Edit、Access: Apps and Policies Edit、Access: Organizations, Identity Providers, and Groups Edit。部分界面显示Write，含义对应写入。不要使用Global API Key，不要放进聊天、源码或普通变量。
