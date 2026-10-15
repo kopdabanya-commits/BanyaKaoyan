@@ -1,5 +1,5 @@
 /* Atomic offline shell. Access responses never enter the cache. */
-const CACHE='yantu-english-ii-m2.2-20261015';
+const CACHE='yantu-english-ii-m2.3-20261015';
 const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 function acceptable(response,url){
  if(!response.ok||response.redirected||response.type==='opaque'||response.type==='opaqueredirect')return false;

@@ -27,7 +27,7 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
 
 test('65 continuous days, unique IDs, exact fallback and 90–120 minute schedules for all vocab settings',()=>{
  assert(core.validPlan(plan));let count=0;for(let day of plan.days){for(const vocab of [30,35,40]){const s=core.defaults();s.settings.vocab=vocab;const minutes=core.tasks(plan,s,day.date).reduce((n,t)=>n+t.minutes,0);assert(minutes>=90&&minutes<=120,day.date);}count+=day.items.length;}
- const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,98);
+ const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,99);
 });
 test('plan rejects duplicate IDs, duplicate dates, impossible dates, over-budget days and prototype keys',()=>{
  for(const edit of [p=>p.days[1].date=p.days[0].date,p=>p.days[1].items[0].id=p.days[0].items[0].id,p=>p.days[0].date='2026-02-31',p=>p.days[0].items[0].minutes=90,p=>p.days[0].items[0].id='__proto__']){const p=clone(plan);edit(p);assert.equal(core.validPlan(p),false);}
@@ -50,7 +50,7 @@ test('first open, check/uncheck, reopen and refresh preserve local records',asyn
 });
 test('wrong answers and notes save, clear, and remain separate across tasks',async()=>{
  const h=harness();await h.settle();for(const [id,w,note]of [['2026-10-15-1',2,'甲'],['2026-10-16-1',3,'乙']]){
-  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':id.includes('15')?55:60,'task-move':id.slice(0,10),'task-wrong':w,'task-note':note}))h.input(field,value);
+  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':id.includes('15')?30:60,'task-move':id.slice(0,10),'task-wrong':w,'task-note':note}))h.input(field,value);
   await h.event('submit',{id:'task-form',dataset:{id,day:id.slice(0,10)}});
  }assert.equal(h.api.state.wrong['2026-10-15-1'],2);assert.equal(h.api.state.notes['2026-10-16-1'],'乙');
  h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-16'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
@@ -107,4 +107,24 @@ test('moving a task then checking it clears rest only on the destination day',as
 });
 test('settings changes do not rewrite the duration of previously completed vocabulary tasks',async()=>{
  const h=harness();await h.settle();await h.click('toggle',{id:'2026-10-15-vocab',day:'2026-10-15'});await h.event('change',{id:'vocab-minutes',value:'40'});assert.equal(h.api.allTasks('2026-10-15')[0].minutes,35);assert.equal(h.api.allTasks('2026-10-16')[0].minutes,40);
+});
+
+// 2026-10-15 用户指定：单词不列今日打卡，专项65分钟包含作文及2014新题型。
+test('Oct 15 visible plan contains 65 minutes writing and new type, and hides separate vocabulary tasks',async()=>{
+ const day=plan.days.find(d=>d.date==='2026-10-15');
+ assert.equal(day.items.reduce((n,t)=>n+t.minutes,0),65);
+ assert(day.items.some(t=>t.title.includes('小作文')));
+ assert(day.items.some(t=>t.title.includes('2014年新题型')));
+ const h=harness({fail:true});await h.settle();
+ const v=h.api.dateProgress('2026-10-15');
+ assert.equal(v.total,3);assert.equal(v.minutes,65);
+ assert(!h.el('app').innerHTML.includes('class="task-title">背单词'));
+ assert(h.el('app').innerHTML.includes('2014年新题型'));
+ for(const item of day.items)await h.click('toggle',{id:item.id,day:day.date});
+ assert.equal(h.api.dateProgress('2026-10-15').done,3);
+ assert(h.el('app').innerHTML.includes('100%'));
+ const restarted=harness({storage:h.storage,fail:true});await restarted.settle();
+ assert.equal(restarted.api.dateProgress('2026-10-15').done,3);
+ const summary=h.api.summaryText();assert(summary.includes('2014年新题型'));
+ assert(!summary.includes('背单词 35 分钟[未完成]'));
 });
