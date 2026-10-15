@@ -48,7 +48,9 @@ function panel() {
  '<h2>云端同步 · 两科独立</h2>'+
  '<p class="setting-note">本机优先，断网照常打卡。首次上传或恢复必须手动确认；冲突暂停自动写入，绝不以空白云数据覆盖旧记录。</p>'+
  (!connected?'<form id="banya-cloud-config"><label class="input-line">HTTPS同步地址<input id="banya-cloud-url" type="url" required value="https://124.70.128.201" readonly></label>'+
- '<label class="input-line">私有同步密钥<input id="banya-cloud-token" type="password" required minlength="32" autocomplete="off"></label>'+
+ '<label class="input-line">私有同步密钥<input id="banya-cloud-token" type="password" required minlength="32" autocomplete="off" placeholder="在本机生成并安全保存"></label>'+
+ '<button type="button" class="cta secondary small" data-banya-action="generate-token">在本机生成随机密钥</button>'+
+ '<p class="setting-note">密钥不会提交到GitHub源码。请将其保存在密码管理器，再通过GitHub Actions Secrets安全配置到服务器；完成前不会上传学习记录。</p>'+
  '<button type="submit" class="cta small">验证并启用</button></form>':
  '<p class="setting-note">已配置 '+escaped(config.endpoint)+'。密钥只保存在这台设备的浏览器本地存储中，不提交GitHub。</p>'+
  SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已建立同步基线':'等待首次确认')+
@@ -165,6 +167,17 @@ document.addEventListener('submit',async function(e){
 document.addEventListener('click',async function(e){
  const button=e.target.closest('[data-banya-action]');if(!button || busy)return;
  const action=button.dataset.banyaAction,subject=button.dataset.banyaSubject;
+ if(action==='generate-token'){
+  const field=document.getElementById('banya-cloud-token');
+  if(!field)return;
+  const bytes=new Uint8Array(48);
+  crypto.getRandomValues(bytes);
+  field.value=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+  field.type='text';
+  field.select();
+  notify('已在此设备生成安全随机密钥。请复制并保存在个人密码管理器，再填写 GitHub Actions Secret BANYA_SYNC_TOKEN。不要把它发在聊天中。');
+  return;
+ }
  if(action==='disconnect'){
   if(root.confirm('停用自动同步并删除本机同步密钥？已存在的学习记录不会被清除。')){
    localStorage.removeItem(CONFIG);config=null;for(const s of SUBJECTS)localStorage.removeItem(META+s);
