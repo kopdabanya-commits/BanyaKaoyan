@@ -1,0 +1,45 @@
+name: Verify existing ECS SQLite backup
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-backup-verify.yml]
+permissions:
+  contents: read
+jobs:
+  backup-once:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create and validate one existing-database backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -p 22 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+          systemctl start banya-sync-backup.service
+          systemctl is-active --quiet banya-sync-backup.timer
+          python3 - <<'PY'
+          import glob, os, sqlite3
+          backups=glob.glob('/var/lib/banya-sync/backups/sync-*.sqlite3')
+          assert backups, 'no SQLite backup was generated'
+          latest=max(backups,key=os.path.getmtime)
+          with sqlite3.connect('file:'+latest+'?mode=ro',uri=True) as con:
+            assert con.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
+            count=con.execute('SELECT COUNT(*) FROM snapshots').fetchone()[0]
+          print('ECS private SQLite backup created; integrity_check=ok; snapshot row count:',count)
+          print('ECS private backup files:',len(backups))
+          PY
+          REMOTE
