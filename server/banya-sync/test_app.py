@@ -73,14 +73,14 @@ def test_subjects_isolated_and_cas_conflict(api):
     stale = client.put("/v1/snapshot/english", headers=auth(), json={
         "expectedRevision": 0, "state": pack("english", {"done": {"en-1": False}, "notes": {}})})
     assert stale.status_code == 409
-    assert client.get("/v1/snapshot/english", headers=auth()).json()["state"] == s1
+    assert client.get("/v1/snapshot/english", headers=auth()).json()["state"] == pack("english", s1)
     next_rev = client.put("/v1/snapshot/english", headers=auth(), json={
-        "expectedRevision": 1, "state": {"done": {"en-1": False}}})
+        "expectedRevision": 1, "state": pack("english", {"done": {"en-1": False}, "notes": {}})})
     assert next_rev.json()["revision"] == 2
     with sqlite3.connect(path) as con:
         old = con.execute("SELECT state_json FROM history WHERE subject='english'").fetchone()[0]
         assert json.loads(old) == pack("english", s1)
-    assert client.get("/v1/snapshot/politics", headers=auth()).json()["state"] == s2
+    assert client.get("/v1/snapshot/politics", headers=auth()).json()["state"] == pack("politics", s2)
 
 
 def test_invalid_types_large_body_and_wrong_content_type(api):
@@ -104,8 +104,7 @@ def test_revision_history_bounded(api):
         assert res.status_code == 200
     with sqlite3.connect(path) as con:
         assert con.execute("SELECT count(*) FROM history").fetchone()[0] == HISTORY_KEEP
-    assert client.get("/v1/snapshot/english", headers=auth()).json()["state"] == {
-        "counter": HISTORY_KEEP + 4}
+    assert client.get("/v1/snapshot/english", headers=auth()).json()["state"] == pack("english", {"done": {}, "notes": {"counter": str(HISTORY_KEEP + 4)}})
 
 
 def test_reject_blank_and_cross_subject_payloads(api):
