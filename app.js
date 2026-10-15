@@ -91,13 +91,14 @@ function renderCalendar(){
  for(let i=0;i<weekdayOffset;i++)arr.push('<div></div>');
  for(let day=1;day<=count;day++){
   let s=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-  let valid=inRange(s),p=valid?dateProgress(s):{done:0,total:0};
-  arr.push(`<button class="cal-day ${s===selectedDate?'current':''} ${s===today?'reddot':''} ${!valid?'dim':''} ${p.total&&p.total===p.done?'complete':''}" data-action="cal-day" data-date="${s}" ${!valid?'disabled':''}>${day}${valid?'<i class="cal-dot"></i>':'<i style="height:5px"></i>'}</button>`)
+  let valid=inRange(s),p=valid?dateProgress(s):{done:0,total:0,skipped:false};
+  const status=p.skipped?'已标记休息':p.total&&p.total===p.done?'专项已完成':p.done?'已完成'+p.done+'项，共'+p.total+'项':'待练'+p.total+'项';
+  arr.push(`<button class="cal-day ${s===selectedDate?'current':''} ${s===today?'reddot':''} ${!valid?'dim':''} ${p.skipped?'skipped':''} ${p.total&&p.total===p.done?'complete':''}" data-action="cal-day" data-date="${s}" aria-label="${month}月${day}日，${valid?status:'计划范围外'}" ${!valid?'disabled':''}>${day}${valid?'<i class="cal-dot"></i>':'<i style="height:5px"></i>'}</button>`)
  }
  let totalDone=data.days.filter(d=>dateProgress(d.date).total===dateProgress(d.date).done).length; const skippedDays=data.days.filter(d=>state.skipped[d.date]).length;
- return `<div class="eyebrow">逐日安排</div><h1 class="page-title">65天复习日历</h1><p class="subtitle">点日期查看具体安排。不同于固定表格，任务可以改期和记录。</p>
+ return `<div class="eyebrow">65天 · 专项复习安排</div><h1 class="page-title">每天学什么，一眼就知道</h1><p class="subtitle">选择日期即可查看训练内容，临时调整不会让第二天自动加倍。</p>
  <div class="month-head"><button class="round-btn" data-action="prev-month" aria-label="上个月">‹</button><h2>${year}年${month}月</h2><button class="round-btn" data-action="next-month" aria-label="下个月">›</button></div>
- <div class="calendar"><div class="cal-grid">${arr.join('')}</div><div class="legend"><span><i></i>有安排</span><span class="green"><i></i>当天全部完成</span></div></div>
+ <div class="calendar"><div class="cal-grid">${arr.join('')}</div><div class="legend"><span><i></i>待练</span><span class="green"><i></i>已完成</span><span class="amber"><i></i>休息</span></div></div>
  <section class="section-row"><h2>三个复习阶段</h2></section>
  <div class="mini-card"><h3>10.15—11.15 · 写作入门＋客观题扫尾</h3><p>不追赶前两天进度；11月15日前完成2014—2023新题型一刷。</p></div>
  <div class="mini-card"><h3>11.16—12.04 · 完形翻译收官＋首次检测</h3><p>11月20日左右完形一刷完成；12月1日翻译一刷完成。11月21—24日2024卷弹性模考。</p></div>
@@ -114,22 +115,23 @@ function renderStats(){
  const pct=scheduled?Math.round(done/scheduled*100):0;
  const focus=['写作','新题型','翻译','完形','阅读','复盘','综合','模考','机动'];
  let records=[];for(const d of data.days){for(const t of specialTasks(d.date)){if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')records.push({date:d.date,t,wrong:state.wrong[t.id]})}}
- return `<div class="eyebrow">学习进展</div><h1 class="page-title">看见每一步积累。</h1><p class="subtitle">仅根据你实际勾选和录入的内容统计；不虚构学习时长或成绩。</p>
- <div class="stats-two"><div class="statbox"><div class="name">已完成任务</div><div class="val">${done}<span style="font-size:12px;color:#aab1bf"> / ${scheduled}</span></div></div><div class="statbox"><div class="name">已完成任务的预计时长</div><div class="val">${(minutes/60).toFixed(1)}<span style="font-size:12px;color:#aab1bf"> 小时</span></div></div></div>
+ return `<div class="eyebrow">专项复习 · 完成记录</div><h1 class="page-title">练过哪些，记录得清楚</h1><p class="subtitle">只统计已打卡的任务；学习时长是计划估算，不是手机自动计时，也不等于真实得分。</p>
+ <div class="stats-two"><div class="statbox"><div class="name">已完成任务</div><div class="val">${done}<span style="font-size:12px;color:#aab1bf"> / ${scheduled}</span></div></div><div class="statbox"><div class="name">已完成任务预计时长</div><div class="val">${(minutes/60).toFixed(1)}<span style="font-size:12px;color:#aab1bf"> 小时</span></div></div></div>
  <div class="progress-block"><div class="progress-top"><span class="progress-title">总体任务完成率</span><span class="progress-value">${pct}%</span></div><div class="track"><span style="width:${pct}%"></span></div></div>
  <section class="section-row"><h2>各题型完成情况</h2></section><div class="setting-section">${focus.filter(x=>counters[x]).map(x=>`<div class="metric"><div><b>${x}</b><br/><small>${counters[x].done}/${counters[x].total} 已完成</small></div><progress value="${counters[x].done}" max="${counters[x].total}"></progress></div>`).join('')}</div>
- <section class="section-row"><h2>你之前的真实基线</h2></section><div class="setting-section"><div class="metric"><b>阅读一刷</b><small>约 37 / 40</small></div><div class="metric"><b>新题型</b><small>6.5 / 10</small></div><div class="metric"><b>完形填空</b><small>6 / 10</small></div><div class="metric"><b>作文状态</b><small>从零启动</small></div></div>
- <div class="tip">复习策略：优先让大小作文能独立写，其次改善翻译中文表达与新题型稳定性；37分阅读是旧卷回忆估计，待后期新卷模考再校准。</div><section class="section-row"><h2>已记录的错题</h2></section>${records.length?records.slice(-10).reverse().map(r=>`<div class="mini-card"><h3>${esc(r.t.title)}</h3><p>${niceDate(r.date)} · 错 ${esc(r.wrong)} 题</p></div>`).join(''):'<div class="empty">开始练习后，点任务右侧 ··· 填错题数，这里就会生成记录。</div>'}
+ <section class="section-row"><h2>建档时的学习基线</h2></section><div class="setting-section"><div class="metric"><b>阅读一刷</b><small>约 37 / 40</small></div><div class="metric"><b>新题型</b><small>6.5 / 10</small></div><div class="metric"><b>完形填空</b><small>6 / 10</small></div><div class="metric"><b>作文起点</b><small>小作文难独立完成，大作文未开始</small></div></div>
+ <div class="tip">复习策略：优先让大小作文能独立写，其次改善翻译中文表达与新题型稳定性；37分阅读是旧卷回忆估计，待后期新卷模考再校准。</div><section class="section-row"><h2>最近的作答记录</h2></section>${records.length?records.slice(-10).reverse().map(r=>`<div class="mini-card"><h3>${esc(r.t.title)}</h3><p>${niceDate(r.date)} · 错 ${esc(r.wrong)} 题</p></div>`).join(''):'<div class="empty">暂时还没有作答记录。打开任意专项任务，在“训练记录”中填写错题数即可。</div>'}
  <section class="section-row"><h2>计划移出的保留记录</h2></section>${Object.values(state.archive).filter(t=>t.retired).map(t=>`<div class="mini-card"><h3>${esc(t.title)}</h3><p>${esc(t.date)} · 已移出待办，记录仍保留${state.wrong[t.id]!==undefined?' · 错'+esc(state.wrong[t.id])+'题':''}</p></div>`).join('')||'<p class="setting-note">暂无移出的任务。</p>'}<div class="tip">阅读是现有优势，计划重心是写作；记录真实成绩后，可进一步调整薄弱项。</div>`;
 }
 function renderSettings(){
- return `<div class="eyebrow">我的设置</div><h1 class="page-title">你的计划，你来掌控。</h1><p class="subtitle">不要因为临时安排打乱节奏；把计划调到能完成的程度。</p>
- <section class="setting-section"><h2>日常时间配置</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''}>90分钟</option><option value="100" ${state.settings.budget===100?'selected':''}>100分钟（默认）</option><option value="110" ${state.settings.budget===110?'selected':''}>110分钟</option><option value="120" ${state.settings.budget===120?'selected':''}>120分钟</option></select></label><p class="setting-note">单词由你自己安排，不再出现在每日任务、完成率和进度统计里。这里只保留时间预留，避免专项与背词合计超时。</p></section>
- <section class="setting-section"><h2>获取最新计划</h2><p class="setting-note">你告诉ChatGPT最新进度后，等我更新GitHub仓库里的 plan.json。手机有网络时点「检查更新」，不会清空已打卡和笔记。</p><div class="button-row"><button class="cta secondary" data-action="check-updates">↻ 检查计划更新</button><button class="cta ghost" data-action="copy-summary">▤ 复制学习近况</button></div><p class="setting-note" id="sync-status">当前：${esc(data.meta.planVersion||'初始版')} · ${esc(updateSource)} · ${esc(lastCheck)}</p></section>
- <section class="setting-section"><h2>数据与备份</h2><div class="button-row"><button class="cta secondary" data-action="export">↥ 导出学习记录</button><button class="cta ghost" data-action="import">↧ 导入备份</button><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></div><input id="file-import" type="file" accept="application/json,.json"/><p class="setting-note" style="margin-top:13px">当前版本所有记录只存在这台设备的浏览器中，不会自动同步。清除站点数据可能丢失记录，请定期导出备份。</p></section>
+ return `<div class="eyebrow">设置与学习记录</div><h1 class="page-title">少设置一点，多练习一点</h1><p class="subtitle">每天只看60—80分钟专项任务；单词你自己安排，不占打卡列表。</p>
+ <section class="setting-section"><h2>最常用的三个操作</h2><div class="usage-steps"><p><b>练习：</b>在“今日”选一项训练，先独立作答，再核对原文或范文。</p><p><b>复盘：</b>打开任务详情，记录错题数和一句话错因，可同时打卡。</p><p><b>调整：</b>将做题情况发给ChatGPT，计划更新后再到这里检查新版。</p></div></section>
+ <section class="setting-section"><h2>时间预算（选填调整）</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''}>90分钟</option><option value="100" ${state.settings.budget===100?'selected':''}>100分钟（默认）</option><option value="110" ${state.settings.budget===110?'selected':''}>110分钟</option><option value="120" ${state.settings.budget===120?'selected':''}>120分钟</option></select></label><p class="setting-note">单词由你自己安排，不再出现在每日任务、完成率和进度统计里。这里只保留时间预留，避免专项与背词合计超时。</p></section>
+ <section class="setting-section"><h2>获取最新计划</h2><p class="setting-note">你把实际做题结果告诉ChatGPT，我更新计划并发布后，再点击下方检查。请先预览差异，再决定是否应用；不会把计划任务自动算成已完成。</p><div class="button-row"><button class="cta secondary" data-action="check-updates">↻ 检查计划更新</button><button class="cta ghost" data-action="copy-summary">▤ 复制学习近况</button></div><p class="setting-note" id="sync-status">当前：${esc(data.meta.planVersion||'初始版')} · ${esc(updateSource)} · ${esc(lastCheck)}</p></section>
+ <section class="setting-section"><h2>数据与备份</h2><div class="button-row"><button class="cta secondary" data-action="export">↥ 导出学习记录</button><button class="cta ghost" data-action="import">↧ 导入备份</button><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></div><input id="file-import" type="file" accept="application/json,.json"/><p class="setting-note" style="margin-top:13px">打卡、错题和复盘存在当前手机的浏览器数据中，并未自动上传云端。建议每周导出一次备份；清除浏览器数据或换机前务必备份。</p></section>
  <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>计划依据</h2><div class="metric"><b>计划开始</b><small>2026年10月15日</small></div><div class="metric"><b>计划结束</b><small>2026年12月18日</small></div><div class="metric"><b>英语二考试</b><small>2026年12月19日</small></div><div class="metric"><b>模拟安排</b><small>3套 · 弹性4天</small></div></section>
  <section class="setting-section"><h2>安装到手机桌面</h2><p class="setting-note">部署到HTTPS站点后，在 Android Chrome 或 Edge 菜单中选择「安装应用」或「添加到主屏幕」。荣耀手机安装后如果找不到图标，检查浏览器“创建桌面快捷方式”权限。首次联网缓存完成后再尝试离线启动；清理网站数据前先导出备份。</p></section>
- <div class="watermark">M2.3 本地优先 · 联网更新计划 · 暂无跨设备打卡同步和后台提醒</div>`;
+ <div class="watermark">M2.4 本地优先 · 联网更新计划 · 暂无跨设备打卡同步和后台提醒</div>`;
 }
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
 let modalFocus=null;
@@ -172,7 +174,7 @@ async function checkUpdates(silent=false){
  try{
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),6500);let response;
   try{response=await fetch('./plan.json?check='+Date.now(),{cache:'no-store',redirect:'error',signal:controller.signal})}finally{clearTimeout(timer)}
-  if(!response.ok||response.redirected||!response.headers.get('content-type')?.includes('json'))throw Error('需要重新登录或网络异常');
+  if(!response.ok||response.redirected||!response.headers.get('content-type')?.includes('json'))throw Error('服务器暂时不可用或网络异常');
   const fresh=await response.json();if(!validatePlan(fresh))throw Error('计划结构校验不通过');
   if((fresh.meta.revision||0)<(data.meta.revision||0))throw Error('服务器计划较旧，已阻止回退');
   const changed=JSON.stringify(data)!==JSON.stringify(fresh);
@@ -180,7 +182,7 @@ async function checkUpdates(silent=false){
   lastCheck=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});updateSource='已联机检查';
   pendingPlan=changed?fresh:null;if(view==='settings'||changed)render();
   if(changed&&!silent)reviewUpdate();else if(!silent)toast('已经是最新计划');
- }catch(err){updateSource='更新未完成';lastCheck='保留本地计划';if(view==='settings')render();if(!silent)toast(err.message==='服务器计划较旧，已阻止回退'?err.message:'更新失败，原计划和记录保留；可联网重新验证访问');}
+ }catch(err){updateSource='更新未完成';lastCheck='保留本地计划';if(view==='settings')render();if(!silent)toast(err.message==='服务器计划较旧，已阻止回退'?err.message:'计划检查未成功，原记录不受影响；请联网后重试');}
  finally{checking=false;const button=document.querySelector('[data-action="check-updates"]');if(button)button.disabled=false;}
 }
 function summaryText(){
@@ -205,7 +207,7 @@ document.addEventListener('click',e=>{
  const action=btn.dataset.action;
  if(action==='review-update'){reviewUpdate();return}
  if(action==='apply-update'){applyUpdate();return}
- if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已请求检查，关闭后重新打开可使用新版')).catch(()=>toast('暂时无法检查，稍后重试'));return}
+ if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已检查应用更新；有新版时关闭再打开即可')).catch(()=>toast('暂时无法检查，稍后重试'));return}
  if(action==='toggle'){const t=findTask(btn.dataset.id,btn.dataset.day);if(!t)return;const next=!state.done[t.id];state.archive[t.id]={...t,date:btn.dataset.day};state.done[t.id]=next;if(next)delete state.skipped[btn.dataset.day];if(!save()){render();return;}render(false,next?t.id:'');const p=dateProgress(btn.dataset.day);toast(next?(p.total&&p.done===p.total?'当日专项已完成，打卡已保存在本机':'已完成，打卡已保存在本机'):'已取消完成标记');return}
  if(action==='day'||action==='cal-day'){selectedDate=btn.dataset.date;calendarMonth=selectedDate.substring(0,7);if(action==='cal-day')nav('today');else render(true);return}
  if(action==='jump-today'){selectedDate=inRange(today)?today:data.meta.start;render(true);return}
@@ -276,7 +278,7 @@ window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=load();close
 document.addEventListener('keydown',e=>{const box=document.getElementById('modal');if(box.classList.contains('hidden'))return;if(e.key==='Escape'){closeModal();return;}if(e.key==='Tab'){const a=[...box.querySelectorAll('button,input,select,textarea,a[href]')].filter(x=>!x.disabled);const first=a[0],last=a.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
 checkUpdates(true);
 if('serviceWorker'  in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
- window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(async r=>{const observe=w=>{w?.addEventListener('statechange',()=>{if(w.state==='redundant'){offlineStatus='缓存安装失败，请联网重新验证访问';if(view==='settings')render();}if(w.state==='installed'){offlineStatus='离线资源已缓存';if(view==='settings')render();toast(r.active?'应用新版已下载，关闭后重新打开生效':'离线资源已就绪');}})};observe(r.installing);r.addEventListener('updatefound',()=>observe(r.installing));if(r.waiting){offlineStatus='新版已下载，关闭所有页面后重开生效';}if(navigator.serviceWorker.controller){offlineStatus='离线资源已缓存';if(view==='settings')render();}}).catch(()=>{offlineStatus='离线缓存未完成，请联网重新验证访问后刷新';if(view==='settings')render();}));
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(async r=>{const observe=w=>{w?.addEventListener('statechange',()=>{if(w.state==='redundant'){offlineStatus='离线缓存安装失败，请联网后重试';if(view==='settings')render();}if(w.state==='installed'){offlineStatus='离线资源已缓存';if(view==='settings')render();toast(r.active?'应用新版已下载，关闭后重新打开生效':'离线资源已就绪');}})};observe(r.installing);r.addEventListener('updatefound',()=>observe(r.installing));if(r.waiting){offlineStatus='新版已下载，关闭所有页面后重开生效';}if(navigator.serviceWorker.controller){offlineStatus='离线资源已缓存';if(view==='settings')render();}}).catch(()=>{offlineStatus='离线缓存未完成，请联网打开网页后再试';if(view==='settings')render();}));
 }
 })();
 
