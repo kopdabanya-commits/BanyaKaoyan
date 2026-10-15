@@ -32,3 +32,4 @@ printf 'BANYA_INSTALL_LOG_TAIL_BEGIN\n'; tail -20 /root/banya-stage/install-resu
 printf 'BANYA_UNIT_RESULT='; systemctl show banya-sync -p Result -p ExecMainStatus -p NRestarts --no-pager 2>/dev/null | paste -sd, - || true
 printf 'BANYA_JOURNAL_BEGIN\n'; journalctl -u banya-sync -n 24 --no-pager -o cat 2>/dev/null || true; printf 'BANYA_JOURNAL_END\n'
 printf 'BANYA_PATHS='; ls -ld /opt/banya-sync /var/lib/banya-sync 2>/dev/null || true
+printf 'NGINX_ERROR_BEGIN\n'; tail -20 /var/log/nginx/error.log 2>/dev/null || true; printf 'NGINX_ERROR_END\n'
