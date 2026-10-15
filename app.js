@@ -40,43 +40,47 @@ function fits(day,id,minutes){return allTasks(day).filter(t=>t.id!==id).reduce((
 function canPlace(day,id,minutes){if(fits(day,id,minutes))return true;toast('该日已超出时间预算，请先缩短或改期其他任务');return false;}
 function dateProgress(s){const a=specialTasks(s);return {done:a.filter(x=>state.done[x.id]).length,total:a.length,minutes:a.reduce((n,x)=>n+x.minutes,0),skipped:!!state.skipped[s]}}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('on'),2800)}
-function nav(next){view=next;document.querySelectorAll('.nav-tab').forEach(el=>el.classList.toggle('active',el.dataset.view===view));render();window.scrollTo(0,0)}
-function render(){
+function nav(next){view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
+function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
- app.innerHTML = view==='today'?renderToday():view==='calendar'?renderCalendar():view==='stats'?renderStats():renderSettings();
+ const content=view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():view==='stats'?renderStats():renderSettings();
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${content}</div>`;
  if(storageMessage)app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan)app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
 function remainingDays(){return Math.max(0, Math.round((dateFrom(data.meta.exam)-dateFrom(today))/(1000*60*60*24)))}
 function refreshToday(){const fresh=localISO(new Date());if(fresh!==today){const followingToday=selectedDate===today;today=fresh;if(followingToday&&inRange(today))selectedDate=today;render();}}
-function taskCard(t,day){
+function taskCard(t,day,featured=false,justDone=false){
  const checked=!!state.done[t.id];
  const text = state.notes[t.id]||'';
  const wrong = state.wrong[t.id];
- return `<article class="task-card ${checked?'done':''}">
+ return `<article class="task-card ${checked?'done':''} ${featured?'featured':''} ${justDone?'just-done':''}">
  <button class="check ${checked?'checked':''}" data-action="toggle" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-pressed="${checked}" aria-label="${checked?'取消完成':'标记完成'}：${esc(t.title)}">${checked?'✓':''}</button>
- <button class="task-main task-open" data-action="detail" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-label="查看任务详情：${esc(t.title)}"><div class="task-title">${esc(t.title)}</div><p class="task-sub">${t.detail?esc(t.detail):'完成后可点击右侧记录错题或心得。'}</p>
+ <button class="task-main task-open" data-action="detail" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-label="查看训练方法并记录：${esc(t.title)}">${featured?'<span class="task-label">建议先做</span>':''}<div class="task-title">${esc(t.title)}</div><p class="task-sub">${t.detail?esc(t.detail):'完成后可点击右侧记录错题或心得。'}</p>
  <div class="pills"><span class="pill ${COLORS[t.type]||'gray'}">${esc(t.type)}</span><span class="pill gray">◷ ${t.minutes} 分钟</span>${wrong!==undefined&&wrong!==''?`<span class="pill peach">错 ${esc(wrong)} 题</span>`:''}${text?`<span class="pill green">已记录</span>`:''}</div></button>
- <button class="task-more" data-action="detail" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-label="记录或调整任务">···</button>
+ <button class="task-more" data-action="detail" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-label="记录、复盘或调整：${esc(t.title)}">···</button>
  </article>`;
 }
-function renderToday(){
+function renderToday(justDone=''){
  const s=selectedDate; const v=dateProgress(s);
  const budget=state.settings.budget;
  const percent=v.total?Math.round(v.done/v.total*100):0;
  let days=[];for(let i=-3;i<=3;i++){const d=plus(s,i);days.push(`<button class="day-chip ${d===s?'selected':''} ${d===today?'today':''}" data-action="day" data-date="${d}" ${!inRange(d)?'disabled':''}><span class="dow">${weekday(d).slice(1)}</span><span class="number">${dateFrom(d).getDate()}</span></button>`)}
  const tasks=specialTasks(s);
- const remainingMinutes=tasks.filter(t=>!state.done[t.id]).reduce((sum,t)=>sum+t.minutes,0);
- return `<div class="eyebrow">2027 考研 · 英语二专项计划</div><h1 class="page-title">一点点，向目标靠近。</h1><p class="subtitle">10月13—14日已留空，从15日重新出发；无需补做双份。</p>
- <section class="hero"><div class="hero-top"><div><h2>距离英语二初试还有</h2><div class="count">${remainingDays()}<small>天</small></div></div><div class="hero-right"><div class="biggoal">80<span style="font-size:13px">分</span></div><div class="goal-label">冲刺目标</div><div class="smallgoal">基础目标 75分</div></div></div><div class="hero-bottom"><span>专项任务约 ${v.minutes} 分钟 · 单词另计</span><div class="hero-foot">${s===today?'今日':'所选日'}进度 <div class="hero-bar"><span style="width:${percent}%"></span></div><b>${percent}%</b></div></div></section>
- <section class="section-row"><h2>${dateHeading(s)}</h2><span class="sub">专项 ${v.minutes}分钟 · 尚需${remainingMinutes}分钟</span></section><div class="weekstrip">${days.join('')}</div>
+ const pending=tasks.filter(t=>!state.done[t.id]);
+ const remainingMinutes=pending.reduce((sum,t)=>sum+t.minutes,0);
+ const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
+ const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
+ return `<div class="eyebrow">2027 考研 · 英语二</div><h1 class="page-title">${s===today?'今天的专项训练':s<today?'回看这天的学习':'提前看看这天的安排'}</h1><p class="subtitle">${intro}</p>
+ <section class="hero"><div class="hero-top"><div><h2>距离英语二初试</h2><div class="count">${remainingDays()}<small>天</small></div></div><div class="hero-right"><div class="biggoal">80<span style="font-size:13px">分</span></div><div class="goal-label">冲刺目标</div><div class="smallgoal">基础目标 75分</div></div></div><div class="hero-bottom"><span>当天专项 ${v.minutes} 分钟 · 单词另计</span><div class="hero-foot">${selectedLabel}进度 <div class="hero-bar"><span style="width:${percent}%"></span></div><b>${percent}%</b></div></div></section>
+ <section class="section-row"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项完成 · 尚需约${remainingMinutes}分钟</span></section><div class="weekstrip">${days.join('')}</div>
  ${v.skipped?'<div class="skip-banner">这一天已标记为休息／未学习，不会累计补课。随时可以恢复。</div>':''}
- <div class="progress-block"><div class="progress-top"><span class="progress-title">${percent===100?'今天完成了，做得不错 ✓':v.skipped?'今天先休息，保留原任务':'今天只做这几项'}</span><span class="progress-value">${v.done}/${v.total}项 · 剩余约${remainingMinutes}分钟</span></div><div class="track"><span style="width:${percent}%"></span></div></div>
- ${tasks.map(t=>taskCard(t,s)).join('')||'<div class="empty">这一天没有任务，给自己留点喘息空间。</div>'}
+ <div class="progress-block" aria-label="${selectedLabel}专项进度"><div class="progress-top"><span class="progress-title">${v.total&&percent===100?'当日专项已完成':v.skipped?'已标记休息，不会补债':'专项完成进度'}</span><span class="progress-value">${v.done}/${v.total}项 · 剩余约${remainingMinutes}分钟</span></div><div class="track" role="progressbar" aria-label="专项任务完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${v.total&&percent===100?'<p class="progress-footnote">完成记录已保存在本机，需要时可在任务详情补充复盘。</p>':pending.length?`<p class="progress-footnote">下一步：${esc(pending[0].title)} · 约${pending[0].minutes}分钟</p>`:''}</div>
+ ${tasks.map(t=>taskCard(t,s,t.id===pending[0]?.id,t.id===justDone)).join('')||'<div class="empty">这一天没有安排专项练习，可以根据需要添加任务。</div>'}
  ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
  ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
- <div class="section-row"><h2>灵活调整</h2><span class="sub">不让计划成为负担</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复这一天':'今天没学／休息'}</button><button class="cta ghost" data-action="jump-today">返回今天</button></div>
+ <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
  <p class="watermark">每天60—80分钟专项训练 · 单词另计 · 本地保存</p>`;
 }
 function renderCalendar(){
