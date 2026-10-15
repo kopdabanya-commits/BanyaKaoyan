@@ -39,3 +39,66 @@ body{overflow-wrap:anywhere}
 .update-details{margin:12px 0;border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--paper)}
 .update-details summary{cursor:pointer;font-size:14px;font-weight:650;color:var(--brand);padding:5px 0}
 @media(max-width:360px){.section-row{align-items:flex-start;gap:8px}.section-row .sub{max-width:55%}}
+
+/* M2.4 · 安静且清晰的学习界面：轻动效、可靠反馈、手机端优先 */
+:root{--text:#24304a;--muted:#67758c;--line:#e9eaf2;--shadow:0 8px 26px rgba(38,48,83,.065)}
+body{background:linear-gradient(180deg,#f8f8fd 0%,#f9fafc 50%,#f8f9fb 100%)}
+.logo{letter-spacing:0}.topbar{margin-bottom:24px}
+.page-title{letter-spacing:-.55px;font-size:28px}
+.subtitle{font-size:13px;color:#6d7890;margin-bottom:18px}
+.hero{box-shadow:0 14px 30px rgba(98,86,195,.18);margin-bottom:20px}
+.hero:before,.hero:after{pointer-events:none}
+.hero-bar span,.track span{transition:width .32s cubic-bezier(.22,1,.36,1)}
+.nav-tab{position:relative;gap:5px;transition:background-color .16s ease,color .16s ease,transform .16s ease}
+.nav-tab.active{background:#f0edff;color:#6458cf}
+.nav-tab:active,.day-chip:active,.cal-day:active{transform:scale(.96)}
+.nav-icon{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bottom-nav{padding-inline:12px;gap:7px}
+.task-card{border:1px solid #edf0f7;transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease,transform .18s ease}
+.task-card.featured{border-color:#cac4ff;box-shadow:0 7px 22px rgba(107,97,219,.1)}
+.task-card.done{border-color:#e4eee9;background:#fcfefd}
+.task-card.done .task-title{text-decoration:none;color:#7f8a9e}
+.task-label{display:inline-flex;align-items:center;border-radius:6px;background:#eceaff;color:#6258c7;font-size:10px;font-weight:800;letter-spacing:.15px;margin:0 0 6px;padding:3px 7px}
+.task-card .task-sub{color:#6e7c92;font-size:12px}
+.task-main:active,.cta:active,.task-more:active{transform:scale(.985)}
+.cta,.task-main,.task-more,.day-chip,.round-btn,.cal-day{transition:transform .15s ease,background-color .2s ease,color .2s ease}
+.check{transition:background-color .18s ease,border-color .18s ease,transform .17s cubic-bezier(.2,1.6,.5,1)}
+.check.checked{background:#6d66d9}
+.check:active{transform:scale(.87)}
+.task-card.just-done .check{animation:checkDone .3s cubic-bezier(.2,1.5,.5,1) both}
+.progress-footnote{font-size:12px;line-height:1.6;color:#78859b;margin:10px 0 0}
+.progress-block{padding:17px 18px;margin:14px 0 18px}
+.progress-value{color:#685ed4}
+.view-content.entering{animation:viewAppear .2s ease-out both}
+.modal{background:rgba(26,34,54,.48);backdrop-filter:blur(3px)}
+.modal:not(.hidden) .modal-card{animation:sheetRise .24s cubic-bezier(.2,.9,.25,1) both}
+.modal-card{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.study-guide{padding:15px 16px;background:#f2f3ff;border:1px solid #e9e6ff;border-radius:17px;margin-bottom:18px}
+.study-guide .guide-label{font-size:11px;font-weight:800;color:#6759cc;letter-spacing:.3px}
+.study-guide p{font-size:13px;line-height:1.8;color:#48536b;margin:6px 0 0;white-space:pre-wrap}
+.task-overview{padding:13px 15px;margin-bottom:12px}
+.task-overview b{font-size:15px;line-height:1.5}
+.task-overview span{display:inline-block;margin-top:4px}
+.record-heading{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.record-heading h3{margin:0;font-size:14px}
+.record-heading small{color:#7e8a9e;font-size:11px}
+.advanced-adjust{border:1px solid #e6e8f1;border-radius:15px;margin:15px 0 0;background:#fff}
+.advanced-adjust summary{padding:15px;font-size:13px;color:#625bc3;font-weight:750;cursor:pointer}
+.advanced-adjust[open] summary{border-bottom:1px solid #f0f1f7}
+.advanced-fields{padding:5px 15px 13px}
+.record-actions{display:grid;grid-template-columns:1fr 1.15fr;gap:9px}
+.record-actions .cta{min-width:0;padding-inline:8px}
+.cal-day.skipped{background:#fff2e2;color:#936528}
+.cal-day.skipped .cal-dot{background:#e4b06d}
+.cal-day.complete{background:#effaf6;color:#17826a}
+.cal-day.current{background:#7569e9;color:white}
+.cal-day.current .cal-dot{background:#fff}
+.legend .amber i{background:#e4b06d}
+.month-head h2{font-size:19px}
+#toast{bottom:calc(87px + env(safe-area-inset-bottom));min-width:min(160px,80%);border-radius:14px;line-height:1.5;transition:opacity .2s ease,transform .2s ease;transform:translate(-50%,8px)}
+#toast.on{transform:translate(-50%,0)}
+@keyframes viewAppear{from{opacity:.72;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sheetRise{from{opacity:.6;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes checkDone{0%{transform:scale(.78)}65%{transform:scale(1.12)}100%{transform:scale(1)}}
+@media(max-width:375px){.record-actions{grid-template-columns:1fr}.page-title{font-size:26px}.bottom-nav{gap:3px;padding-inline:8px}}
+@media(prefers-reduced-motion:reduce){.view-content.entering,.task-card.just-done .check,.modal:not(.hidden) .modal-card{animation:none!important}html{scroll-behavior:auto}.nav-tab,.day-chip,.cal-day,.check,.task-card,.task-main,.cta,.task-more,.hero-bar span,.track span,#toast{transition:none!important}}
