@@ -14,9 +14,38 @@ if [[ ! -e /etc/banya-sync.env ]]; then
     tail -30 "$SRC/install-result.log" >&2
     exit 1
   }
+else
+  current_digest="$(sed -n 's/^BANYA_SYNC_TOKEN_SHA256=//p' /etc/banya-sync.env)"
+  if [[ "$current_digest" != "$BANYA_SYNC_TOKEN_SHA256" ]]; then
+    # Retry after a partial installation may need a new ephemeral token.
+    # Never silently rotate once real subject data exists.
+    if [[ -f /var/lib/banya-sync/sync.sqlite3 ]]; then
+      count="$(python3 - <<'PY'
+import sqlite3
+con = sqlite3.connect('file:/var/lib/banya-sync/sync.sqlite3?mode=ro', uri=True)
+try:
+    print(con.execute('SELECT count(*) FROM snapshots').fetchone()[0])
+finally:
+    con.close()
+PY
+)"
+      [[ "$count" == 0 ]] || { echo 'Existing learning data: refusing token rotation' >&2; exit 1; }
+    fi
+    cp -p /etc/banya-sync.env "$SRC/banya-sync-env.before-retry"
+    sed -i "s/^BANYA_SYNC_TOKEN_SHA256=.*/BANYA_SYNC_TOKEN_SHA256=$BANYA_SYNC_TOKEN_SHA256/" /etc/banya-sync.env
+    chmod 0600 /etc/banya-sync.env
+  fi
 fi
+# Correct permissions from installations made with the root-only umask.
+chmod -R a+rX /opt/banya-sync/.venv
+systemctl restart banya-sync.service
 systemctl is-active --quiet banya-sync.service
-curl -fsS --max-time 8 http://127.0.0.1:8765/health > /dev/null
+ready=false
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -fsS --max-time 2 http://127.0.0.1:8765/health > /dev/null 2>&1; then ready=true; break; fi
+  sleep 1
+done
+[[ "$ready" == true ]] || { echo 'Backend did not become healthy' >&2; exit 1; }
 
 install -m 0644 "$SRC/nginx-ip.conf" /etc/nginx/sites-available/banya-sync
 if [[ -e /etc/nginx/sites-enabled/njfu-seat || -L /etc/nginx/sites-enabled/njfu-seat ]]; then

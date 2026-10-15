@@ -30,6 +30,9 @@ install -m 0644 "$SRC/backup_db.py" /opt/banya-sync/backup_db.py
 install -m 0644 "$SRC/requirements.txt" /opt/banya-sync/requirements.txt
 python3 -m venv /opt/banya-sync/.venv
 /opt/banya-sync/.venv/bin/python -m pip install --disable-pip-version-check -r /opt/banya-sync/requirements.txt
+# The root installation umask protects secrets, but the unprivileged service
+# must be able to traverse and execute the public dependency environment.
+chmod -R a+rX /opt/banya-sync/.venv
 SECRET=""
 if [[ -n "${BANYA_SYNC_TOKEN_SHA256:-}" ]]; then
   [[ "$BANYA_SYNC_TOKEN_SHA256" =~ ^[0-9a-fA-F]{64}$ ]] || die "BANYA_SYNC_TOKEN_SHA256 格式不正确"
