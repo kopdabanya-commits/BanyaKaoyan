@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const types=['写作','新题型','翻译','完形','阅读','复盘','机动','综合','模考','单词'];
-const defaults=()=>({done:{},skipped:{},moved:{},added:[],notes:{},wrong:{},edits:{},archive:{},settings:{vocab:35,budget:100}});
+const defaults=()=>({done:{},skipped:{},moved:{},added:[],notes:{},wrong:{},edits:{},archive:{},settings:{vocab:35,budget:130}});
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const safeKey=k=>typeof k==='string'&&k.length>0&&k.length<=160&&!['__proto__','constructor','prototype'].includes(k);
 const date=s=>typeof s==='string'&&/^2026-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s+'T12:00:00Z'))&&new Date(s+'T12:00:00Z').toISOString().slice(0,10)===s;
@@ -13,7 +13,7 @@ function validPlan(p){
  if(p.meta.revision!==undefined&&(!Number.isInteger(p.meta.revision)||p.meta.revision<1))return false;
  const ids=new Set(),dates=new Set();
  for(const d of p.days){if(!object(d)||!inRange(d.date)||dates.has(d.date)||!Array.isArray(d.items))return false;dates.add(d.date);let m=40;
-  for(const t of d.items){if(!task(t)||t.id.endsWith('-vocab')||t.id.startsWith('custom-')||ids.has(t.id))return false;ids.add(t.id);m+=t.minutes;}if(m>120)return false;
+  for(const t of d.items){if(!task(t)||t.id.endsWith('-vocab')||t.id.startsWith('custom-')||ids.has(t.id))return false;ids.add(t.id);m+=t.minutes;}if(m>135)return false;
  }return true;
 }
 function normalizeState(s){
@@ -33,7 +33,7 @@ function normalizeState(s){
   }
  }
  if(s.settings!==undefined){if(!object(s.settings))throw Error('设置无效');Object.assign(n.settings,s.settings);}
- if(![30,35,40].includes(n.settings.vocab)||![90,100,110,120].includes(n.settings.budget))throw Error('时间设置超出范围');
+ if(![30,35,40].includes(n.settings.vocab)||![90,100,110,120,130,135].includes(n.settings.budget))throw Error('时间设置超出范围');
  if(s.added!==undefined){if(!Array.isArray(s.added)||s.added.length>5000)throw Error('自定义任务无效');const ids=new Set();for(const t of s.added){if(!task(t,true)||ids.has(t.id))throw Error('自定义任务无效或重复');ids.add(t.id);}n.added=structuredClone(s.added);}
  return n;
 }
