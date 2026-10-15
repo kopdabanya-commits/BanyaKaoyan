@@ -52,7 +52,14 @@ export async function configure({accountId,email,api,probe,persist,summary=()=>{
   throw err;
  }
 }
+export function normalizeToken(value){
+ const token=String(value??'').trim();
+ if(!token)throw Error('请先保存名为CLOUDFLARE_API_TOKEN的仓库Secret，再重新运行');
+ if(!/^[A-Za-z0-9_-]+$/.test(token))throw Error('Cloudflare令牌格式不正确：请仅保存令牌本身，不包含说明文字、引号或中间换行');
+ return token;
+}
 export function cfClient(token,fetcher=fetch){
+ token=normalizeToken(token);
  return async function api(method,path,body){
   if(method==='LIST'){const result=[];for(let page=1;page<=20;page++){const data=await request('GET',`${path}?page=${page}&per_page=100`);if(!Array.isArray(data.result))throw Error('列表响应异常');result.push(...data.result);if(page>=(data.result_info?.total_pages||1))return result;}throw Error('列表分页超出限制');}
   async function request(verb,url){
@@ -80,7 +87,7 @@ async function persistGitHub(marker){
  console.log('已提交验证后的域名配置：'+commit.sha);
 }
 async function main(){
- const token=process.env.CLOUDFLARE_API_TOKEN;if(!token)throw Error('请先保存名为CLOUDFLARE_API_TOKEN的仓库Secret，再重新运行');
+ const token=normalizeToken(process.env.CLOUDFLARE_API_TOKEN);
  if(process.env.GITHUB_REF!=='refs/heads/main')throw Error('仅允许在main手动运行');
  await configure({accountId:process.env.CLOUDFLARE_ACCOUNT_ID,email:process.env.ACCESS_EMAIL||'',api:cfClient(token),probe:url=>fetch(url,{redirect:'manual',signal:AbortSignal.timeout(15000)}),persist:persistGitHub,summary:async text=>{console.log(text);if(process.env.GITHUB_STEP_SUMMARY)await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,`## 配置结果\n\n${text}\n\nhttps://${HOST}\n`);}});
 }

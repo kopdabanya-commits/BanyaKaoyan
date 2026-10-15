@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {configure,exactPolicy,loginRedirect,HOST,APP_NAME,cfClient}from './configure-access.mjs';
+import {configure,exactPolicy,loginRedirect,HOST,APP_NAME,cfClient,normalizeToken}from './configure-access.mjs';
 const email='owner@example.com',accountId='a'.repeat(32),auth_domain='team.cloudflareaccess.com';
 function fake({unsafe=false,publicSite=false,unready=false,writeFail=false,existing=true}={}){
  const calls=[];let enabled=false,persisted=false;
@@ -15,3 +15,6 @@ test('public response rolls route back closed; does not persist open configurati
 test('missing Zero Trust and failed configuration persistence leave route closed',async()=>{for(const opt of [{unready:true},{writeFail:true}]){const f=fake(opt);await assert.rejects(configure(f.args));assert(!f.enabled);assert(!f.persisted);}});
 test('new application has only owner email and OTP; existing app is reused without rewriting',async()=>{const f=fake({existing:false});await configure(f.args);const create=f.calls.find(c=>c.path.endsWith('/apps')&&c.method==='POST');assert.equal(create.body.domain,HOST);assert(exactPolicy(create.body.policies[0],email));assert.deepEqual(create.body.allowed_idps,['otp']);});
 test('CF transport never follows redirects or leaks API response body in errors',async()=>{const api=cfClient('FAKE_TEST_SECRET',async(url,opts)=>{assert(url.startsWith('https://api.cloudflare.com/client/v4/'));assert.equal(opts.redirect,'error');return new Response(JSON.stringify({success:false,errors:[{message:'should not print private response'}]}),{status:403});});await assert.rejects(api('GET','/accounts/test'),e=>!e.message.includes('FAKE_TEST_SECRET')&&!e.message.includes('private response'));});
+
+test('token copied with surrounding newlines is normalized before request',async()=>{const api=cfClient(' \nFAKE_TEST_SECRET\r\n ',async(url,opts)=>{assert.equal(opts.headers.Authorization,'Bearer FAKE_TEST_SECRET');return new Response(JSON.stringify({success:true,result:{ok:true}}));});assert.deepEqual(await api('GET','/accounts/test'),{ok:true});});
+test('invalid token rejects locally without leaking its contents',()=>{for(const value of ['', 'FAKE_TEST\nSECRET', 'Bearer FAKE_TEST_SECRET', '"FAKE_TEST_SECRET"'])assert.throws(()=>normalizeToken(value),e=>!e.message.includes('FAKE_TEST'));});
