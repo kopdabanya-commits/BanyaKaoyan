@@ -101,18 +101,29 @@ function renderToday(justDone=''){
  const tasks=specialTasks(s);
  const pending=tasks.filter(t=>!state.done[t.id]);
  const remainingMinutes=pending.reduce((sum,t)=>sum+t.minutes,0);
+ const insight=Intel.recommend(data,state,Core,s);
+ const week=Intel.week(data,state,Core,today);
  const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
  const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
- return `<div class="eyebrow">2027 考研 · 英语二</div><h1 class="page-title">${s===today?'今天的专项训练':s<today?'回看这天的学习':'提前看看这天的安排'}</h1><p class="subtitle">${intro}</p>
- <section class="hero"><div class="hero-top"><div><h2>距离英语二初试</h2><div class="count">${remainingDays()}<small>天</small></div></div><div class="hero-right"><div class="biggoal">80<span style="font-size:13px">分</span></div><div class="goal-label">冲刺目标</div><div class="smallgoal">基础目标 75分</div></div></div><div class="hero-bottom"><span>当天专项 ${v.minutes} 分钟 · 单词另计</span><div class="hero-foot">${selectedLabel}进度 <div class="hero-bar"><span style="width:${percent}%"></span></div><b>${percent}%</b></div></div></section>
- <section class="section-row"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项完成 · 尚需约${remainingMinutes}分钟</span></section><div class="weekstrip">${days.join('')}</div>
- ${v.skipped?'<div class="skip-banner">这一天已标记为休息／未学习，不会累计补课。随时可以恢复。</div>':''}
+ return `<div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天，把注意力留给重要的题。':s<today?'回看这一日的积累':'提前看看这一天'}</h1><p class="subtitle">${intro}</p>
+ <section class="hero premium-hero" aria-label="倒计时与今日进度">
+ <div class="aurora aurora-one" aria-hidden="true"></div><div class="aurora aurora-two" aria-hidden="true"></div><div class="hero-glow-grid" aria-hidden="true"></div>
+ <div class="hero-top"><div class="hero-copy"><span class="hero-kicker"><span class="glint-dot"></span>2027 考研 · 稳定推进</span><h2>距离初试还有</h2><div class="count">${remainingDays()}<small>天</small></div><p class="hero-motto">今天完成的，才是属于自己的进度。</p></div>
+ <div class="hero-ring" role="img" aria-label="${selectedLabel}已完成${percent}%的专项任务" style="--ring-progress:${percent}%"><div class="hero-ring-core"><strong>${percent}<small>%</small></strong><span>专项完成</span></div></div></div>
+ <div class="hero-bottom premium-foot"><div><small>当日专项</small><b>${v.minutes}<span>分钟</span></b></div><div><small>尚需预计</small><b>${remainingMinutes}<span>分钟</span></b></div><div><small>英语二目标</small><b>80<span>分</span></b></div></div>
+ </section>
+ <section class="section-row calendar-heading"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项已完成</span></section><div class="weekstrip">${days.join('')}</div>
+ ${v.skipped?'<div class="skip-banner">这一天已标记为未学习。保留原任务记录，不自动补双倍。</div>':''}
+ <section class="focus-panel" aria-label="当日行动建议">
+ <div class="focus-top"><span class="micro-label"><span class="micro-icon">✦</span>${esc(insight?.eyebrow||'当前计划')}</span><span class="focus-duration">${insight?.minutes?'约'+insight.minutes+'分钟':'本机建议'}</span></div>
+ <h2>${esc(insight?.title||'今天按计划稳步推进')}</h2><p>${esc(insight?.detail||'以实际做题情况为准，不自动改变计划。')}</p>
+ <div class="focus-actions">${insight?.taskId?`<button class="cta focus-primary" data-action="detail" data-id="${esc(insight.taskId)}" data-day="${s}">开始这项训练 <span aria-hidden="true">↗</span></button>`:''}<button class="cta focus-secondary" data-action="copy-summary">发给 ChatGPT 调整计划 <span aria-hidden="true">↗</span></button></div></section>
  <div class="progress-block" aria-label="${selectedLabel}专项进度"><div class="progress-top"><span class="progress-title">${v.total&&percent===100?'当日专项已完成':v.skipped?'已标记休息，不会补债':'专项完成进度'}</span><span class="progress-value">${v.done}/${v.total}项 · 剩余约${remainingMinutes}分钟</span></div><div class="track" role="progressbar" aria-label="专项任务完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${v.total&&percent===100?'<p class="progress-footnote">完成记录已保存在本机，需要时可在任务详情补充复盘。</p>':pending.length?`<p class="progress-footnote">下一步：${esc(pending[0].title)} · 约${pending[0].minutes}分钟</p>`:''}</div>
  ${tasks.map(t=>taskCard(t,s,t.id===pending[0]?.id,t.id===justDone)).join('')||'<div class="empty">这一天没有安排专项练习，可以根据需要添加任务。</div>'}
  ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
  ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
  <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
- <p class="watermark">每天60—80分钟专项训练 · 单词另计 · 本地保存</p>`;
+ <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">专项60—80分钟 · 单词另计 · 不内置计时器</p>`;
 }
 function renderCalendar(){
  let [year,month] = calendarMonth.split('-').map(Number);
@@ -144,11 +155,14 @@ function renderStats(){
    if(state.done[t.id]){done++;minutes+=t.minutes;counters[t.type].done++}
  }}
  const pct=scheduled?Math.round(done/scheduled*100):0;
+ const week=Intel.week(data,state,Core,today);
  const focus=['写作','新题型','翻译','完形','阅读','复盘','综合','模考','机动'];
  let records=[];for(const d of data.days){for(const t of specialTasks(d.date)){if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')records.push({date:d.date,t,wrong:state.wrong[t.id]})}}
  return `<div class="eyebrow">专项复习 · 完成记录</div><h1 class="page-title">练过哪些，记录得清楚</h1><p class="subtitle">只统计已打卡的任务；学习时长是计划估算，不是手机自动计时，也不等于真实得分。</p>
  <div class="stats-two"><div class="statbox"><div class="name">已完成任务</div><div class="val">${done}<span style="font-size:12px;color:#aab1bf"> / ${scheduled}</span></div></div><div class="statbox"><div class="name">已完成任务预计时长</div><div class="val">${(minutes/60).toFixed(1)}<span style="font-size:12px;color:#aab1bf"> 小时</span></div></div></div>
  <div class="progress-block"><div class="progress-top"><span class="progress-title">总体任务完成率</span><span class="progress-value">${pct}%</span></div><div class="track"><span style="width:${pct}%"></span></div></div>
+ <section class="section-row"><h2>七日学习足迹</h2><span class="sub">${week.done}/${week.total}项打卡 · 休息${week.skipped}天</span></section>
+ <section class="week-insight full">${renderWeekChart(week)}<p class="week-disclaimer">只使用当前手机上的真实打卡，不计算番茄 Todo 时间，也不推算政治成绩。</p></section>
  <section class="section-row"><h2>各题型完成情况</h2></section><div class="setting-section">${focus.filter(x=>counters[x]).map(x=>`<div class="metric"><div><b>${x}</b><br/><small>${counters[x].done}/${counters[x].total} 已完成</small></div><progress value="${counters[x].done}" max="${counters[x].total}"></progress></div>`).join('')}</div>
  <section class="section-row"><h2>建档时的学习基线</h2></section><div class="setting-section"><div class="metric"><b>阅读一刷</b><small>约 37 / 40</small></div><div class="metric"><b>新题型</b><small>6.5 / 10</small></div><div class="metric"><b>完形填空</b><small>6 / 10</small></div><div class="metric"><b>作文起点</b><small>小作文难独立完成，大作文未开始</small></div></div>
  <div class="tip">复习策略：优先让大小作文能独立写，其次改善翻译中文表达与新题型稳定性；37分阅读是旧卷回忆估计，待后期新卷模考再校准。</div><section class="section-row"><h2>最近的作答记录</h2></section>${records.length?records.slice(-10).reverse().map(r=>`<div class="mini-card"><h3>${esc(r.t.title)}</h3><p>${niceDate(r.date)} · 错 ${esc(r.wrong)} 题</p></div>`).join(''):'<div class="empty">暂时还没有作答记录。打开任意专项任务，在“训练记录”中填写错题数即可。</div>'}
