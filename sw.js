@@ -1,6 +1,6 @@
 /* Atomic offline shell. Access responses never enter the cache. */
-const CACHE='yantu-english-ii-m2.4-20261015';
-const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='yantu-english-ii-m2.5-20261015';
+const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./study-intelligence.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 function acceptable(response,url){
  if(!response.ok||response.redirected||response.type==='opaque'||response.type==='opaqueredirect')return false;
  if(response.url&&new URL(response.url).origin!==self.location.origin)return false;
