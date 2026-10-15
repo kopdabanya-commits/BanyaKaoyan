@@ -10,3 +10,5 @@
 - HTTPS 证书验证及 HEAD /: 502
 
 此探测不验证 SSH 身份、现有服务内容或板牙考研部署。
+
+SSH 公钥指纹（首次连接基线）：`SHA256:9oyfKbAJFel2TMt1diomTJvKJvFNh2HUqtDdLAEivwA`。部署前须保持主机公钥匹配。
