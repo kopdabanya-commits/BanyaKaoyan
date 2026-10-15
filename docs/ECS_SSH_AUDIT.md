@@ -8,7 +8,7 @@ OS=ubuntu 24.04
 KERNEL=6.8.0-136-generic
 USER_ID=0
 DISK=/dev/vda1        40G   11G   27G  29% /
-MEMORY=Mem:            1775         469         596           2         899        1305
+MEMORY=Mem:            1775         475         589           2         901        1300
 PYTHON=Python 3.12.3
 LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.1:8765,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
 SERVICE_nginx=active
@@ -26,7 +26,7 @@ CERTBOT_CERTIFICATES_BEGIN
 CERTBOT_CERTIFICATES_END
 OLD_DEPLOY_SIZE=3.4G	/opt/NJFU--main
 NGINX_VERSION=nginx version: nginx/1.24.0 (Ubuntu)
-NGINX_ENABLED_SITES=njfu-seat,
+NGINX_ENABLED_SITES=banya-sync,
 NGINX_ROUTING_BEGIN
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -35,7 +35,8 @@ NGINX_ROUTING_BEGIN
     listen [::]:443 ssl default_server;
     server_name 124.70.128.201;
     ssl_certificate /etc/letsencrypt/live/124.70.128.201/fullchain.pem;
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8765;
+        proxy_pass http://127.0.0.1:8765;
 NGINX_ROUTING_END
 TLS_LEAF_BEGIN
 subject=
@@ -69,20 +70,8 @@ curl: (7) Failed to connect to 127.0.0.1 port 8765 after 0 ms: Couldn't connect 
 同步密钥由部署方提供；仅保存哈希，安装日志未输出密钥。
 请勿向公网开放8765端口。旧项目完全不需要启动。
 BANYA_INSTALL_LOG_TAIL_END
-BANYA_UNIT_RESULT=Result=success,NRestarts=34,ExecMainStatus=0
+BANYA_UNIT_RESULT=Result=success,NRestarts=0,ExecMainStatus=0
 BANYA_JOURNAL_BEGIN
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
-banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 32.
-Started banya-sync.service - Banya Kaoyan private study sync API.
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
-banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 33.
-Started banya-sync.service - Banya Kaoyan private study sync API.
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
 banya-sync.service: Failed with result 'exit-code'.
 banya-sync.service: Scheduled restart job, restart counter is at 34.
 Started banya-sync.service - Banya Kaoyan private study sync API.
@@ -95,11 +84,22 @@ INFO:     Started server process [5856]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+Stopping banya-sync.service - Banya Kaoyan private study sync API...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5856]
+banya-sync.service: Deactivated successfully.
+Stopped banya-sync.service - Banya Kaoyan private study sync API.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+INFO:     Started server process [6344]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
 BANYA_JOURNAL_END
 BANYA_PATHS=drwxr-xr-x 3 root       root       4096 Oct 16 02:05 /opt/banya-sync
-drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:08 /var/lib/banya-sync
+drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:10 /var/lib/banya-sync
 NGINX_ERROR_BEGIN
-2026/10/16 00:25:26 [error] 2215667#2215667: *46531 connect() failed (111: Connection refused) while connecting to upstream, client: 147.185.132.97, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201:443"
 2026/10/16 00:32:42 [error] 2215667#2215667: *46537 connect() failed (111: Connection refused) while connecting to upstream, client: 205.210.31.224, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201:80/"
 2026/10/16 00:44:51 [error] 2215667#2215667: *46541 connect() failed (111: Connection refused) while connecting to upstream, client: 172.235.40.131, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
 2026/10/16 00:46:39 [error] 2215667#2215667: *46544 connect() failed (111: Connection refused) while connecting to upstream, client: 172.236.228.224, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201/"
@@ -119,5 +119,14 @@ NGINX_ERROR_BEGIN
 2026/10/16 01:55:06 [error] 1295#1295: *33 connect() failed (111: Connection refused) while connecting to upstream, client: 135.119.79.34, server: 124.70.128.201, request: "HEAD / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
 2026/10/16 01:56:01 [error] 1295#1295: *38 connect() failed (111: Connection refused) while connecting to upstream, client: 74.235.126.88, server: 124.70.128.201, request: "HEAD / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
 2026/10/16 02:08:23 [error] 1296#1296: *46 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: 124.70.128.201, request: "GET /health HTTP/1.1", upstream: "http://127.0.0.1:8000/health", host: "124.70.128.201"
+2026/10/16 02:10:50 [error] 5879#5879: *50 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: 124.70.128.201, request: "GET /health HTTP/1.1", upstream: "http://127.0.0.1:8000/health", host: "124.70.128.201"
 NGINX_ERROR_END
+CERTBOT_VERSION=certbot 5.8.0
+CERTBOT_RENEWAL_SETTINGS_BEGIN
+authenticator = webroot
+webroot_path = /var/www/letsencrypt,
+server = https://acme-v02.api.letsencrypt.org/directory
+CERTBOT_RENEWAL_SETTINGS_END
+CERTBOT_RECENT_FAILURE_BEGIN
+CERTBOT_RECENT_FAILURE_END
 ```
