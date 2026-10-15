@@ -1,4 +1,4 @@
-name: Configure private Cloudflare access
+name: ARCHIVED - Do not run private Access setup
 on:
   workflow_dispatch:
     inputs:
@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   configure:
-    if: github.ref == 'refs/heads/main' && github.repository == 'kopdabanya-commits/English-II-Plan'
+    # Archived: user opted for no-card public workers.dev; never run this old Access setup.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
