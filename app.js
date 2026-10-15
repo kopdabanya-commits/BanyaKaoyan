@@ -1,4 +1,4 @@
-/* 研途 · English II / 2026-10-15 — 2026-12-18. Local-first, no backend. */
+/* 板牙考研 · 单一PWA的英语二和政治科目。原数据键保持兼容。 */
 (() => {
 'use strict';
 const Core=window.PlannerCore;
@@ -17,7 +17,9 @@ const DEFAULT = Core.defaults();
 const STORAGE_KEY = 'yantu_english_2026_m1';
 let state = load();
 let view = 'today';
-let subject = 'english';
+const SUBJECT_KEY='banya_active_subject_v1';
+let subject='english';
+try{const saved=localStorage.getItem(SUBJECT_KEY);if(saved==='english'||saved==='politics')subject=saved;}catch{}
 const THEME_KEY='yantu_theme_v1';
 let theme='light';
 try{const raw=localStorage.getItem(THEME_KEY);if(['light','dark'].includes(raw))theme=raw;}catch{}
@@ -51,9 +53,9 @@ function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
  const content=subject==='politics'?renderPolitics():view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
- const subjectBar=view==='settings'?'':renderSubjects();
+ const subjectBar=renderSubjects();
  app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}</div>`;
- if(storageMessage)app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
+ if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
 function renderSubjects(){
@@ -165,10 +167,10 @@ function renderSettings(){
  <section class="setting-section"><h2>英语二时间预算</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>90分钟（旧版）</option><option value="100" ${state.settings.budget===100?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>100分钟（旧版）</option><option value="110" ${state.settings.budget===110?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>110分钟（旧版）</option><option value="120" ${state.settings.budget===120?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>120分钟（旧版）</option><option value="130" ${state.settings.budget===130?'selected':''}>130分钟（新版建议）</option><option value="135" ${state.settings.budget===135?'selected':''}>135分钟</option></select></label><p class="setting-note">新计划增加20—25分钟旧卷题感训练：阅读1篇、新题型5题或完形20空。多数日专项85—90分钟，单词另计；130分钟总预算包含自行安排的单词时间。</p></section>
  <section class="setting-section"><h2>获取最新计划</h2><p class="setting-note">你把实际做题结果告诉ChatGPT，我更新计划并发布后，再点击下方检查。请先预览差异，再决定是否应用；不会把计划任务自动算成已完成。</p><div class="button-row"><button class="cta secondary" data-action="check-updates">↻ 检查计划更新</button><button class="cta ghost" data-action="copy-summary">▤ 复制学习近况</button></div><p class="setting-note" id="sync-status">当前：${esc(data.meta.planVersion||'初始版')} · ${esc(updateSource)} · ${esc(lastCheck)}</p></section>
  <section class="setting-section"><h2>数据与备份</h2><div class="button-row"><button class="cta secondary" data-action="export">↥ 导出学习记录</button><button class="cta ghost" data-action="import">↧ 导入备份</button><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></div><input id="file-import" type="file" accept="application/json,.json"/><p class="setting-note" style="margin-top:13px">打卡、错题和复盘存在当前手机的浏览器数据中，并未自动上传云端。建议每周导出一次备份；清除浏览器数据或换机前务必备份。</p></section>
- <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>多科目规划</h2><p class="setting-note">英语二日程和记录已在使用中；政治为下一阶段预留了独立入口、计划文件位置和数据命名空间。你提供真实学习状况后再开始制作政治计划，不预设学习成绩。</p><div class="button-row"><button class="cta secondary" data-action="open-politics">查看政治科目准备情况</button><button class="cta ghost" data-action="copy-politics">复制建档清单</button></div></section>
+ <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>一个App，两门科目</h2><p class="setting-note">板牙考研的英语二和政治共用同一App、页面导航和离线资源，分别保存任务与做题记录。政治已有64天独立计划，使用苍盾肖1000题需手动登记。切换科目不会把另一科自动打卡。</p><div class="button-row"><button class="cta secondary" data-action="open-politics">进入政治复习</button><button class="cta ghost" data-action="copy-politics">复制政治学习反馈清单</button></div></section>
  <section class="setting-section"><h2>计划依据</h2><div class="metric"><b>计划开始</b><small>2026年10月15日</small></div><div class="metric"><b>计划结束</b><small>2026年12月18日</small></div><div class="metric"><b>英语二考试</b><small>2026年12月19日</small></div><div class="metric"><b>模拟安排</b><small>3套 · 弹性4天</small></div></section>
  <section class="setting-section"><h2>安装到手机桌面</h2><p class="setting-note">部署到HTTPS站点后，在 Android Chrome 或 Edge 菜单中选择「安装应用」或「添加到主屏幕」。荣耀手机安装后如果找不到图标，检查浏览器“创建桌面快捷方式”权限。首次联网缓存完成后再尝试离线启动；清理网站数据前先导出备份。</p></section>
- <div class="watermark">M2.6 本地优先 · 联网更新计划 · 暂无跨设备打卡同步和后台提醒</div>`;
+ <div class="watermark">板牙考研 M2.8 · 单一App / 科目记录独立 · 暂不支持跨设备同步</div>`;
 }
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
 let modalFocus=null;
@@ -227,14 +229,14 @@ async function checkUpdates(silent=false){
 function summaryText(){
  const cutoff=today>data.meta.end?data.meta.end:today;
  const latest=data.days.filter(d=>d.date<=cutoff && d.date>=plus(cutoff,-13));
- const lines=['研途英语二 · 学习进度（发给ChatGPT用于改计划）',`生成日期：${today}`,`计划版本：${data.meta.planVersion||'初始版'}`,`每天总预算：${state.settings.budget}分钟；单词：${state.settings.vocab}分钟`,`阅读一刷近年约37/40，二刷到2011 Text 3；新题型约6.5/10；完形约6/10。`,`近14天情况：`];
+ const lines=['板牙考研 · 英语二学习进度（发给ChatGPT用于改计划）',`生成日期：${today}`,`计划版本：${data.meta.planVersion||'初始版'}`,`每天总预算：${state.settings.budget}分钟；单词：${state.settings.vocab}分钟`,`阅读一刷近年约37/40，二刷到2011 Text 3；新题型约6.5/10；完形约6/10。`,`近14天情况：`];
  for(const d of latest){const arr=specialTasks(d.date);const short=arr.map(t=>`${t.title}${state.done[t.id]?'[完成]':'[未完成]'}${state.wrong[t.id]!==undefined?'(错'+state.wrong[t.id]+')':''}`).join('；');
   lines.push(`${d.date}${state.skipped[d.date]?'[休息]':''}：${short}`);
   for(const t of arr){if(state.notes[t.id])lines.push(`  复盘（${t.title}）：${state.notes[t.id]}`)}
  }
  lines.push('请优先保留已完成记录，按剩余时间重排未完成任务，不自动双倍补课。');return lines.join('\n');
 }
-const POLITICS_BRIEF='请帮我为2027考研政治建立复习计划，并接入研途PWA的独立政治科目。我的当前政治复习资料或课程：____；目前学到的阶段：____；已经完成的题库、练习和错题情况：____；每天或每周能分给政治的时间：____；我的重要安排与限制：____。请先根据我填的信息核实，再设计计划，不要猜进度，也不要修改英语二的打卡和复习安排。';
+const POLITICS_BRIEF='板牙考研已在同一个PWA内接入政治与英语二。请根据我的最新政治学习反馈调整政治科目计划，不修改英语二：徐涛27强化课当前学到____；苍盾考研肖1000题马原已做____/____题，其他章节完成____；错题薄弱点____；每天政治可用时间____；是否已取得肖八/肖四____。请优先读取同一个GitHub仓库最新politics-plan.json与工作流文档，核对真实进度，不要编造学习记录，也不要建立第二个App。';
 async function copyPolitics(){
  try{await navigator.clipboard.writeText(POLITICS_BRIEF);toast('政治建档清单已复制，可发到ChatGPT填写');}
  catch{modal(`<div class="modal-head"><h2>政治建档清单</h2><button class="close" data-action="close" aria-label="关闭">×</button></div><p class="setting-note">长按全选复制后发给ChatGPT，不需要现在立刻填写。</p><textarea class="share-text" readonly>${esc(POLITICS_BRIEF)}</textarea>`);}
@@ -244,12 +246,12 @@ function nextBuffer(day){
  for(let i=1;i<=14;i++){const d=plus(day,i);if(!inRange(d))break;const hints=(byDate.get(d)?.items||[]);if(hints.some(t=>t.type==='机动'))return d}
  return null;
 }
-function exportState(previous=false){let record={app:'yantu-english-ii',version:2,exportedAt:new Date().toISOString(),state,plan:data,...(storageBlocked?{unreadableRaw:localStorage.getItem(STORAGE_KEY)}:{})};if(previous){try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY+'_before_restore'));if(!p)throw Error();record={app:'yantu-english-ii',version:2,state:p.state,plan:p.plan,...(p.raw?{unreadableRaw:p.raw}:{})};}catch{toast('没有恢复前副本');return;}}const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download=`研途英语二备份_${today}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),3000);toast('备份已生成，请妥善保存')}
+function exportState(previous=false){let record={app:'yantu-english-ii',version:2,exportedAt:new Date().toISOString(),state,plan:data,...(storageBlocked?{unreadableRaw:localStorage.getItem(STORAGE_KEY)}:{})};if(previous){try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY+'_before_restore'));if(!p)throw Error();record={app:'yantu-english-ii',version:2,state:p.state,plan:p.plan,...(p.raw?{unreadableRaw:p.raw}:{})};}catch{toast('没有恢复前副本');return;}}const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download=`板牙考研_英语二备份_${today}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),3000);toast('备份已生成，请妥善保存')}
 document.addEventListener('click',e=>{
  const tab=e.target.closest('.nav-tab');if(tab){nav(tab.dataset.view);return}
  const btn=e.target.closest('[data-action]');if(!btn){if(e.target.id==='modal')closeModal();return}
  const action=btn.dataset.action;
- if(action==='switch-subject'||action==='open-politics'){subject=action==='open-politics'?'politics':btn.dataset.subject==='politics'?'politics':'english';if(action==='open-politics')view='today';document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0);return;}
+ if(action==='switch-subject'||action==='open-politics'){subject=action==='open-politics'?'politics':btn.dataset.subject==='politics'?'politics':'english';try{localStorage.setItem(SUBJECT_KEY,subject);}catch{}if(action==='open-politics')view='today';document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0);return;}
  if(action==='copy-politics'){copyPolitics();return;}
  if(action==='theme'){const next=btn.dataset.theme;if(next!=='light'&&next!=='dark')return;theme=next;if(document.documentElement)document.documentElement.dataset.theme=theme;try{localStorage.setItem(THEME_KEY,theme);}catch{toast('外观已切换，但偏好未能保存');}render();return;}
  if(action==='review-update'){reviewUpdate();return}
@@ -303,7 +305,7 @@ document.addEventListener('change',async e=>{
  if(e.target.id==='file-import'){
   const file=e.target.files?.[0];if(!file)return;
   try{if(file.size>2000000)throw Error('文件过大');const obj=JSON.parse(await file.text());
-    if(obj.app!=='yantu-english-ii'||![1,2].includes(obj.version))throw Error('不是有效的研途备份');
+    if(obj.app!=='yantu-english-ii'||![1,2].includes(obj.version))throw Error('不是有效的英语二学习记录备份');
     const next=Core.normalizeState(obj.state);if(obj.plan&&!Core.validPlan(obj.plan))throw Error('备份计划无效');
     if(!window.confirm('恢复此备份将替换当前记录。恢复前会在本机保留一份回退副本，是否继续？'))return;
     const previous={state,plan:data,raw:localStorage.getItem(STORAGE_KEY)};
@@ -321,7 +323,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshTo
 setInterval(refreshToday,60000);
 window.addEventListener('online',()=>{render();checkUpdates(true)});
 window.addEventListener('offline',()=>{render();toast('已离线，打卡仍保存在本机')});
-window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=load();closeModal();render();toast('已载入另一个窗口的记录');}if(e.key===THEME_KEY&&['light','dark'].includes(e.newValue)){theme=e.newValue;if(document.documentElement)document.documentElement.dataset.theme=theme;render();}if(e.key===PLAN_KEY){try{const p=JSON.parse(e.newValue);if(Core.validPlan(p)){data=p;byDate=new Map(data.days.map(d=>[d.date,d]));closeModal();render();}}catch{}}});
+window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=load();closeModal();render();toast('已载入另一个窗口的记录');}if(e.key===SUBJECT_KEY&&['english','politics'].includes(e.newValue)){subject=e.newValue;render();}if(e.key===THEME_KEY&&['light','dark'].includes(e.newValue)){theme=e.newValue;if(document.documentElement)document.documentElement.dataset.theme=theme;render();}if(e.key===PLAN_KEY){try{const p=JSON.parse(e.newValue);if(Core.validPlan(p)){data=p;byDate=new Map(data.days.map(d=>[d.date,d]));closeModal();render();}}catch{}}});
 document.addEventListener('keydown',e=>{const box=document.getElementById('modal');if(box.classList.contains('hidden'))return;if(e.key==='Escape'){closeModal();return;}if(e.key==='Tab'){const a=[...box.querySelectorAll('button,input,select,textarea,a[href],summary')].filter(x=>!x.disabled);const first=a[0],last=a.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
 checkUpdates(true);
 if('serviceWorker'  in navigator && (location.protocol==='https:'||location.hostname==='localhost')){

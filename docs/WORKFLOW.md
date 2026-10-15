@@ -1,57 +1,57 @@
-# 研途英语二｜跨ChatGPT、Codex、Work和GitHub的操作工作流
+# 板牙考研｜ChatGPT × Codex × GitHub × Cloudflare 标准工作流
 
-## 为什么需要它
-用户考研备考很忙，零编程基础。最重要的交付不是聊天写出一堆步骤，而是**AI直接在已获授权的GitHub中安全修改、测试、记录，并让用户只做必要的手机确认**。不同聊天可能无法共享实时电脑与未保存的上下文；全部关键决策必须落地GitHub。
+生效日期：2026-10-15。产品只有**一个板牙考研 PWA**，英语二和政治是同一App的两个科目模块。此文优先于旧版“研途英语二”开发流程。技术边界以 [单App契约](SINGLE_APP_CONTRACT.md) 为准，当前真实状态以 [状态快照](PROJECT_STATUS.md) 为准。
 
-## 职责分工
-| 角色 | 主要职责 | 不应默认做什么 |
-|---|---|---|
-| 用户 | 告知真实学习情况、目标、体验；决定有风险或需要本人授权的操作；用手机验收 | 逐文件改代码、登录多次、绑卡、复杂终端操作 |
-| ChatGPT（当前聊天及新聊天） | 核实学习基线；制定、调整英语二计划；协调GitHub读写；记录决策；复核测试证据；提供最短使用说明 | 伪造App学习记录或真机测试，宣称能遥控另一个聊天中的Work |
-| Codex | 读取AGENTS.md和最新文档；直接编码、编写测试、修复、提交PR；按验收单交付 | 未读状态就推翻架构，重建Cloudflare Worker，写入密码 |
-| ChatGPT Work | 若该模式能实际使用已授权GitHub或浏览器，执行多步操作、下载、部署与页面测试，并回写仓库状态 | 假定Chrome/Cloudflare已登录；登录403后无限重试；声称普通聊天能直接指挥Work |
-| GitHub | 代码、计划、Docs、PR、Actions的长期“事实底座” | 存储本机个人错题/学习笔记、Token |
-| Cloudflare Workers | 使用已有项目部署HTTPS静态PWA | 付费数据库、自动从ChatGPT获取本地数据或邮件提醒 |
+## 1. 人与工具如何分工
+- **用户**：给出真实学习反馈、取舍决策；有需要时在手机验收并保留备份。用户零编程基础，不应被要求手工编辑大量代码、频繁登录、付款/绑卡、重新安装PWA。
+- **ChatGPT**：查真实资料与用户基线、制定英语/政治计划、直接使用已授权GitHub工具创建分支、更新文件、检查CI、合并合格PR、记录项目决策。不能从用户手机或苍盾小程序私自获取真实打卡。
+- **Codex**：工程代码、UI/测试、修复与PR主要执行者；读同一 GitHub 项目指令后开发，不自己重命名产品/重建Worker。
+- **ChatGPT Work/云端浏览器**：仅当该模式可用、已授权时处理多步部署和真网页/手机模拟验收。不得假定不同聊天共享实时云电脑、登录状态或背景任务。
+- **GitHub**：唯一代码、计划、开发规范和PR事实来源，不保存用户私密笔记。
+- **Cloudflare**：仅负责同一个已存在 Worker 的免费静态部署，不负责实时云端学习同步；无需额外购买服务。
 
-## 新会话的标准开场
-1. 用户一句“按GitHub当前项目继续”；若 GitHub 插件/连接器已授权，AI直接打开仓库。
-2. 顺序读取根目录 `AGENTS.md` → `docs/index.md` → `docs/PROJECT_STATUS.md` → `docs/DECISIONS.md` → `docs/STUDY_BASELINE_2026-10-15.md` → 本次涉及文件。
-3. 检查 `main` 最新提交、现有PR、是否有别人并行编辑。不要依赖旧聊天给的固定SHA判断当前代码。
-4. 先向用户报告1—2句明确状态，接着直接执行允许的安全操作；缺少必要用户授权才问一个具体问题。
+## 2. 每个开发对话开始必须执行
+1. 读取最新GitHub仓库 `kopdabanya-commits/English-II-Plan` 的 `main`，特别是 `AGENTS.md`、`docs/index.md`、`docs/PROJECT_STATUS.md`、`docs/DECISIONS.md`、`docs/SINGLE_APP_CONTRACT.md`、`docs/ACTIVE_WORK.md`。
+2. 查询**实时main提交、当前开放PR、活动分支**，检查是否有另一会话修改相同文件；不得依赖昨天的SHA、旧聊天或历史标题来判断最新版本。
+3. 明确本次工作属于英语专项、政治专项还是共享App。查看 [文件所有权矩阵](SINGLE_APP_CONTRACT.md)；如需改别人正在改的共享文件，先协调并行分支，或者等其PR合并并重新基于最新main创建集成分支。
+4. 告知用户简短的真实状态，然后直接执行允许的低风险操作；只有必须由用户完成登录/同意/真机步骤时再询问。
 
-## 一次计划调整从头到尾
-1. 获取最新真实完成情况：当前消息 ＞ 用户主动贴出的“复制学习近况”或导出文件 ＞ 已记录历史基线。不能自动读取用户手机 localStorage。
-2. 查看 `plan.json` 中旧安排与具体ID；锁定本次调整影响的日期。不能无故重排完整65天、消耗2024—2026预留新卷。
-3. 根据最新M2.6以 **每天至少一项阅读/新题型/完形的客观题题感训练，总专项60—90分钟/天** 安排写作、新题型、翻译、完形和少量阅读。单词自行安排、**不在App每日打卡显示**。历史已完成任务不要补债。
-4. 同时改 `plan.json` 和 `plan-data.js`；两者数据逐字段一致。`meta.revision` 每次+1、`meta.planVersion` 必须改变、`changeSummary` 说明差异。原任务改期保留ID；真正新增任务用新ID；防止重复安排同一年题型。
-5. `planner-core.js` 与 `app.js` 控制计划读取、合并、笔记等；如果变更前端静态资源，同步更新 `sw.js` 的CACHE名称，避免旧资源与新资源混用。
-6. 运行 `node --check app.js`、`node --check planner-core.js`、`node --check plan-data.js`、`node --check sw.js`、`node scripts/check.mjs`、`node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs`。注意 `scripts/check.mjs` 与 `scripts/test.mjs` 有特定版本/任务数量断言，**未来计划变更时必须同步维护测试，不可为过测删除必要约束**。
-7. 使用分支/PR，等 `Validate planner` 检查通过，再合并 `main`；主分支触发原Cloudflare Worker构建流程。验证线上版本；**不要把推送成功当成网页更新成功**。
-8. 用户在Edge PWA：`设置 → 检查计划更新 → 查看变化 → 保留记录并应用`。已经打卡、错题、笔记、个人改期不能被新版抹除；更新前提醒先导出备份。
-9. 更新 `docs/PROJECT_STATUS.md` 的版本、证据、待验收项；新决定写 `docs/DECISIONS.md`。用户只需验收关键体验，不应反复提交截图。
+## 3. 分支命名、合并与防覆盖
+- 英语计划：`feat/english-...`，政治计划：`feat/politics-...`，共享App/跨科目：`feat/shared-...` 或产品命名分支。不要在 `main` 上无测试地直接反复覆盖。
+- 新分支使用**实际刚查询到的main提交**作为起点；一个分支尽量只做一个明确任务，复用同一个PR修复其中失败，不因失败新开一堆互相覆盖的PR。
+- 修改前查 `docs/ACTIVE_WORK.md` 和最新开放PR；共享入口如 `app.js`、`index.html`、`sw.js`、`styles.css` 采用一个集成PR串行合并。GitHub PR mergeable为false时不能硬合并。
+- 在PR正文写明：目标科目、计划/代码范围、是否动了共享入口、数据迁移、UI变更、测试结果与未验证项。新增用户决策同步 `docs/DECISIONS.md`，修改工程边界同步 `SINGLE_APP_CONTRACT.md`。
+- CI必须经过对应commit的 `Validate planner`，失败要看具体job日志修复并复跑。PR合并前重新检查main SHA/PR head/合并冲突；任何别的分支提前合并导致main变化，先同步并重新做相关回归。
+- 禁止通过重建仓库/Worker/改域名来“解决部署问题”，禁止为UI命名修改旧 localStorage 键、旧备份 app 标识、manifest `id`。
 
-## 一次代码修复
-- 建立可复现行为 → 定位代码 → 最小改动 → 补回归测试 → PR → 检查 → 合并 → 真机验收。
-- 不随意修改localStorage键 `yantu_english_2026_m1`；迁移兼容 `planner-core.js` 和v1/v2备份。
-- Service Worker只缓存完整且内容类型正确的App静态资源，不缓存 `plan.json` 更新请求、登陆跳转或开发文件；不要用 `skipWaiting` 强行打断当前学习。
-- `.assetsignore` 排除 `docs/`、`scripts/`、`.github/` 等开发资源；新增开发目录需要同步保护。
-- 严禁将个人学习数据、token、邮箱、Cloudflare账户凭据写入网页资源或提交公开日志。
+## 4. 两门科目如何独立调整计划
+**英语二：** 权威 `plan.json`、镜像 `plan-data.js` 必须逐字段一致。每次计划调整递增 `meta.revision`、更新 `meta.planVersion` 与 `changeSummary`；旧任务ID稳定、改期保留ID、新任务新ID，特别维护“每天至少一篇阅读/一组新题型/一套完形、单词不显示、2024—2026模考卷保留”的M2.6规则。用户历史记录只来自其主动反馈或导出文件，缺一天不自动补双倍。
+**政治：** 权威 `politics-plan.json`、镜像 `politics-plan-data.js` 必须完全一致；政治当前v1按徐涛强化课、苍盾肖1000题和上海60—65分目标制定，但已完成题数仅限用户曾报告的马原93/396；后续做题、错题必须由用户手动登记或真实反馈。计划变更需增加独立revision/version、保留任务ID并有前后兼容测试。当前政治不支持与英语同等的在线计划差异预览；完善前不要对用户声称“检查计划更新”同时更新了政治，也不可自动覆盖用户私人修改。
+**跨科目：** 统一首页或数据总览可以只读合并汇总，但**单科完成率和题数永远分开**。共享的数据仅为配色、科目选择等UI偏好。用户使用番茄 Todo计时，板牙考研不开发计时器。
 
-## CI / CD当前机制
-- `.github/workflows/validate.yml` 在push和PR运行静态检查/Node模拟测试。
-- Cloudflare同名Worker的GitHub构建集成此前有成功记录，但**本文件并不证明任一特定提交已上线**，必须核实。
-- 当前 `wrangler.jsonc` 要保持 `workers_dev=true`、`preview_urls=false`。网页公开可访问，不要误认为GitHub Private提供了站点登录限制。
-- 历史 `.github/workflows/configure-access.yml` 是Access尝试，用户已拒绝绑卡。**不得触发**；详见决策记录。
+## 5. 自动测试和发布门禁
+1. 语法检查：`node --check app.js`、`node --check planner-core.js`、`node --check politics-core.js`、`node --check politics-ui.js`、`node --check study-intelligence.js`、`node --check sw.js` 及计划JS镜像。
+2. `node scripts/check.mjs` 检查英语；`node --test scripts/*.mjs` 跑所有子系统（但 `check.mjs` 单独运行，不要误将其当Node test）。
+3. 新增 `scripts/integration-contract-test.mjs` 约束单一App、两科独立、备份/存储键不变、同一SW缓存；不因UI改动而删除相关安全断言。
+4. 修改共享静态资源需要同步 `sw.js` CACHE名与 ASSETS，包含政治模块全部JS。旧缓存前缀保留清理，禁止对当前用户 `skipWaiting` 强更、不缓存计划联机检查JSON或HTML登录跳转。
+5. PR绿色后才合并main并再次回读提交状态。GitHub的CI绿不表示Cloudflare生产上线，Cloudflare上线不表示荣耀Android Edge已安装的PWA成功更新/离线可用，任何状态都要分别记录。
+6. 用户手机更新时**先建议分别导出英语备份和政治备份**，尽量避免卸载或清理网站数据；新的品牌名不需要新建地址和单独政治App。
 
-## 不同工具没有权限时
-先确认已有连接器能否读GitHub。不能写仓库时，产出带路径、内容和测试要求的明确提交材料，要求有权限的Codex/Work执行；不能假称已提交。用户可在ChatGPT项目中保留简短指令指向 `docs/index.md`，但**ChatGPT 项目和GitHub的指令并非自动双向同步**。新聊天需实际读取最新文件。
+## 6. 一次交付必须写回哪些东西
+- `docs/PROJECT_STATUS.md`：目前品牌、两个科目的真实版本、PR/CI证据、Cloudflare状态、手机验收与未完成风险。最新状态放前面，旧日志只标历史，不得让过时段落冒充最新。
+- `docs/DECISIONS.md`：如果用户做了新选择，唯一编号、日期、覆盖旧决定的说明。
+- `docs/ACTIVE_WORK.md`：新PR占用共享文件、责任分支及合并状态。注意这不是自动锁，不可依赖它代替GitHub实时检查。
+- `README.md` / `docs/GPT_HANDOFF.md` / `AGENTS.md`：重要架构变化要保持命名、交接与最短指令同步。
+- PR合并后用户可只需要一段简短的手机操作说明。不能让他反复改脚本。
 
-## 完成定义
-- “代码已写”：GitHub有提交/PR。
-- “测试通过”：有本次提交相符的检查结果。
-- “部署成功”：有本次提交对应的Cloudflare构建或线上访问验证。
-- “手机验收通过”：用户真机按步骤确认。
-四者不可以互相代替。
+## 7. 验收等级（绝不混淆）
+- **代码实现**：GitHub存在可检查的提交。
+- **自动校验**：对应提交的Node/Actions检查通过。
+- **生产上线**：Cloudflare构建成功并证实线上实际是该版本。
+- **真实手机使用**：用户在Edge同一个已安装App中检查、切换两科、各完成/撤销一项、重开后记录分别保留、独立备份可导出；未收到这些反馈则只能写“待手机验收”。
 
-## M2.6 增补规范
-凡用户改英语计划，检查65天每天至少包含阅读一篇／新题型一组／完形一套（综合模考第2段也算）；原99项任务和已记录数据必须稳定，2024—2026保留卷不新增作为日常题。新版预算130分钟含单词，自行填充的专项不能突破135分钟总硬边界。应用更新须由用户确认。来源与细节见`DAILY_QUESTION_FEEL_2026-10-15.md`。
+## 8. 失联与故障恢复
+- ChatGPT连接器暂不可用：说明阻塞，提供可复用的工作说明，不得冒充修改已完成；不要让用户为了重建项目付钱。
+- CI红：读取具体job和断言，先修根因再合并；不能绕过测试或删掉关键覆盖。
+- Cloudflare更新未见：先对照提交和Workers构建日志，检查manifest/SW缓存，再选择保守重试；不要清理用户存储、删除旧Worker或错误改地址。
+- 用户记录丢失/损坏：立即停止自动覆写，优先单科导出备份与恢复前副本，必要时分析原始JSON；不可拿另一门科目备份来恢复。

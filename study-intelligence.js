@@ -1,4 +1,4 @@
-/* 研途 · 可解释的本地学习建议与未来科目注册。无网络、无个人数据上传。 */
+/* 板牙考研 · 可解释的本地学习建议与学科注册。无网络、无个人数据上传。 */
 (function(root){
 'use strict';
 const SUBJECTS=Object.freeze([

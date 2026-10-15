@@ -1,70 +1,31 @@
-# 研途英语二 · English-II-Plan
+# 板牙考研 · Banya Kaoyan
 
-2027年考研英语二的**65天复习计划 + 本地打卡 PWA**。用户希望尽量少操作代码和部署，保留真实学习进度，优先提高英语成绩。
+面向2027考研的免费、离线优先 **单一PWA**。英语二和政治是一个App内的两门独立科目：共用同一安装入口、主题和导航，但各有复习任务、做题记录、计划版本和数据备份。不内置计时器（用户使用番茄 Todo）。
 
-> **新ChatGPT / Codex / Work从这里进入：[项目知识库 docs/index.md](docs/index.md)。当前真实状态见 [PROJECT_STATUS.md](docs/PROJECT_STATUS.md)，协作流程见 [WORKFLOW.md](docs/WORKFLOW.md)。**
+> 新AI/Codex/Work应先阅读 [AGENTS.md](AGENTS.md) → [项目知识库](docs/index.md) → [当前状态](docs/PROJECT_STATUS.md) → [单App契约](docs/SINGLE_APP_CONTRACT.md) → [并行任务登记](docs/ACTIVE_WORK.md)。不要只凭旧聊天开发。
 
-## 项目入口
-- GitHub：`https://github.com/kopdabanya-commits/English-II-Plan`（**Private**，`main`）
-- 部署：现有Cloudflare Worker `english-ii-plan`（Workers Static Assets，**不是Pages**）
-- 网站：`https://english-ii-plan.kopdabanya.workers.dev`（用户已手动启用；当前**公开网页，不设置Access鉴权**）
-- 手机：荣耀Android 16，经微软Edge安装PWA；具体实机回归状态见项目状态文档
-- 原则：**永久免费、不绑银行卡、不购买额外套餐**；不删除/重建现有项目
+## 项目与部署
+- **正式产品名：板牙考研**。旧产品名「研途」只属于历史版本。
+- **唯一GitHub仓库：** [kopdabanya-commits/English-II-Plan](https://github.com/kopdabanya-commits/English-II-Plan)（Private）。仓库历史名故意保留以避免扰乱现有集成。
+- **唯一Cloudflare Worker：** `english-ii-plan`（Workers Static Assets），部署网址 `https://english-ii-plan.kopdabanya.workers.dev`。产品改名不等于迁移网站；不要创建第二个站点/仓库或更改域名。
+- 安卓设备：荣耀Android16，微软Edge安装PWA；网址目前公开，并不通过Cloudflare Access私有化，不绑银行卡、不启用收费服务。
+- **版本区分：** App外观/缓存 M2.8（品牌/协作升级），英语计划版本 `2026.10.15-m2.6`（revision6），政治计划版本 `politics.2026-10-15-v1`（revision1）。App版本与科目计划版本不是一回事；实际合并/部署以 [PROJECT_STATUS](docs/PROJECT_STATUS.md) 为准。
 
-## 当前学习计划（M2.6）
-- 版本 `2026.10.15-m2.6`，`revision=6`；2026-10-15至12-18共65天，**141项专项任务**（不包括单词）。
-- 用户最新要求：每天有客观题题感训练，专项**60—90分钟**（多数日85—90分钟），背单词自己单独安排，**不显示在每日任务/打卡统计中**。预留约30—40分钟另学单词。
-- 10月15日：2010年小作文30分钟 + 2014年新题型30分钟 + 5分钟作文回忆 = **65分钟**。原10月17日的2014新题型改为错题复盘。
-- 目标按用户安排2026-12-19考试，冲刺80分；75分是努力争取的基础目标，不是成绩保证。
-- 2024—2026真题预留后期弹性模拟，未确认做完前不能先记作已完成。
+## 科目与记录
+| 科目 | 当前计划 | 核心特点 |
+|---|---|---|
+| 英语二 | 10/15—12/18，65天/141项 | 每天至少阅读1篇/新题型1组/完形1套；作文翻译照常；单词另计；2024—2026卷留后期模拟 |
+| 政治 | 10/16—12/18，64天/192项 | 徐涛27强化课、苍盾考研肖1000题和错题、按实际取得情况使用肖八肖四；政治目标60—65分，上海地区 |
 
-## 数据怎样运作
-- `plan.json`：唯一权威日程；`plan-data.js`：完全同步的离线初始副本。
-- `planner-core.js`：任务构建、数据校验、历史迁移；`app.js`：页面、打卡、错题、记录、计划更新；`sw.js`：离线静态资源缓存。
-- 个人打卡、错题和笔记通过`localStorage`只保存在当前网站来源和浏览器，不在仓库或云端，不跨设备自动同步。存储键`yantu_english_2026_m1`须保持迁移兼容。
-- 新计划发布后，手机在“设置 → 检查计划更新”手动确认并应用；已有记录、个人改期和笔记应保留。建议先导出备份。
-- **私人GitHub不等于私人PWA网址**。当前网站公开访问，预设计划和前端代码不能当作秘密；不能提交凭据、个人笔记或身份信息。
+两个科目共用 `index.html` 和底部导航；英语由 `app.js` / `planner-core.js` 及 `plan.json` / `plan-data.js` 提供，政治由 `politics-ui.js` / `politics-core.js` 及 `politics-plan.json` / `politics-plan-data.js` 提供。
 
-## 开发与发布
-- `AGENTS.md`：AI工程师快速规则；`docs/WORKFLOW.md`：完整协作与发布流程。
-- 代码合并 `main` 后通过现有 GitHub→Cloudflare Workers 集成部署；任何一次提交是否真实上线须单独核实。
-- `wrangler.jsonc` 保持 `workers_dev=true`、`preview_urls=false`。`.assetsignore` 排除文档、脚本和工作流，禁止公开发布内部开发材料。
-- `.github/workflows/validate.yml`：提交和PR自动执行校验；`configure-access.yml`：旧Access实验流程，**已归档停用**，不得触发，也不要求用户绑卡。
+旧存储键 `yantu_english_2026_m1`、`yantu_english_plan_v2`、`yantu_politics_2026_v1` 及备份里的历史标识特意不随品牌迁移。页面的「板牙考研」名与旧内部键并不矛盾。用户打卡/错题/笔记仅保存在当前浏览器localStorage，仓库和AI都不能自动读取。政治与苍盾小程序没有登录或实时同步，题数须用户手动登记。
 
-## 基本检查（Node 22）
-```sh
-node --check planner-core.js
-node --check app.js
-node --check plan-data.js
-node --check sw.js
-node scripts/check.mjs
-node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs
-```
+**更新提醒：** 英语可以在设置检查最新 `plan.json` 并预览、确认迁移；政治目前随应用资源更新加载 `politics-plan-data.js`，还未拥有同等的差异预览/人工确认。修改政治计划必须格外注意稳定ID及旧记录，且不要在UI里假称两个科目都已独立联机同步。
 
-Node模拟检查不等于真实Edge安卓PWA验收。每次更新版本需同步测试中的特定版本号、任务数量等断言，而不是简单删除保护性检查。
-
-## 长期文档导航
-- [docs/index.md](docs/index.md)：唯一入口、阅读顺序和来源优先级。
-- [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)：最新确认状态与待验收。
-- [docs/DECISIONS.md](docs/DECISIONS.md)：用户长期决定、旧方案与新方案的取代关系。
-- [docs/WORKFLOW.md](docs/WORKFLOW.md)：ChatGPT、Codex、Work、GitHub、Cloudflare分工与操作步骤。
-- [docs/GPT_HANDOFF.md](docs/GPT_HANDOFF.md)：GPT项目指令与新聊天提示词。
-- [docs/OPERATIONS.md](docs/OPERATIONS.md)：手机打卡、更新和备份。
-- [docs/STUDY_BASELINE_2026-10-15.md](docs/STUDY_BASELINE_2026-10-15.md)：历史真实学习基线，需结合当前用户反馈。
-- [docs/VALIDATION.md](docs/VALIDATION.md)：历史测试日志（旧Access部署要求已过时）。
-
-## M2.4（界面、动效与交互优化；计划数据仍是M2.3）
-不改变`plan.json`、`plan-data.js`、任务ID或localStorage键。优化考研学生使用场景：今日页按当前/过去/未来日期说明、下一项建议、完成进度与预计剩余分钟数；底部矢量导航、克制的页面/弹窗/勾选动效；支持系统减少动态效果设置；详情优先显示训练方法，再填写错题和一句话复盘，重命名/调分钟/改期收在可展开区域，可“一步保存并打卡”。日历的待练/完成/休息状态和读屏标签更加明确；进度页强调时长为计划估计而非真实计时；设置页给出简短上手流程。SW缓存版本升级到M2.4以更新静态资源，不修改Cloudflare收费和访问方式。
-
-## M2.5 多科目视觉与智能复习体验（界面版本）
-- 深浅主题、质感渐变与微动效、环形完成进度、优先行动卡、最近七天实际打卡图表，支持系统“减少动态效果”。
-- 本机 `study-intelligence.js` 使用透明规则从当前英语任务与完成状态推荐下一项练习。不是云端AI，不上传学习数据、不自动改计划。
-- 政治科目已预留独立科目入口和未来计划文件命名空间，**现在只有待建档空状态，没有生成政治任务**。准备好后再根据用户真实进度设计政治计划。
-- 用户使用番茄 Todo计时，**本项目不做计时器**，也不声称与番茄 Todo自动同步。
-- App界面版本 M2.5，英语计划版本仍是 `2026.10.15-m2.3`，不要混淆。架构与政治接入规范见 [多科目架构说明](docs/MULTI_SUBJECT_ARCHITECTURE.md)。
-- 兼容原有英语打卡、错题、笔记、改期和本机备份；UI主题使用新的独立键 `yantu_theme_v1`，不改变学习记录键。
-
-## M2.6：每天不断档的阅读／新题型／完形训练
-- 65天中每天至少包括**一篇阅读（5题）／一组英语二新题型（5题）／一套完形（20空）**之一。对原来缺少客观题的42天，每天补充一项20—25分钟旧卷训练；原来的作文、翻译、其他任务一律保留。2024—2026模考卷不提前消耗。
-- 较多日专项85—90分钟，单词仍自己单独学习，总英语预算建议130分钟（含单词）。仅在用户查看新计划并点击“保留记录并应用”时，旧预算不足130分钟的设置才会相应上调；其他打卡、错题和个人改期保留。
-- 分析依据：学生个人经验与高校真实学生公开经验，详见 [题感日程的研究与设计](docs/DAILY_QUESTION_FEEL_2026-10-15.md)。UI代码/离线缓存版本M2.6；GitHub合并不等于Cloudflare已上线或手机验收完成。
+## 开发与部署
+- [跨聊天开发流程](docs/WORKFLOW.md)、[单App数据隔离契约](docs/SINGLE_APP_CONTRACT.md)、[活动工作清单](docs/ACTIVE_WORK.md)、[长期决策](docs/DECISIONS.md)、[ChatGPT/Codex交接](docs/GPT_HANDOFF.md)。
+- 英语/政治计划与镜像必须一一对应，代码/数据改动通过分支、PR、`Validate planner` 全部相关测试后合并；共享入口和SW只通过一个集成PR协调修改。
+- CI调用 Node22 的静态检查、`node scripts/check.mjs`、`node --test ...`（含跨科隔离测试）；CI绿不等于Cloudflare生产部署成功，更不等于荣耀手机真机验证通过。
+- 升级静态资源改 `sw.js` 缓存版本；Service Worker离线更新保守、不强更正在运行的App。不清除或重建用户Edge网站存储。
+- Cloudflare公开静态文件由 `.assetsignore` 排除私有项目文档/脚本；不要把敏感账号或真实笔记加入 `plan.json`。
