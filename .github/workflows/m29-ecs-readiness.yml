@@ -1,0 +1,40 @@
+name: M2.9 ECS readiness (isolated and non-destructive)
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/m29-ecs-readiness.yml]
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SYNC_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check credential configuration without revealing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          if [ -n "$BANYA_SYNC_TOKEN" ]; then
+            echo 'BANYA_SYNC_TOKEN: configured (value not displayed)' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'BANYA_SYNC_TOKEN: NOT configured, live token rotation blocked' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Audit deployed TLS, backups, and run isolated synthetic API tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -p 22 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" 'bash -s' < server/banya-sync/readiness-ecs.sh
