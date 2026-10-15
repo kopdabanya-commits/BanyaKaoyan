@@ -1,5 +1,5 @@
 name: Deploy Banya sync backend to authorized ECS
-# Retry HTTPS verification after Nginx finishes its graceful reload.
+# Serve the ACME webroot from port 80 and verify renewal after deployment.
 
 on:
   push:
