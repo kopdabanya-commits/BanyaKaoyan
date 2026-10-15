@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createRequire} from 'node:module';
-const require=createRequire(import.meta.url),core=require('../planner-core.js');
+const require=createRequire(import.meta.url),core=require('../planner-core.js'),intel=require('../study-intelligence.js');
 const plan=JSON.parse(fs.readFileSync(new URL('../plan.json',import.meta.url)));
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const oldPlan=structuredClone(plan);oldPlan.meta.planVersion='previous';oldPlan.meta.revision=2;
@@ -15,7 +15,7 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
  function el(id){return elements[id]??=( {id,value:'',disabled:false,dataset:{},textContent:'',_html:'',classList:{add(){},remove(){},contains(){return false;}},set innerHTML(s){this._html=s;},get innerHTML(){return this._html;},insertAdjacentHTML(_,s){this._html=s+this._html;},querySelector(){return el('focus');},querySelectorAll(){return []},focus(){},click(){},closest(){return null;}} );}
  const doc={hidden:false,activeElement:el('active'),body:{classList:{add(){},remove(){}}},getElementById:el,querySelector:()=>el('update-button'),querySelectorAll:()=>[],addEventListener:(k,f)=>(handlers[k]??=[]).push(f),createElement:()=>el('download')};
  const ls={getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(quota){quota=false;throw Error('quota');}storage.set(k,v)}};
- const context={window:null,PlannerCore:core,STUDY_PLAN:clone(oldPlan),document:doc,navigator:{onLine:online,clipboard:{writeText:async t=>{context.copied=t}}},localStorage:ls,Date:Clock,structuredClone,console,AbortController,Blob,URL:class extends URL{static createObjectURL(b){blobs.push(b);return 'blob:test'}static revokeObjectURL(){}},location:{protocol:'https:',hostname:'test.invalid'},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{intervals.push(f)},fetch:async()=>{if(fetchFail)throw Error('offline');return {ok:true,redirected:false,headers:new Headers({'content-type':'application/json'}),json:async()=>clone(currentFresh)}},confirm:()=>true,addEventListener:(k,f)=>(winHandlers[k]??=[]).push(f),scrollTo(){}};
+ const context={window:null,PlannerCore:core,StudyIntel:intel,STUDY_PLAN:clone(oldPlan),document:doc,navigator:{onLine:online,clipboard:{writeText:async t=>{context.copied=t}}},localStorage:ls,Date:Clock,structuredClone,console,AbortController,Blob,URL:class extends URL{static createObjectURL(b){blobs.push(b);return 'blob:test'}static revokeObjectURL(){}},location:{protocol:'https:',hostname:'test.invalid'},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{intervals.push(f)},fetch:async()=>{if(fetchFail)throw Error('offline');return {ok:true,redirected:false,headers:new Headers({'content-type':'application/json'}),json:async()=>clone(currentFresh)}},confirm:()=>true,addEventListener:(k,f)=>(winHandlers[k]??=[]).push(f),scrollTo(){}};
  context.window=context;
  vm.createContext(context);vm.runInContext(source.replace(/\n\}\)\(\);\s*$/,'\nglobalThis.api={get data(){return data},get state(){return state},get pending(){return pendingPlan},get selected(){return selectedDate},get today(){return today},allTasks,dateProgress,checkUpdates,applyUpdate,reviewUpdate,render,nav,exportState,summaryText,refreshToday};\n})();'),context);
  const api=context.api;
@@ -132,8 +132,8 @@ test('Oct 15 visible plan contains 65 minutes writing and new type, and hides se
 test('M2.4 student interface gives focused guidance, accessible nav, and truthful progress language',async()=>{
  const h=harness({fail:true});await h.settle();
  const home=h.el('app').innerHTML;
- assert(home.includes('今天的专项训练'));
- assert(home.includes('下一步：'));
+ assert(home.includes('今天，把注意力留给重要的题。'));
+ assert(home.includes('本机规则建议'));
  assert(home.includes('建议先做'));
  assert(!home.includes('class="task-title">背单词'));
  await h.click('detail',{id:'2026-10-15-1',day:'2026-10-15'});
@@ -168,4 +168,35 @@ test('M2.4 recording can save and complete together, persists across reloads, an
  assert.equal(again.api.state.done[task.id],true);
  assert.equal(again.api.state.wrong[task.id],2);
  assert(again.el('app').innerHTML.includes('1/3项'));
+});
+
+test('M2.5 dashboard shows real local analytics and keeps politics empty until user supplies a plan',async()=>{
+ const h=harness({fail:true});await h.settle();
+ assert(h.el('app').innerHTML.includes('focus-panel'));
+ assert(h.el('app').innerHTML.includes('premium-hero'));
+ assert(h.el('app').innerHTML.includes('最近七天'));
+ assert(h.el('app').innerHTML.includes('2027 研究生考试'));
+ assert(h.el('app').innerHTML.includes('政治'));
+ await h.click('switch-subject',{subject:'politics'});
+ const political=h.el('app').innerHTML;
+ assert(political.includes('政治计划筹备中'));
+ assert(political.includes('不生成任何虚构任务'));
+ assert(!political.includes('2014年新题型'));
+ h.api.nav('calendar');assert(h.el('app').innerHTML.includes('政治计划筹备中'));
+ await h.click('switch-subject',{subject:'english'});
+ assert(h.el('app').innerHTML.includes('65天'));
+ const active=h.api.state.done['2026-10-15-1'];
+ assert.equal(active,undefined);
+});
+test('M2.5 appearance controls never overwrite learning records',async()=>{
+ const h=harness({fail:true});await h.settle();
+ await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});
+ h.api.nav('settings');
+ assert(h.el('app').innerHTML.includes('视觉外观'));
+ await h.click('theme',{theme:'dark'});
+ assert.equal(h.storage.get('yantu_theme_v1'),'dark');
+ assert.equal(h.api.state.done['2026-10-15-1'],true);
+ const second=harness({storage:h.storage,fail:true});await second.settle();
+ assert.equal(second.api.state.done['2026-10-15-1'],true);
+ assert(second.el('app').innerHTML.includes('premium-hero'));
 });

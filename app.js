@@ -2,6 +2,7 @@
 (() => {
 'use strict';
 const Core=window.PlannerCore;
+const Intel=window.StudyIntel;
 const PLAN_KEY='yantu_english_plan_v2';
 let data = window.STUDY_PLAN;
 try{const cached=JSON.parse(localStorage.getItem(PLAN_KEY));if(Core.validPlan(cached))data=cached;}catch{}
@@ -16,6 +17,11 @@ const DEFAULT = Core.defaults();
 const STORAGE_KEY = 'yantu_english_2026_m1';
 let state = load();
 let view = 'today';
+let subject = 'english';
+const THEME_KEY='yantu_theme_v1';
+let theme='light';
+try{const raw=localStorage.getItem(THEME_KEY);if(['light','dark'].includes(raw))theme=raw;}catch{}
+if(document.documentElement)document.documentElement.dataset.theme=theme;
 let today = localISO(new Date());
 let selectedDate = (today>=data.meta.start && today<=data.meta.end)?today:data.meta.start;
 let calendarMonth = selectedDate.substring(0,7);
@@ -44,10 +50,35 @@ function nav(next){view=next;document.querySelectorAll('.nav-tab').forEach(el=>{
 function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
- const content=view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():view==='stats'?renderStats():renderSettings();
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${content}</div>`;
+ const content=view==='settings'?renderSettings():subject==='politics'?renderPolitics():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
+ const subjectBar=view==='settings'?'':renderSubjects();
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}</div>`;
  if(storageMessage)app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
- if(pendingPlan)app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
+ if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
+}
+function renderSubjects(){
+ return `<section class="subject-rail" aria-label="复习科目">
+ <div class="subject-tabs" role="group" aria-label="选择科目">
+ ${Intel.SUBJECTS.map(item=>`<button type="button" data-action="switch-subject" data-subject="${item.id}" class="subject-tab ${subject===item.id?'is-active':''}" aria-pressed="${subject===item.id}"><span class="subject-symbol">${item.id==='english'?'英':'政'}</span><span>${item.label}</span>${item.status!=='active'?'<span class="subject-new">待建档</span>':''}</button>`).join('')}
+ </div><span class="subject-context">${subject==='english'?'65天专项计划':'政治计划筹备中'}</span></section>`;
+}
+function renderPolitics(){
+ return `<div class="politics-hero">
+ <div class="politics-orbit" aria-hidden="true">政</div>
+ <div class="eyebrow">考研政治 · 科目预留</div>
+ <h1 class="page-title">政治，也可以在这里有条理地复习。</h1>
+ <p class="subtitle">已为政治预留独立科目与数据命名空间。目前没有你的教材、真实进度和可用时间，因此不生成任何虚构任务，也不影响英语二的计划和记录。</p>
+ <div class="politics-steps"><div><span>01</span><b>确认当前进度</b><small>课程、资料、题库与做题情况</small></div><div><span>02</span><b>确定可用时间</b><small>结合英语、数学、专业课整体分配</small></div><div><span>03</span><b>再建立政治计划</b><small>分科目保存、按真实反馈调整</small></div></div>
+ <button class="cta" data-action="copy-politics">复制政治建档信息清单 <span aria-hidden="true">↗</span></button>
+ <p class="setting-note">只准备接入，不自动开启政治打卡；无需安装第二个App。</p></div>
+ <button class="cta ghost politics-back" data-action="switch-subject" data-subject="english">← 继续英语二训练</button>`;
+}
+function renderWeekChart(week,compact=false){
+ const labels=['日','一','二','三','四','五','六'];
+ return `<div class="weekly-chart ${compact?'compact':''}" aria-label="最近七天专项任务完成情况">
+ ${week.days.map(d=>`<div class="week-col" title="${d.date}：${d.done}/${d.total}项${d.skipped?'，已休息':''}">
+ <div class="week-bar-track"><span class="week-bar-fill ${d.skipped?'is-rest':''}" style="height:${!d.planned?0:d.skipped?15:Math.round(d.fraction*100)}%"></span></div>
+ <small>${labels[d.day]}</small></div>`).join('')}</div>`;
 }
 function remainingDays(){return Math.max(0, Math.round((dateFrom(data.meta.exam)-dateFrom(today))/(1000*60*60*24)))}
 function refreshToday(){const fresh=localISO(new Date());if(fresh!==today){const followingToday=selectedDate===today;today=fresh;if(followingToday&&inRange(today))selectedDate=today;render();}}
@@ -70,18 +101,29 @@ function renderToday(justDone=''){
  const tasks=specialTasks(s);
  const pending=tasks.filter(t=>!state.done[t.id]);
  const remainingMinutes=pending.reduce((sum,t)=>sum+t.minutes,0);
+ const insight=Intel.recommend(data,state,Core,s);
+ const week=Intel.week(data,state,Core,today);
  const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
  const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
- return `<div class="eyebrow">2027 考研 · 英语二</div><h1 class="page-title">${s===today?'今天的专项训练':s<today?'回看这天的学习':'提前看看这天的安排'}</h1><p class="subtitle">${intro}</p>
- <section class="hero"><div class="hero-top"><div><h2>距离英语二初试</h2><div class="count">${remainingDays()}<small>天</small></div></div><div class="hero-right"><div class="biggoal">80<span style="font-size:13px">分</span></div><div class="goal-label">冲刺目标</div><div class="smallgoal">基础目标 75分</div></div></div><div class="hero-bottom"><span>当天专项 ${v.minutes} 分钟 · 单词另计</span><div class="hero-foot">${selectedLabel}进度 <div class="hero-bar"><span style="width:${percent}%"></span></div><b>${percent}%</b></div></div></section>
- <section class="section-row"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项完成 · 尚需约${remainingMinutes}分钟</span></section><div class="weekstrip">${days.join('')}</div>
- ${v.skipped?'<div class="skip-banner">这一天已标记为休息／未学习，不会累计补课。随时可以恢复。</div>':''}
+ return `<div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天，把注意力留给重要的题。':s<today?'回看这一日的积累':'提前看看这一天'}</h1><p class="subtitle">${intro}</p>
+ <section class="hero premium-hero" aria-label="倒计时与今日进度">
+ <div class="aurora aurora-one" aria-hidden="true"></div><div class="aurora aurora-two" aria-hidden="true"></div><div class="hero-glow-grid" aria-hidden="true"></div>
+ <div class="hero-top"><div class="hero-copy"><span class="hero-kicker"><span class="glint-dot"></span>2027 考研 · 稳定推进</span><h2>距离初试还有</h2><div class="count">${remainingDays()}<small>天</small></div><p class="hero-motto">今天完成的，才是属于自己的进度。</p></div>
+ <div class="hero-ring" role="img" aria-label="${selectedLabel}已完成${percent}%的专项任务" style="--ring-progress:${percent}%"><div class="hero-ring-core"><strong>${percent}<small>%</small></strong><span>专项完成</span></div></div></div>
+ <div class="hero-bottom premium-foot"><div><small>当日专项</small><b>${v.minutes}<span>分钟</span></b></div><div><small>尚需预计</small><b>${remainingMinutes}<span>分钟</span></b></div><div><small>英语二目标</small><b>80<span>分</span></b></div></div>
+ </section>
+ <section class="section-row calendar-heading"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项已完成</span></section><div class="weekstrip">${days.join('')}</div>
+ ${v.skipped?'<div class="skip-banner">这一天已标记为未学习。保留原任务记录，不自动补双倍。</div>':''}
+ <section class="focus-panel" aria-label="当日行动建议">
+ <div class="focus-top"><span class="micro-label"><span class="micro-icon">✦</span>${esc(insight?.eyebrow||'当前计划')}</span><span class="focus-duration">${insight?.minutes?'约'+insight.minutes+'分钟':'本机建议'}</span></div>
+ <h2>${esc(insight?.title||'今天按计划稳步推进')}</h2><p>${esc(insight?.detail||'以实际做题情况为准，不自动改变计划。')}</p>
+ <div class="focus-actions">${insight?.taskId?`<button class="cta focus-primary" data-action="detail" data-id="${esc(insight.taskId)}" data-day="${s}">开始这项训练 <span aria-hidden="true">↗</span></button>`:''}<button class="cta focus-secondary" data-action="copy-summary">发给 ChatGPT 调整计划 <span aria-hidden="true">↗</span></button></div></section>
  <div class="progress-block" aria-label="${selectedLabel}专项进度"><div class="progress-top"><span class="progress-title">${v.total&&percent===100?'当日专项已完成':v.skipped?'已标记休息，不会补债':'专项完成进度'}</span><span class="progress-value">${v.done}/${v.total}项 · 剩余约${remainingMinutes}分钟</span></div><div class="track" role="progressbar" aria-label="专项任务完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${v.total&&percent===100?'<p class="progress-footnote">完成记录已保存在本机，需要时可在任务详情补充复盘。</p>':pending.length?`<p class="progress-footnote">下一步：${esc(pending[0].title)} · 约${pending[0].minutes}分钟</p>`:''}</div>
  ${tasks.map(t=>taskCard(t,s,t.id===pending[0]?.id,t.id===justDone)).join('')||'<div class="empty">这一天没有安排专项练习，可以根据需要添加任务。</div>'}
  ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
  ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
  <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
- <p class="watermark">每天60—80分钟专项训练 · 单词另计 · 本地保存</p>`;
+ <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">专项60—80分钟 · 单词另计 · 不内置计时器</p>`;
 }
 function renderCalendar(){
  let [year,month] = calendarMonth.split('-').map(Number);
@@ -113,11 +155,14 @@ function renderStats(){
    if(state.done[t.id]){done++;minutes+=t.minutes;counters[t.type].done++}
  }}
  const pct=scheduled?Math.round(done/scheduled*100):0;
+ const week=Intel.week(data,state,Core,today);
  const focus=['写作','新题型','翻译','完形','阅读','复盘','综合','模考','机动'];
  let records=[];for(const d of data.days){for(const t of specialTasks(d.date)){if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')records.push({date:d.date,t,wrong:state.wrong[t.id]})}}
  return `<div class="eyebrow">专项复习 · 完成记录</div><h1 class="page-title">练过哪些，记录得清楚</h1><p class="subtitle">只统计已打卡的任务；学习时长是计划估算，不是手机自动计时，也不等于真实得分。</p>
  <div class="stats-two"><div class="statbox"><div class="name">已完成任务</div><div class="val">${done}<span style="font-size:12px;color:#aab1bf"> / ${scheduled}</span></div></div><div class="statbox"><div class="name">已完成任务预计时长</div><div class="val">${(minutes/60).toFixed(1)}<span style="font-size:12px;color:#aab1bf"> 小时</span></div></div></div>
  <div class="progress-block"><div class="progress-top"><span class="progress-title">总体任务完成率</span><span class="progress-value">${pct}%</span></div><div class="track"><span style="width:${pct}%"></span></div></div>
+ <section class="section-row"><h2>七日学习足迹</h2><span class="sub">${week.done}/${week.total}项打卡 · 休息${week.skipped}天</span></section>
+ <section class="week-insight full">${renderWeekChart(week)}<p class="week-disclaimer">只使用当前手机上的真实打卡，不计算番茄 Todo 时间，也不推算政治成绩。</p></section>
  <section class="section-row"><h2>各题型完成情况</h2></section><div class="setting-section">${focus.filter(x=>counters[x]).map(x=>`<div class="metric"><div><b>${x}</b><br/><small>${counters[x].done}/${counters[x].total} 已完成</small></div><progress value="${counters[x].done}" max="${counters[x].total}"></progress></div>`).join('')}</div>
  <section class="section-row"><h2>建档时的学习基线</h2></section><div class="setting-section"><div class="metric"><b>阅读一刷</b><small>约 37 / 40</small></div><div class="metric"><b>新题型</b><small>6.5 / 10</small></div><div class="metric"><b>完形填空</b><small>6 / 10</small></div><div class="metric"><b>作文起点</b><small>小作文难独立完成，大作文未开始</small></div></div>
  <div class="tip">复习策略：优先让大小作文能独立写，其次改善翻译中文表达与新题型稳定性；37分阅读是旧卷回忆估计，待后期新卷模考再校准。</div><section class="section-row"><h2>最近的作答记录</h2></section>${records.length?records.slice(-10).reverse().map(r=>`<div class="mini-card"><h3>${esc(r.t.title)}</h3><p>${niceDate(r.date)} · 错 ${esc(r.wrong)} 题</p></div>`).join(''):'<div class="empty">暂时还没有作答记录。打开任意专项任务，在“训练记录”中填写错题数即可。</div>'}
@@ -126,12 +171,14 @@ function renderStats(){
 function renderSettings(){
  return `<div class="eyebrow">设置与学习记录</div><h1 class="page-title">少设置一点，多练习一点</h1><p class="subtitle">每天只看60—80分钟专项任务；单词你自己安排，不占打卡列表。</p>
  <section class="setting-section"><h2>最常用的三个操作</h2><div class="usage-steps"><p><b>练习：</b>在“今日”选一项训练，先独立作答，再核对原文或范文。</p><p><b>复盘：</b>打开任务详情，记录错题数和一句话错因，可同时打卡。</p><p><b>调整：</b>将做题情况发给ChatGPT，计划更新后再到这里检查新版。</p></div></section>
- <section class="setting-section"><h2>时间预算（选填调整）</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''}>90分钟</option><option value="100" ${state.settings.budget===100?'selected':''}>100分钟（默认）</option><option value="110" ${state.settings.budget===110?'selected':''}>110分钟</option><option value="120" ${state.settings.budget===120?'selected':''}>120分钟</option></select></label><p class="setting-note">单词由你自己安排，不再出现在每日任务、完成率和进度统计里。这里只保留时间预留，避免专项与背词合计超时。</p></section>
+ <section class="setting-section appearance-section"><div class="setting-row-title"><div><h2>视觉外观</h2><p class="setting-note">两套配色都保留流畅轻动效；系统设置“减少动态效果”时自动精简动画。</p></div><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="${theme==='light'?'selected':''}" aria-pressed="${theme==='light'}">浅色</button><button type="button" data-action="theme" data-theme="dark" class="${theme==='dark'?'selected':''}" aria-pressed="${theme==='dark'}">深色</button></div></div></section>
+ <section class="setting-section"><h2>英语二时间预算（选填调整）</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''}>90分钟</option><option value="100" ${state.settings.budget===100?'selected':''}>100分钟（默认）</option><option value="110" ${state.settings.budget===110?'selected':''}>110分钟</option><option value="120" ${state.settings.budget===120?'selected':''}>120分钟</option></select></label><p class="setting-note">单词由你自己安排，不再出现在每日任务、完成率和进度统计里。这里只保留时间预留，避免专项与背词合计超时。</p></section>
  <section class="setting-section"><h2>获取最新计划</h2><p class="setting-note">你把实际做题结果告诉ChatGPT，我更新计划并发布后，再点击下方检查。请先预览差异，再决定是否应用；不会把计划任务自动算成已完成。</p><div class="button-row"><button class="cta secondary" data-action="check-updates">↻ 检查计划更新</button><button class="cta ghost" data-action="copy-summary">▤ 复制学习近况</button></div><p class="setting-note" id="sync-status">当前：${esc(data.meta.planVersion||'初始版')} · ${esc(updateSource)} · ${esc(lastCheck)}</p></section>
  <section class="setting-section"><h2>数据与备份</h2><div class="button-row"><button class="cta secondary" data-action="export">↥ 导出学习记录</button><button class="cta ghost" data-action="import">↧ 导入备份</button><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></div><input id="file-import" type="file" accept="application/json,.json"/><p class="setting-note" style="margin-top:13px">打卡、错题和复盘存在当前手机的浏览器数据中，并未自动上传云端。建议每周导出一次备份；清除浏览器数据或换机前务必备份。</p></section>
- <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>计划依据</h2><div class="metric"><b>计划开始</b><small>2026年10月15日</small></div><div class="metric"><b>计划结束</b><small>2026年12月18日</small></div><div class="metric"><b>英语二考试</b><small>2026年12月19日</small></div><div class="metric"><b>模拟安排</b><small>3套 · 弹性4天</small></div></section>
+ <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>多科目规划</h2><p class="setting-note">英语二日程和记录已在使用中；政治为下一阶段预留了独立入口、计划文件位置和数据命名空间。你提供真实学习状况后再开始制作政治计划，不预设学习成绩。</p><div class="button-row"><button class="cta secondary" data-action="open-politics">查看政治科目准备情况</button><button class="cta ghost" data-action="copy-politics">复制建档清单</button></div></section>
+ <section class="setting-section"><h2>计划依据</h2><div class="metric"><b>计划开始</b><small>2026年10月15日</small></div><div class="metric"><b>计划结束</b><small>2026年12月18日</small></div><div class="metric"><b>英语二考试</b><small>2026年12月19日</small></div><div class="metric"><b>模拟安排</b><small>3套 · 弹性4天</small></div></section>
  <section class="setting-section"><h2>安装到手机桌面</h2><p class="setting-note">部署到HTTPS站点后，在 Android Chrome 或 Edge 菜单中选择「安装应用」或「添加到主屏幕」。荣耀手机安装后如果找不到图标，检查浏览器“创建桌面快捷方式”权限。首次联网缓存完成后再尝试离线启动；清理网站数据前先导出备份。</p></section>
- <div class="watermark">M2.4 本地优先 · 联网更新计划 · 暂无跨设备打卡同步和后台提醒</div>`;
+ <div class="watermark">M2.5 本地优先 · 联网更新计划 · 暂无跨设备打卡同步和后台提醒</div>`;
 }
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
 let modalFocus=null;
@@ -195,6 +242,11 @@ function summaryText(){
  }
  lines.push('请优先保留已完成记录，按剩余时间重排未完成任务，不自动双倍补课。');return lines.join('\n');
 }
+const POLITICS_BRIEF='请帮我为2027考研政治建立复习计划，并接入研途PWA的独立政治科目。我的当前政治复习资料或课程：____；目前学到的阶段：____；已经完成的题库、练习和错题情况：____；每天或每周能分给政治的时间：____；我的重要安排与限制：____。请先根据我填的信息核实，再设计计划，不要猜进度，也不要修改英语二的打卡和复习安排。';
+async function copyPolitics(){
+ try{await navigator.clipboard.writeText(POLITICS_BRIEF);toast('政治建档清单已复制，可发到ChatGPT填写');}
+ catch{modal(`<div class="modal-head"><h2>政治建档清单</h2><button class="close" data-action="close" aria-label="关闭">×</button></div><p class="setting-note">长按全选复制后发给ChatGPT，不需要现在立刻填写。</p><textarea class="share-text" readonly>${esc(POLITICS_BRIEF)}</textarea>`);}
+}
 async function copySummary(){const s=summaryText();try{await navigator.clipboard.writeText(s);toast('近况已复制，粘贴到ChatGPT即可')}catch{modal(`<div class="modal-head"><h2>复制学习近况</h2><button class="close" data-action="close" aria-label="关闭弹窗">×</button></div><p class="setting-note">长按文本全选复制，发给ChatGPT。</p><textarea class="share-text" readonly>${esc(s)}</textarea>`);}}
 function nextBuffer(day){
  for(let i=1;i<=14;i++){const d=plus(day,i);if(!inRange(d))break;const hints=(byDate.get(d)?.items||[]);if(hints.some(t=>t.type==='机动'))return d}
@@ -205,6 +257,9 @@ document.addEventListener('click',e=>{
  const tab=e.target.closest('.nav-tab');if(tab){nav(tab.dataset.view);return}
  const btn=e.target.closest('[data-action]');if(!btn){if(e.target.id==='modal')closeModal();return}
  const action=btn.dataset.action;
+ if(action==='switch-subject'||action==='open-politics'){subject=action==='open-politics'?'politics':btn.dataset.subject==='politics'?'politics':'english';if(action==='open-politics')view='today';document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0);return;}
+ if(action==='copy-politics'){copyPolitics();return;}
+ if(action==='theme'){const next=btn.dataset.theme;if(next!=='light'&&next!=='dark')return;theme=next;if(document.documentElement)document.documentElement.dataset.theme=theme;try{localStorage.setItem(THEME_KEY,theme);}catch{toast('外观已切换，但偏好未能保存');}render();return;}
  if(action==='review-update'){reviewUpdate();return}
  if(action==='apply-update'){applyUpdate();return}
  if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已检查应用更新；有新版时关闭再打开即可')).catch(()=>toast('暂时无法检查，稍后重试'));return}
@@ -274,7 +329,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshTo
 setInterval(refreshToday,60000);
 window.addEventListener('online',()=>{render();checkUpdates(true)});
 window.addEventListener('offline',()=>{render();toast('已离线，打卡仍保存在本机')});
-window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=load();closeModal();render();toast('已载入另一个窗口的记录');}if(e.key===PLAN_KEY){try{const p=JSON.parse(e.newValue);if(Core.validPlan(p)){data=p;byDate=new Map(data.days.map(d=>[d.date,d]));closeModal();render();}}catch{}}});
+window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=load();closeModal();render();toast('已载入另一个窗口的记录');}if(e.key===THEME_KEY&&['light','dark'].includes(e.newValue)){theme=e.newValue;if(document.documentElement)document.documentElement.dataset.theme=theme;render();}if(e.key===PLAN_KEY){try{const p=JSON.parse(e.newValue);if(Core.validPlan(p)){data=p;byDate=new Map(data.days.map(d=>[d.date,d]));closeModal();render();}}catch{}}});
 document.addEventListener('keydown',e=>{const box=document.getElementById('modal');if(box.classList.contains('hidden'))return;if(e.key==='Escape'){closeModal();return;}if(e.key==='Tab'){const a=[...box.querySelectorAll('button,input,select,textarea,a[href],summary')].filter(x=>!x.disabled);const first=a[0],last=a.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
 checkUpdates(true);
 if('serviceWorker'  in navigator && (location.protocol==='https:'||location.hostname==='localhost')){

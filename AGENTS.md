@@ -31,3 +31,11 @@
 6. 不要要求用户为旧`configure-access.yml`配置Token或银行卡。该流程为归档历史试验。
 
 详细流程、验收、故障处理见`docs/WORKFLOW.md`与`docs/OPERATIONS.md`。
+
+## M2.5 多科目准备与UI约束（2026-10-15）
+- 用户要求明显提升UI视觉质感、动效和智能功能，**但不开发计时/番茄钟**（用户用番茄 Todo），不虚构与其集成。
+- 英语二已有计划仍为M2.3、65天99项；政治暂时只准备独立科目入口、注册表和计划数据命名空间，不能假定用户已经开始政治学习。
+- `study-intelligence.js` 是透明、离线、本机规则推荐和实际打卡分析，不是云端AI/自动读取用户手机数据；不会自动调整复习计划。
+- 科目正式启用、记录隔离、导出备份及版本管理以 `docs/MULTI_SUBJECT_ARCHITECTURE.md` 为准。
+- 新增JS需同步 `index.html`、`sw.js` 静态离线资源表、Service Worker模拟测试、GitHub Actions检查和 `.assetsignore` 约束；轻动效必须遵守 `prefers-reduced-motion`。
+- UI版本M2.5与英语计划版本M2.3是两个层面，别为纯UI更新擅自修改 `plan.json` 或迁移用户学习数据。

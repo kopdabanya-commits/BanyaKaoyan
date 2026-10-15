@@ -1,0 +1,55 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+const require=createRequire(import.meta.url);
+const Intel=require('../study-intelligence.js');
+const Core=require('../planner-core.js');
+const plan=JSON.parse(fs.readFileSync(new URL('../plan.json',import.meta.url),'utf8'));
+const state=()=>Core.defaults();
+test('catalog isolates the future politics plan and does not invent tasks',()=>{
+ assert.deepEqual(Intel.SUBJECTS.map(x=>x.id),['english','politics']);
+ assert.equal(Intel.SUBJECTS[0].status,'active');
+ assert.equal(Intel.SUBJECTS[1].status,'awaiting-plan');
+ assert.notEqual(Intel.SUBJECTS[0].storageKey,Intel.SUBJECTS[1].storageKey);
+ assert.equal(Intel.SUBJECTS[1].planFile,'politics-plan.json');
+ assert(!fs.existsSync(new URL('../politics-plan.json',import.meta.url)), 'must not fabricate a politics schedule');
+});
+test('recommendation follows available tasks, never moves or completes anything',()=>{
+ const s=state(),day='2026-10-15';
+ const before=JSON.stringify(s);
+ const result=Intel.recommend(plan,s,Core,day);
+ assert.equal(result.kind,'next');
+ assert.equal(result.taskId,'2026-10-15-1');
+ assert(result.title.includes('小作文'));
+ assert.equal(JSON.stringify(s),before);
+ s.done['2026-10-15-1']=true;
+ const after=Intel.recommend(plan,s,Core,day);
+ assert.equal(after.kind,'next');
+ assert.notEqual(after.taskId,'2026-10-15-1');
+ for(const t of Core.tasks(plan,s,day).filter(x=>!x.vocab))s.done[t.id]=true;
+ assert.equal(Intel.recommend(plan,s,Core,day).kind,'complete');
+});
+test('rest means no double-load, weekly analytics use confirmed actions only',()=>{
+ const s=state();s.skipped['2026-10-15']=true;
+ assert.equal(Intel.recommend(plan,s,Core,'2026-10-15').kind,'rest');
+ const w1=Intel.week(plan,s,Core,'2026-10-15');
+ assert.equal(w1.done,0);
+ assert.equal(w1.total,3);
+ assert.equal(w1.skipped,1);
+ s.skipped['2026-10-15']=false;s.done['2026-10-15-1']=true;
+ const w2=Intel.week(plan,s,Core,'2026-10-15');
+ assert.equal(w2.done,1);
+ assert.equal(w2.days.at(-1).fraction,1/3);
+ assert.equal(w2.days.at(-1).date,'2026-10-15');
+ assert.equal(w2.days[0].planned,false);
+});
+test('no phantom future achievements and weekdays remain correctly ordered',()=>{
+ const s=state();
+ s.done['2026-10-20-1']=true;
+ const w=Intel.week(plan,s,Core,'2026-10-15');
+ assert.equal(w.done,0);
+ assert.equal(w.days.length,7);
+ assert.deepEqual(w.days.map(d=>d.day),[5,6,0,1,2,3,4]);
+ assert.equal(Intel.before('2026-11-01',1),'2026-10-31');
+});
