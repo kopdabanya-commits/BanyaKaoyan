@@ -33,3 +33,6 @@ printf 'BANYA_UNIT_RESULT='; systemctl show banya-sync -p Result -p ExecMainStat
 printf 'BANYA_JOURNAL_BEGIN\n'; journalctl -u banya-sync -n 24 --no-pager -o cat 2>/dev/null || true; printf 'BANYA_JOURNAL_END\n'
 printf 'BANYA_PATHS='; ls -ld /opt/banya-sync /var/lib/banya-sync 2>/dev/null || true
 printf 'NGINX_ERROR_BEGIN\n'; tail -20 /var/log/nginx/error.log 2>/dev/null || true; printf 'NGINX_ERROR_END\n'
+printf 'CERTBOT_VERSION='; certbot --version 2>&1 || true
+printf 'CERTBOT_RENEWAL_SETTINGS_BEGIN\n'; grep -E '^(authenticator|pref_challs|server|installer|webroot_path|http01_port)\s*=' /etc/letsencrypt/renewal/124.70.128.201.conf 2>/dev/null || true; printf 'CERTBOT_RENEWAL_SETTINGS_END\n'
+printf 'CERTBOT_RECENT_FAILURE_BEGIN\n'; tail -180 /var/log/letsencrypt/letsencrypt.log 2>/dev/null | grep -iE 'challenge|error|unauthorized|invalid|detail|timeout|refused|failed' | tail -25 || true; printf 'CERTBOT_RECENT_FAILURE_END\n'
