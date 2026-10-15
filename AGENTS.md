@@ -21,6 +21,6 @@
 - 至少执行README所列语法、计划、Node集成和SW模拟测试。真实浏览器/Android测试未做应明确记录，不能用模拟通过替代真机通过。
 - 原始任务改期和标题/分钟编辑须保留稳定ID；未完成未来任务被新版移出时不继续占待办预算，记录仍保留。已完成单词任务时长不随设置追溯变动。
 - 文档、测试、新增工具脚本不得被发布到静态网站；新增开发目录同时更新.assetsignore。不得把GitHub token或Cloudflare token放进前端。
-- 发布保护闸门：当前 `wrangler.jsonc` 将workers_dev和preview_urls设为false，防止自动部署意外开放。只有在该Worker的All traffic Access邮箱白名单验证后，才能把workers_dev改为true；预览无需求继续关闭。
+- 2026-10-15用户明确拒绝绑卡购买Access，选择使用免费的公开workers.dev网址，并手动启用后确认能打开。`wrangler.jsonc`与之同步：`workers_dev=true`、`preview_urls=false`。网站内容公开（包括预设计划），GitHub仍保持Private，打卡笔记仅本地。后续不得因旧Access规则擅自把网站关闭。
 - Cloudflare浏览器登录已出现403，停止重复尝试。替代流程见docs/ACCESS_AUTOMATION.md，手动触发configure-access.yml；令牌仅GitHub Actions Secret，禁止让用户贴到聊天。
-- 自动配置通过API回读单邮箱政策及四入口无凭证Access重定向后，才提交workers_dev=true和.cloudflare/access-state.json。预览保持false。配置未完成不得宣称Access有效或Android验收通过。
+- 原Access自动配置仅作为暂停使用的可选开发流程，不要自动触发、不要要求用户绑卡。用户已经在Edge完成安装，但数据保留/离线/跨天仍需真机测试；任何未测试部分不得声称通过。
