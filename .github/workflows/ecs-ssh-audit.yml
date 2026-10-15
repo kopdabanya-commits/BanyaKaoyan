@@ -1,5 +1,5 @@
 name: ECS authorized read-only audit
-# Read-only follow-up diagnoses the first deployment attempt.
+# Read-only follow-up diagnoses the new service start failure.
 
 on:
   push:

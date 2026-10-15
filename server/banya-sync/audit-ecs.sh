@@ -29,3 +29,6 @@ printf 'TLS_LEAF_END\n'
 printf 'BANYA_CONFIG_EXISTS='; if [[ -e /etc/banya-sync.env ]]; then echo yes; else echo no; fi
 printf 'BANYA_STAGE_FILES='; find /root/banya-stage -maxdepth 1 -type f -printf '%f,' 2>/dev/null; echo
 printf 'BANYA_INSTALL_LOG_TAIL_BEGIN\n'; tail -20 /root/banya-stage/install-result.log 2>/dev/null || true; printf 'BANYA_INSTALL_LOG_TAIL_END\n'
+printf 'BANYA_UNIT_RESULT='; systemctl show banya-sync -p Result -p ExecMainStatus -p NRestarts --no-pager 2>/dev/null | paste -sd, - || true
+printf 'BANYA_JOURNAL_BEGIN\n'; journalctl -u banya-sync -n 24 --no-pager -o cat 2>/dev/null || true; printf 'BANYA_JOURNAL_END\n'
+printf 'BANYA_PATHS='; ls -ld /opt/banya-sync /var/lib/banya-sync 2>/dev/null || true
