@@ -8,7 +8,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: node --check planner-core.js
       - run: node --check app.js
       - run: node --check plan-data.js
       - run: node --check sw.js
       - run: node scripts/check.mjs
+
+      - run: node --test scripts/test.mjs scripts/sw-test.mjs

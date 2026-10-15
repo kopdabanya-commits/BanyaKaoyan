@@ -17,3 +17,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .task-sub,.setting-note,.mini-card p{color:#718096}
 .cta:disabled{opacity:.55;cursor:wait}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* M2.1: mobile touch targets and keyboard-safe sheets */
+body.modal-open{overflow:hidden}
+body{overflow-wrap:anywhere}
+.shell{padding-top:calc(18px + env(safe-area-inset-top));padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.hero-bottom{flex-wrap:wrap;row-gap:12px}.hero-foot{flex-wrap:wrap}.hero-bar{width:64px}
+.section-row{gap:10px;flex-wrap:wrap}.task-card{padding:15px 12px;gap:8px}.task-main{overflow:hidden}
+.check,.task-more,.close,.round-btn{min-width:44px;min-height:44px;flex-basis:44px}
+.task-title{font-size:15px}.task-sub{line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.cta{min-height:44px;text-decoration:none;line-height:1.5}.cta:active,.check:active,.task-more:active{filter:brightness(.94)}
+.nav-tab.active{background:#f1efff}.nav-tab{min-height:52px;color:#65738a}
+.modal-card{max-height:90dvh;overscroll-behavior:contain;padding-top:18px}.modal-head{align-items:flex-start;gap:12px}.modal-head h2{margin:8px 0 16px}
+.form-line input,.form-line select,.form-line textarea{font-size:16px}.input-line{flex-wrap:wrap}.input-line select{max-width:100%}.top-date{white-space:nowrap}.stats-two .val{overflow-wrap:anywhere}
+@media(max-width:370px){.page-title{font-size:26px}.top-date{font-size:11px;padding:9px}.task-card{padding:13px 9px}.hero{padding:20px 18px}.hero h2{font-size:13px}.hero .count{font-size:54px}.task-more{background:transparent}.shell{padding-inline:12px}}

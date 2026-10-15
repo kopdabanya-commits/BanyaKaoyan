@@ -5,3 +5,14 @@ scripts/
 .github/
 .gitignore
 .assetsignore
+
+docs/
+tests/
+node_modules/
+package.json
+package-lock.json
+*.log
+*.zip
+*.json.bak
+wrangler.jsonc
+.wrangler/

@@ -1,20 +1,37 @@
-# 研途 · 2027 考研英语二复习 PWA
+# 研途英语二 · M2.1
 
-这是私人考研计划管理项目。仓库 Private，部署的网站默认可能公开；正式托管前需要评估隐私/访问控制。
+私人考研英语二 PWA，沿用 `english-ii-plan` Cloudflare Worker Static Assets；不是 Pages。GitHub 仓库必须保持 Private。计划截止日 2026-12-18，考试日按用户指定为 2026-12-19。
 
-## 学习配置
-- 考试日：2026-12-19；计划日期：2026-10-15 至 12-18（65天）。
-- 每天英语总计90～120分钟，其中背单词30～40分钟。
-- 写作是最重要的补强点；新题型平均约6.5/10，完形约6/10，阅读后期一刷估计约37/40，阅读二刷到2011年Text 3。
-- 2024～2026真题预留三次分段模拟；允许安排完整3小时模拟。
+## 学习安排
 
-## 本地优先
-`plan.json` 是权威计划、`plan-data.js`为离线兜底。手机学习记录本地存储；改计划不应清空打卡与笔记。可导出/恢复个人备份。切换设备需要手动备份。
+2026-10-15 至 12-18 共65天，98项主任务，另有每天单词。默认每天95—100分钟；单词30—40分钟时总计90—105分钟。保留原有任务ID，短日加入作文表达回忆。2024—2026卷仅在预定窗口分四天计时作答，不安排超120分钟的单日模考。
 
-## 部署 Cloudflare Pages
-连接 GitHub Private 仓库；框架选 None，无构建命令，输出目录设为根目录 / 。首次部署后在荣耀 Android 16 浏览器验收安装和离线。**私有仓库不代表部署的网站私有**，若希望只有本人访问，请先配置 Cloudflare Access 等身份限制并验证其对PWA离线缓存的影响。
+## 数据与更新
 
-## 开发
-执行 `node scripts/check.mjs`、`node --check app.js`。开发规范与未来计划调整规则见 `AGENTS.md`。
+`plan.json` 是权威计划，`plan-data.js` 是完全一致的离线初始快照；`planner-core.js` 提供共用校验、任务组装和历史迁移。记录只保存在当前来源的 localStorage，不上传服务器。原版 `yantu_english_2026_m1` 存储键保留。
 
-当前状态：源码已入仓，Cloudflare生产部署和真机完整验收尚未完成。
+检查计划更新只获取同源受 Access 保护的 `plan.json`，不直接读取 GitHub Private API，不在前端放令牌。新版先展示版本、数量和变化，再由用户应用；计划持久化后重启可继续使用。历史、已完成、错题、笔记、个人修改和改期保留，移出的未来未完成任务退出待办并在进度页保留。个人安排造成未来剩余任务超出预算时，拒绝应用并提示调整。
+
+备份v2包含记录与计划；兼容原版v1备份。恢复前严格校验并保留本机恢复前副本，可在设置导出。清除浏览器数据、改变域名或设备不会自动迁移记录。损坏记录不会被静默重置覆盖；写入失败回滚当前操作。
+
+## 部署与保护
+
+沿用控制台现有 GitHub main 触发器及静态资源根目录。`.assetsignore` 排除文档、脚本与测试，`_headers` 设置内容类型保护、CSP、禁止嵌入、禁止索引及更新资源的缓存策略。不要删建项目，不要为运行PWA绕过 Access，不要提交记录或账户令牌。
+
+发布域名前，先在 Worker Access 中为该 Worker 的 All traffic 配置仅当前账户邮箱允许访问。必须验证生产及预览均被保护；如未配置好则保持 workers.dev Disabled。Zero Trust 开通若要求本人接受条款、输入付款信息或付费，则停在该步骤交给用户。
+
+Service Worker 只缓存完整且类型正确的App静态资源，不缓存计划检查、Access接口或登录跳转。新版等旧标签页全部关闭后激活，防止混用版本。设置中的重新验证访问链接绕过离线缓存并到达 Access。离线副本是已登录设备的本机副本，网络访问限制仍由 Access 执行；Access不能远程收回已下载的离线内容。
+
+## 检查
+
+```
+node --check app.js
+node --check planner-core.js
+node --check sw.js
+node scripts/check.mjs
+node --test scripts/test.mjs scripts/sw-test.mjs
+```
+
+测试为 Node VM 集成与逻辑模拟，不代替真实浏览器布局、Cloudflare登录或Android安装验收。实际执行范围和待办见 `docs/VALIDATION.md`，后续开发从 `AGENTS.md` 开始。
+
+当前 `wrangler.jsonc` 明确关闭 `workers_dev` 与 `preview_urls`，避免构建自动开放域名。Access All traffic 规则验证完成后，将workers_dev改为true并重新部署；预览没有必要则保持关闭。保留同名Worker，不创建新项目。

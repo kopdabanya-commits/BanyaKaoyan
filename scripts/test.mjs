@@ -1,0 +1,110 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),core=require('../planner-core.js');
+const plan=JSON.parse(fs.readFileSync(new URL('../plan.json',import.meta.url)));
+const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const oldPlan=structuredClone(plan);oldPlan.meta.planVersion='previous';oldPlan.meta.revision=2;
+const key='yantu_english_2026_m1',pk='yantu_english_plan_v2';
+const clone=x=>JSON.parse(JSON.stringify(x));
+function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
+ const handlers={},winHandlers={},elements={},intervals=[],blobs=[];let now='2026-10-15T04:00:00Z',quota=false,fetchFail=fail,currentFresh=fresh;
+ class Clock extends Date{constructor(...args){super(...(args.length?args:[now]));}static now(){return new Date(now).valueOf();}}
+ function el(id){return elements[id]??=( {id,value:'',disabled:false,dataset:{},textContent:'',_html:'',classList:{add(){},remove(){},contains(){return false;}},set innerHTML(s){this._html=s;},get innerHTML(){return this._html;},insertAdjacentHTML(_,s){this._html=s+this._html;},querySelector(){return el('focus');},querySelectorAll(){return []},focus(){},click(){},closest(){return null;}} );}
+ const doc={hidden:false,activeElement:el('active'),body:{classList:{add(){},remove(){}}},getElementById:el,querySelector:()=>el('update-button'),querySelectorAll:()=>[],addEventListener:(k,f)=>(handlers[k]??=[]).push(f),createElement:()=>el('download')};
+ const ls={getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(quota){quota=false;throw Error('quota');}storage.set(k,v)}};
+ const context={window:null,PlannerCore:core,STUDY_PLAN:clone(oldPlan),document:doc,navigator:{onLine:online,clipboard:{writeText:async t=>{context.copied=t}}},localStorage:ls,Date:Clock,structuredClone,console,AbortController,Blob,URL:class extends URL{static createObjectURL(b){blobs.push(b);return 'blob:test'}static revokeObjectURL(){}},location:{protocol:'https:',hostname:'test.invalid'},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{intervals.push(f)},fetch:async()=>{if(fetchFail)throw Error('offline');return {ok:true,redirected:false,headers:new Headers({'content-type':'application/json'}),json:async()=>clone(currentFresh)}},confirm:()=>true,addEventListener:(k,f)=>(winHandlers[k]??=[]).push(f),scrollTo(){}};
+ context.window=context;
+ vm.createContext(context);vm.runInContext(source.replace(/\n\}\)\(\);\s*$/,'\nglobalThis.api={get data(){return data},get state(){return state},get pending(){return pendingPlan},get selected(){return selectedDate},get today(){return today},allTasks,dateProgress,checkUpdates,applyUpdate,reviewUpdate,render,nav,exportState,summaryText,refreshToday};\n})();'),context);
+ const api=context.api;
+ async function event(type,target){for(const f of handlers[type]||[])await f({target,preventDefault(){}});}
+ async function click(action,opts={}){const b={dataset:{action,...opts}};await event('click',{closest:q=>q==='.nav-tab'?null:b});}
+ const input=(id,value)=>{el(id).value=String(value)};
+ return {api,context,storage,el,input,event,click,winHandlers,blobs,async settle(){await new Promise(setImmediate)},setFresh:p=>currentFresh=p,setFail:v=>fetchFail=v,setNow:v=>now=v,quota:()=>quota=true};
+}
+
+test('65 continuous days, unique IDs, exact fallback and 90–120 minute schedules for all vocab settings',()=>{
+ assert(core.validPlan(plan));let count=0;for(let day of plan.days){for(const vocab of [30,35,40]){const s=core.defaults();s.settings.vocab=vocab;const minutes=core.tasks(plan,s,day.date).reduce((n,t)=>n+t.minutes,0);assert(minutes>=90&&minutes<=120,day.date);}count+=day.items.length;}
+ const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,98);
+});
+test('plan rejects duplicate IDs, duplicate dates, impossible dates, over-budget days and prototype keys',()=>{
+ for(const edit of [p=>p.days[1].date=p.days[0].date,p=>p.days[1].items[0].id=p.days[0].items[0].id,p=>p.days[0].date='2026-02-31',p=>p.days[0].items[0].minutes=90,p=>p.days[0].items[0].id='__proto__']){const p=clone(plan);edit(p);assert.equal(core.validPlan(p),false);}
+});
+test('legacy state migrates; malformed backup, duplicate customs and unsafe keys are rejected',()=>{
+ assert.equal(core.normalizeState({done:{a:true},added:[]}).settings.vocab,35);
+ for(const p of [{done:null},{notes:{a:3}},{wrong:{a:-1}},{moved:{a:'2026-11-31'}},{added:[{id:'bad'}]},JSON.parse('{"done":{"__proto__":true}}')])assert.throws(()=>core.normalizeState(p));
+ const t={id:'custom-1',custom:true,date:'2026-10-15',title:'test',minutes:5,type:'写作'};assert.throws(()=>core.normalizeState({added:[t,t]}));
+});
+test('migration preserves completed, removed, historical, noted and rescheduled tasks without duplication',()=>{
+ const s=core.defaults(),id=plan.days[0].items[0].id;s.done[id]=true;s.notes[id]='笔记';s.wrong[id]=2;s.moved[id]='2026-10-18';
+ const fresh=clone(plan);fresh.days[0].items[0].title='changed';fresh.days[1].items=[];
+ const n=core.migrate(plan,fresh,s,'2026-10-17');assert.equal(n.notes[id],'笔记');assert.equal(n.wrong[id],2);
+ assert.equal(core.tasks(fresh,n,'2026-10-18').filter(t=>t.id===id).length,1);assert.equal(core.tasks(fresh,n,'2026-10-18').find(t=>t.id===id).title,plan.days[0].items[0].title);
+ assert(core.tasks(fresh,n,'2026-10-16').some(t=>t.id===plan.days[1].items[0].id));
+});
+test('first open, check/uncheck, reopen and refresh preserve local records',async()=>{
+ const h=harness();await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(h.api.state.done['2026-10-15-1'],true);
+ const reopened=harness({storage:h.storage});assert.equal(reopened.api.state.done['2026-10-15-1'],true);await reopened.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(reopened.api.state.done['2026-10-15-1'],false);
+});
+test('wrong answers and notes save, clear, and remain separate across tasks',async()=>{
+ const h=harness();await h.settle();for(const [id,w,note]of [['2026-10-15-1',2,'甲'],['2026-10-16-1',3,'乙']]){
+  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':id.includes('15')?55:60,'task-move':id.slice(0,10),'task-wrong':w,'task-note':note}))h.input(field,value);
+  await h.event('submit',{id:'task-form',dataset:{id,day:id.slice(0,10)}});
+ }assert.equal(h.api.state.wrong['2026-10-15-1'],2);assert.equal(h.api.state.notes['2026-10-16-1'],'乙');
+ h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-16'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
+});
+test('edit task, move with reduced duration, reject over-budget add/move and keep one stable ID',async()=>{
+ const h=harness();await h.settle();for(const [id,v]of Object.entries({'task-title':'我的写作','task-minutes':5,'task-move':'2026-10-16','task-wrong':'','task-note':'note'}))h.input(id,v);
+ await h.event('submit',{id:'task-form',dataset:{id:'2026-10-15-1',day:'2026-10-15'}});
+ assert(!h.api.allTasks('2026-10-15').some(t=>t.id==='2026-10-15-1'));assert.equal(h.api.allTasks('2026-10-16').find(t=>t.id==='2026-10-15-1').title,'我的写作');
+ const before=h.api.state.added.length;for(const [id,v]of Object.entries({'add-title':'too much','add-date':'2026-10-16','add-type':'写作','add-minutes':90}))h.input(id,v);
+ await h.event('submit',{id:'add-form'});assert.equal(h.api.state.added.length,before);
+ h.input('add-date','2026-10-15');h.input('add-minutes',5);await h.event('submit',{id:'add-form'});assert.equal(h.api.state.added.length,before+1);
+});
+test('rest day does not spill into tomorrow; check moved task clears target rest marker',async()=>{
+ const h=harness();await h.settle();const count=h.api.allTasks('2026-10-16').length;await h.click('toggle-skip',{date:'2026-10-15'});assert.equal(h.api.state.skipped['2026-10-15'],true);assert.equal(h.api.allTasks('2026-10-16').length,count);
+ await h.click('toggle-skip',{date:'2026-10-15'});assert.equal(h.api.state.skipped['2026-10-15'],undefined);
+});
+test('across days, midnight follows today only when viewing today; cancelled tasks survive',async()=>{
+ const h=harness();await h.settle();h.setNow('2026-10-16T04:00:00Z');h.api.refreshToday();assert.equal(h.api.today,'2026-10-16');assert.equal(h.api.selected,'2026-10-16');
+ await h.click('day',{date:'2026-10-18'});h.setNow('2026-10-17T04:00:00Z');h.api.refreshToday();assert.equal(h.api.selected,'2026-10-18');
+});
+test('new plan needs explicit approval, persists after restart, keeps records and rejects stale/same-version conflicts',async()=>{
+ const h=harness();await h.settle();assert(h.api.pending);assert.equal(h.api.data.meta.planVersion,'previous');await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,plan.meta.planVersion);assert.equal(h.api.state.done['2026-10-15-1'],true);
+ const again=harness({storage:h.storage,fail:true});await again.settle();assert.equal(again.api.data.meta.planVersion,plan.meta.planVersion);
+ h.setFresh(oldPlan);await h.api.checkUpdates();assert.equal(h.api.data.meta.planVersion,plan.meta.planVersion);assert.equal(h.api.pending,null);
+ const conflict=clone(plan);conflict.days[0].items[0].title='unversioned';h.setFresh(conflict);await h.api.checkUpdates();assert.equal(h.api.pending,null);
+});
+test('offline/failure/reconnect keep plan and notes; plan fetch bypasses login/cache redirects',async()=>{
+ const h=harness({fail:true,online:false});await h.settle();assert.equal(h.api.data.meta.planVersion,'previous');await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});h.setFail(false);await h.api.checkUpdates();assert(h.api.pending);assert.equal(h.api.state.done['2026-10-15-1'],true);
+ let seen;h.context.fetch=async(_,opts)=>{seen=opts;return {ok:true,redirected:true,headers:new Headers({'content-type':'text/html'})}};await h.api.checkUpdates();assert.equal(seen.redirect,'error');assert.equal(h.api.data.meta.planVersion,'previous');
+});
+test('export/restore round trip includes plan, notes and wrong counts, and preserves a recovery copy',async()=>{
+ const h=harness();await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});h.api.exportState();const backup=JSON.parse(await h.blobs[0].text());assert.equal(backup.version,2);assert(backup.plan);
+ const fresh=harness();await fresh.settle();await fresh.event('change',{id:'file-import',files:[{size:100,text:async()=>JSON.stringify(backup)}]});assert.equal(fresh.api.state.done['2026-10-15-1'],true);assert(fresh.storage.has(key+'_before_restore'));
+ fresh.api.exportState(true);const previous=JSON.parse(await fresh.blobs[0].text());assert.equal(previous.state.done['2026-10-15-1'],undefined);
+ const invalid=clone(backup);invalid.state.added=[{id:'bad'}];const before=fresh.storage.get(key);await fresh.event('change',{id:'file-import',files:[{size:100,text:async()=>JSON.stringify(invalid)}]});assert.equal(fresh.storage.get(key),before);
+});
+test('corrupt local data is not overwritten and is included verbatim in recovery export',async()=>{
+ const storage=new Map([[key,'broken-json']]);const h=harness({storage});await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(storage.get(key),'broken-json');h.api.exportState();assert.equal(JSON.parse(await h.blobs[0].text()).unreadableRaw,'broken-json');
+});
+test('quota failure rolls back mutations, and another window updates state',async()=>{
+ const h=harness();await h.settle();h.quota();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(h.api.state.done['2026-10-15-1'],undefined);
+ const n=core.defaults();n.done['2026-10-16-1']=true;h.storage.set(key,JSON.stringify(n));for(const f of h.winHandlers.storage)f({key});assert.equal(h.api.state.done['2026-10-16-1'],true);
+});
+
+test('removed future unfinished task is retained outside active schedule, not stacked with replacement',()=>{
+ const fresh=clone(plan),s=core.defaults(),removed=fresh.days[1].items.shift();fresh.days[1].items.push({...removed,id:'replacement-id',title:'replacement'});
+ const n=core.migrate(plan,fresh,s,'2026-10-15');assert.equal(n.archive[removed.id].retired,true);assert(!core.tasks(fresh,n,'2026-10-16').some(t=>t.id===removed.id));assert(core.tasks(fresh,n,'2026-10-16').some(t=>t.id==='replacement-id'));
+});
+test('plan update blocks a future over-budget personalized schedule and leaves current plan intact',async()=>{
+ const s=core.defaults();s.added.push({id:'custom-heavy',title:'already scheduled',minutes:70,type:'写作',date:'2026-10-16',custom:true});const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,'previous');assert(h.api.pending);
+});
+test('moving a task then checking it clears rest only on the destination day',async()=>{
+ const s=core.defaults();s.moved['2026-10-15-1']='2026-10-16';s.skipped['2026-10-16']=true;s.skipped['2026-10-15']=true;const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-16'});assert.equal(h.api.state.skipped['2026-10-16'],undefined);assert.equal(h.api.state.skipped['2026-10-15'],true);
+});
+test('settings changes do not rewrite the duration of previously completed vocabulary tasks',async()=>{
+ const h=harness();await h.settle();await h.click('toggle',{id:'2026-10-15-vocab',day:'2026-10-15'});await h.event('change',{id:'vocab-minutes',value:'40'});assert.equal(h.api.allTasks('2026-10-15')[0].minutes,35);assert.equal(h.api.allTasks('2026-10-16')[0].minutes,40);
+});

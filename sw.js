@@ -1,6 +1,46 @@
-// 静态资源安装缓存；在线获取新版，断网取上次缓存。
-const CACHE='yantu-english-ii-m2-20261015';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./plan.json','./plan-data.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('yantu-english-ii-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const url=new URL(req.url);if(url.origin!==self.location.origin)return;const key=url.pathname.endsWith('/plan.json')?new URL('plan.json',self.registration.scope).href:req;event.respondWith((async()=>{const cache=await caches.open(CACHE);const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),4500);try{const response=await fetch(req,{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('http '+response.status);cache.put(key,response.clone()).catch(()=>{});return response;}catch{const fallback=await cache.match(key);if(fallback)return fallback;return new Response('离线状态下尚无该资源',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}})}finally{clearTimeout(timer)}})());});
+/* Atomic offline shell. Access responses never enter the cache. */
+const CACHE='yantu-english-ii-m2.1-20261015';
+const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+function acceptable(response,url){
+ if(!response.ok||response.redirected||response.type==='opaque'||response.type==='opaqueredirect')return false;
+ if(response.url&&new URL(response.url).origin!==self.location.origin)return false;
+ const type=response.headers.get('content-type')||'';
+ if(url.endsWith('.js'))return /javascript/.test(type);
+ if(url.endsWith('.css'))return type.includes('text/css');
+ if(url.endsWith('.png'))return type.includes('image/png');
+ if(url.endsWith('.webmanifest'))return /json|manifest/.test(type);
+ return type.includes('text/html');
+}
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(CACHE);
+ try{
+  const entries=await Promise.all(ASSETS.map(async path=>{
+   const url=new URL(path,self.registration.scope).href;
+   const response=await fetch(url,{cache:'reload',redirect:'error'});
+   if(!acceptable(response,url))throw Error('Uncacheable resource');
+   if(path==='./'||path==='./index.html'){
+    const html=await response.clone().text();if(!html.includes('id="app"')||!html.includes('./planner-core.js'))throw Error('Not the application shell');
+   }
+   return [url,response];
+  }));
+  await Promise.all(entries.map(([url,response])=>cache.put(url,response)));
+ }catch(err){await caches.delete(CACHE);throw err;}
+ // Do not skipWaiting: existing tabs keep one consistent application bundle.
+})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ for(const key of await caches.keys())if(key.startsWith('yantu-english-ii-')&&key!==CACHE)await caches.delete(key);
+ await self.clients.claim();
+})()));
+self.addEventListener('fetch',event=>{
+ const req=event.request,url=new URL(req.url);
+ if(req.method!=='GET'||url.origin!==self.location.origin)return;
+ if(url.searchParams.has('reauth')||url.pathname.startsWith('/cdn-cgi/')||url.pathname.endsWith('/plan.json'))return;
+ const key=new URL(url.pathname,self.location.origin).href;
+ const allowed=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
+ if(!allowed.has(key))return;
+ event.respondWith((async()=>{
+  const cached=await (await caches.open(CACHE)).match(key);
+  if(cached)return cached;
+  try{return await fetch(req,{cache:'no-store'});}catch{return new Response('离线资源未就绪，请联网验证访问后刷新。',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});}
+ })());
+});
