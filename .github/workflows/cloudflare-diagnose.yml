@@ -1,0 +1,34 @@
+name: Diagnose existing Workers static-assets build
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths:
+      - .github/workflows/cloudflare-diagnose.yml
+      - wrangler.jsonc
+      - .assetsignore
+      - _headers
+  pull_request:
+    paths:
+      - wrangler.jsonc
+      - .assetsignore
+      - _headers
+permissions:
+  contents: read
+jobs:
+  local-wrangler-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check static Worker configuration without deploying
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "JSON.parse(require('fs').readFileSync('wrangler.jsonc','utf8')).name")" = "english-ii-plan"
+          test -f index.html && test -f cloud-sync.js
+          grep -Fxq 'server/' .assetsignore
+          grep -Fq "connect-src 'self' https://124.70.128.201;" _headers
+          npx --yes wrangler@4 deploy --dry-run --outdir /tmp/banya-wrangler-dry-run
+          echo 'Wrangler dry run completed locally; no Cloudflare deployment was performed.'
