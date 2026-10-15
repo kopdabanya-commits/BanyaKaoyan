@@ -1,3 +1,9 @@
+## 云环境接手核验｜2026-10-16（PR #11 分支）
+- Git 原生读取确认 `origin/main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`，`refs/pull/11/head=39a3a6e60e5efcce1acb5239e49c7f18eb8b149`；M2.9 尚未在 main。GitHub GraphQL/REST API 在当前云环境返回 403，因此 PR 当前的草稿标志、审查状态及最新 CI 状态无法独立核实；不得把旧文档快照当成实时状态。
+- 在 PR #11 源码上，本地 Node 22 语法/计划检查与 64 项测试通过，Python 后端与备份 9 项测试通过，部署脚本 `bash -n` 通过。独立启动后端进程验证 `/health` 为 200、未授权快照读取为 401、两科分别保存并可读取、旧 revision 写入为 409。此为本地验证，不代表 ECS 已部署。
+- 当前云环境 `/etc/codex/network-policy.json` 显示 TCP 允许域名/IP 范围均为空，未配置 VPN；对 ECS `124.70.128.201` 的 22/80/443 直接连接均立即返回 `ConnectionRefusedError`，经 HTTP 代理访问 80/443 返回 403，TCP CONNECT 代理 8088 自身拒绝连接。这些结果只证明本环境当前无法抵达目标，不能判断 ECS 服务或 SSH 凭据是否正常。
+- 当前环境与旧项目没有找到适用的 SSH config 或身份文件，也没有可用的华为云/SSH 凭据绑定。未登录 ECS，未核实磁盘、现有服务、Nginx、域名、证书，也未部署。应先在云环境网络设置中放行针对 `124.70.128.201` 的必要 TCP 访问并提供受支持的 SSH 身份授权，然后重新做只读连接检查；无需把密码或私钥发到聊天。
+
 ## 技术线最新记录｜2026-10-16 M2.9 华为云云同步（草稿PR #11）
 - 已实时核对 `main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`；开放PR只有 [#11](https://github.com/kopdabanya-commits/English-II-Plan/pull/11)，分支 `feat/huawei-ecs-cloud-sync-m29`。**main尚未合并M2.9，Cloudflare生产未发布本轮代码。**
 - 已在 PR #11 实际提交：原有FastAPI/SQLite后端的科目绑定格式校验，拒绝空白/跨科写入；`cloud-sync.js` 客户端与同一个设置页集成、服务工作线程离线缓存更新；本地优先、每科单独首次确认、CAS/409冲突暂停、云恢复前备份和同页刷新；自动SQLite备份脚本+systemd每日备份timer；静态部署 `.assetsignore` 排除私有 `server/` 目录；新增 Node/Python 测试。
