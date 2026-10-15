@@ -62,8 +62,16 @@ rollback() {
 }
 if ! nginx -t; then rollback; exit 1; fi
 if ! systemctl reload nginx; then rollback; exit 1; fi
-if ! curl --noproxy '*' --resolve 124.70.128.201:443:127.0.0.1 \
-  -fsS --max-time 8 https://124.70.128.201/health > /dev/null; then
+https_ready=false
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  if curl --noproxy '*' --resolve 124.70.128.201:443:127.0.0.1 \
+    -fsS --max-time 3 https://124.70.128.201/health > /dev/null 2>&1; then
+    https_ready=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$https_ready" != true ]]; then
   rollback
   echo 'HTTPS health validation failed; old Nginx site restored' >&2
   exit 1

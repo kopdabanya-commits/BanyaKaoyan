@@ -1,5 +1,5 @@
 name: Deploy Banya sync backend to authorized ECS
-# Retry only after correcting the new service executable permissions.
+# Retry HTTPS verification after Nginx finishes its graceful reload.
 
 on:
   push:
