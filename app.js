@@ -136,12 +136,20 @@ let modalFocus=null;
 function modal(content){modalFocus=document.activeElement;document.body.classList.add('modal-open');const box=document.getElementById('modal');box.classList.remove('hidden');box.innerHTML=`<div class="modal-card">${content}</div>`;box.querySelector('input,button,textarea')?.focus();}
 function closeModal(){document.getElementById('modal').classList.add('hidden');document.body.classList.remove('modal-open');modalFocus?.focus();}
 function taskModal(id,day){const t=findTask(id,day);if(!t)return;
- modal(`<div class="modal-head"><h2>任务记录与调整</h2><button class="close" data-action="close" aria-label="关闭弹窗">×</button></div><div class="quickflex"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · ${esc(t.type)} · ${t.minutes}分钟</span></div></div>
+ const checked=!!state.done[t.id];
+ modal(`<div class="modal-head"><div><div class="eyebrow">专项训练 · ${esc(t.type)}</div><h2>训练记录</h2></div><button class="close" data-action="close" aria-label="关闭训练记录">×</button></div>
+ <div class="quickflex task-overview"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · 预计${t.minutes}分钟 · ${checked?'已完成':'未完成'}</span></div></div>
+ <section class="study-guide" aria-label="训练方法"><span class="guide-label">这项练习怎么做</span><p>${esc(t.detail||'按自己的节奏独立完成，再核对答案并记录收获。')}</p></section>
  <form id="task-form" data-id="${esc(t.id)}" data-day="${esc(day)}">
- <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label><label class="form-line"><span>预计分钟</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label><label class="form-line"><span>${['新题型','阅读'].includes(t.type)?'错题数（0—5）':t.type==='完形'?'错题数（0—20）':'错题数（选填；没错填0）'}</span><input id="task-wrong" type="number" min="0" max="${['新题型','阅读'].includes(t.type)?5:20}" placeholder="${t.type==='新题型'?'五道题错几道？':'如 2'}" value="${esc(state.wrong[t.id]??'')}"></label>
- <label class="form-line"><span>复盘笔记（可选）</span><textarea id="task-note" placeholder="今天最需要记住的是什么？">${esc(state.notes[t.id]||'')}</textarea></label>
+ <div class="record-heading"><h3>做完后记录</h3><small>不必写很多，留下关键错因即可</small></div>
+ <label class="form-line"><span>${['新题型','阅读'].includes(t.type)?'错题数（0—5）':t.type==='完形'?'错题数（0—20）':'错题数（可选）'}</span><input id="task-wrong" inputmode="numeric" type="number" min="0" max="${['新题型','阅读'].includes(t.type)?5:20}" placeholder="${t.type==='新题型'?'5道题中错了几道？':'没错填0；未统计可留空'}" value="${esc(state.wrong[t.id]??'')}"></label>
+ <label class="form-line"><span>一句话复盘（可选）</span><textarea id="task-note" maxlength="20000" placeholder="例如：定位词找对了，但没看转折句。">${esc(state.notes[t.id]||'')}</textarea></label>
+ <details class="advanced-adjust"><summary>调整任务名称、预计时间或日期</summary><div class="advanced-fields">
+ <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label>
+ <label class="form-line"><span>预计用时（分钟）</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label>
  <label class="form-line"><span>调整到其他日期</span><input id="task-move" type="date" min="${data.meta.start}" max="${data.meta.end}" value="${day}" ${t.vocab?'disabled':''}></label>
- <div class="button-row"><button type="submit" class="cta">保存记录</button>${t.vocab?'':`<button type="button" class="cta secondary" data-action="move-buffer" data-id="${esc(t.id)}" data-day="${day}">移到机动日</button>`}</div></form>
+ </div></details>
+ <div class="button-row record-actions"><button type="submit" class="cta secondary">仅保存记录</button><button type="submit" class="cta" data-complete="true">${checked?'保存并保持完成':'保存并打卡完成'}</button></div></form>
  ${t.custom?'<div class="divider"></div><button class="cta danger" data-action="remove" data-id="'+esc(t.id)+'">删除自定义任务</button>':''}`);
 }
 function addModal(day){modal(`<div class="modal-head"><h2>添加自定义任务</h2><button class="close" data-action="close" aria-label="关闭弹窗">×</button></div><form id="add-form"><label class="form-line"><span>任务名称</span><input required maxlength="70" id="add-title" placeholder="例如：重写2017年小作文"></label><label class="form-line"><span>题型</span><select id="add-type">${['写作','新题型','完形','翻译','阅读','复盘','机动'].map(x=>`<option>${x}</option>`).join('')}</select></label><label class="form-line"><span>预估时长（分钟）</span><input type="number" id="add-minutes" min="5" max="90" value="30" required></label><label class="form-line"><span>日期</span><input type="date" id="add-date" min="${data.meta.start}" max="${data.meta.end}" value="${day}" required></label><div class="button-row"><button type="submit" class="cta">添加任务</button></div></form>`)}
@@ -198,16 +206,16 @@ document.addEventListener('click',e=>{
  if(action==='review-update'){reviewUpdate();return}
  if(action==='apply-update'){applyUpdate();return}
  if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已请求检查，关闭后重新打开可使用新版')).catch(()=>toast('暂时无法检查，稍后重试'));return}
- if(action==='toggle'){const t=findTask(btn.dataset.id,btn.dataset.day);if(!t)return;state.archive[t.id]={...t,date:btn.dataset.day};state.done[btn.dataset.id]=!state.done[btn.dataset.id];if(state.done[btn.dataset.id])delete state.skipped[btn.dataset.day];save();render();return}
- if(action==='day'||action==='cal-day'){selectedDate=btn.dataset.date;calendarMonth=selectedDate.substring(0,7);render();if(action==='cal-day')nav('today');return}
- if(action==='jump-today'){selectedDate=inRange(today)?today:data.meta.start;render();return}
+ if(action==='toggle'){const t=findTask(btn.dataset.id,btn.dataset.day);if(!t)return;const next=!state.done[t.id];state.archive[t.id]={...t,date:btn.dataset.day};state.done[t.id]=next;if(next)delete state.skipped[btn.dataset.day];if(!save()){render();return;}render(false,next?t.id:'');const p=dateProgress(btn.dataset.day);toast(next?(p.total&&p.done===p.total?'当日专项已完成，打卡已保存在本机':'已完成，打卡已保存在本机'):'已取消完成标记');return}
+ if(action==='day'||action==='cal-day'){selectedDate=btn.dataset.date;calendarMonth=selectedDate.substring(0,7);if(action==='cal-day')nav('today');else render(true);return}
+ if(action==='jump-today'){selectedDate=inRange(today)?today:data.meta.start;render(true);return}
  if(action==='toggle-skip'){const day=btn.dataset.date;if(!inRange(day))return;if(state.skipped[day])delete state.skipped[day];else state.skipped[day]=true;const ok=save();render();if(!ok)return;toast(state.skipped[day]?'已标记休息，不会自动补课':'已恢复');return}
  if(action==='detail'){taskModal(btn.dataset.id,btn.dataset.day);return}
  if(action==='add'){addModal(btn.dataset.day||selectedDate);return}
  if(action==='close'){closeModal();return}
  if(action==='move-buffer'){const s=nextBuffer(btn.dataset.day);if(!s){toast('没有可用的机动日，请手动选择日期');return}const t=findTask(btn.dataset.id,btn.dataset.day);if(!t||!canPlace(s,t.id,t.minutes))return;state.moved[btn.dataset.id]=s;if(!save()){render();return;}closeModal();render();toast('已改期到 '+niceDate(s));return}
  if(action==='remove'){if(!confirm('删除此自定义任务？笔记与错题会保留在备份中。'))return;delete state.archive[btn.dataset.id];state.added=state.added.filter(t=>t.id!==btn.dataset.id);delete state.moved[btn.dataset.id];delete state.done[btn.dataset.id];if(!save()){render();return;}closeModal();render();toast('已删除');return}
- if(action==='prev-month'||action==='next-month'){const [y,m]=calendarMonth.split('-').map(Number);const d=new Date(y,m-1+(action==='next-month'?1:-1),1,12);const next=localISO(d).substring(0,7);if(next>='2026-10'&&next<='2026-12')calendarMonth=next;render();return}
+ if(action==='prev-month'||action==='next-month'){const [y,m]=calendarMonth.split('-').map(Number);const d=new Date(y,m-1+(action==='next-month'?1:-1),1,12);const next=localISO(d).substring(0,7);if(next>='2026-10'&&next<='2026-12')calendarMonth=next;render(true);return}
  if(action==='check-updates'){checkUpdates();return}
  if(action==='copy-summary'){copySummary();return}
  if(action==='export'){exportState();return}
@@ -221,12 +229,16 @@ document.addEventListener('submit',e=>{
   const title=document.getElementById('task-title').value.trim(),minutes=Number(document.getElementById('task-minutes').value),move=document.getElementById('task-move').value;
   const w=document.getElementById('task-wrong').value;
   if(!title||!Number.isInteger(minutes)||minutes<1||minutes>90||!inRange(move)){toast('请检查任务名称、分钟和日期');return;}
-  if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>20)){toast('错题数应为0—20之间的整数');return;}
+  const wrongMax=['新题型','阅读'].includes(t.type)?5:20;
+  if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>wrongMax)){toast('请填写0—'+wrongMax+'之间的整数错题数');return;}
   if(!t.vocab&&(minutes!==t.minutes||move!==day)&&!canPlace(move,id,minutes))return;
   if(w==='')delete state.wrong[id];else state.wrong[id]=Number(w);
   state.notes[id]=document.getElementById('task-note').value.trim();
   if(!t.vocab){state.edits[id]={title,minutes};if(move!==day)state.moved[id]=move;}
-  if(!save()){render();return;}closeModal();render();toast('记录已保存');return;
+  const markComplete=e.submitter?.dataset?.complete==='true';
+  if(markComplete){state.archive[id]={...t,date:move};state.done[id]=true;delete state.skipped[move];}
+  if(!save()){render();return;}
+  closeModal();render(false,markComplete?id:'');toast(markComplete?'训练已打卡，错题与笔记同时保存':'复盘记录已保存');return;
  }
  if(e.target.id==='add-form'){
    e.preventDefault();const title=document.getElementById('add-title').value.trim(), date=document.getElementById('add-date').value;
