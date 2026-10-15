@@ -8,7 +8,7 @@ OS=ubuntu 24.04
 KERNEL=6.8.0-136-generic
 USER_ID=0
 DISK=/dev/vda1        40G   11G   27G  29% /
-MEMORY=Mem:            1775         394         871           2         662        1380
+MEMORY=Mem:            1775         401         863           2         663        1373
 PYTHON=Python 3.12.3
 LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
 SERVICE_nginx=active
@@ -19,6 +19,12 @@ SERVICE_banya-sync=inactive
 ENABLED_banya-sync=not-found
 BANYA_HEALTH=000
 CERTBOT=/snap/bin/certbot
+CERTBOT_TIMER=enabled
+CERTBOT_CERTIFICATES_BEGIN
+  Certificate Name: 124.70.128.201
+    Expiry Date: 2026-10-19 15:26:26+00:00 (VALID: 3 days)
+CERTBOT_CERTIFICATES_END
+OLD_DEPLOY_SIZE=3.4G	/opt/NJFU--main
 NGINX_VERSION=nginx version: nginx/1.24.0 (Ubuntu)
 NGINX_ENABLED_SITES=njfu-seat,
 NGINX_ROUTING_BEGIN
