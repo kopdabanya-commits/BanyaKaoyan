@@ -1,4 +1,4 @@
-# 研途英语二 · M2.1
+# 研途英语二 · M2.2
 
 私人考研英语二 PWA，沿用 `english-ii-plan` Cloudflare Worker Static Assets；不是 Pages。GitHub 仓库必须保持 Private。计划截止日 2026-12-18，考试日按用户指定为 2026-12-19。
 
@@ -34,4 +34,7 @@ node --test scripts/test.mjs scripts/sw-test.mjs
 
 测试为 Node VM 集成与逻辑模拟，不代替真实浏览器布局、Cloudflare登录或Android安装验收。实际执行范围和待办见 `docs/VALIDATION.md`，后续开发从 `AGENTS.md` 开始。
 
-当前 `wrangler.jsonc` 明确关闭 `workers_dev` 与 `preview_urls`，避免构建自动开放域名。Access All traffic 规则验证完成后，将workers_dev改为true并重新部署；预览没有必要则保持关闭。保留同名Worker，不创建新项目。
+用户已在2026-10-15明确选择无须绑卡的免费方案，并自行启用 workers.dev、确认本人能打开。`wrangler.jsonc` 现设置 workers_dev=true，避免以后推送覆盖后台设置而关闭网址；preview_urls=false 保持不变。GitHub仓库 Private，但网页本身公开访问；打卡、错题与笔记仅存在本机，不会自动上传。
+
+## M2.2 学习内容与手机体验优化
+为53项缺少操作步骤的任务补充限时做题、错题定位、作文修改与翻译润色指引；保持65天、98项任务原有日期、ID和分钟数。首页展示未完成任务剩余预计用时；错题填写提示按题型区分；计划变化超过6项时可折叠浏览；设置页增加Edge/荣耀桌面安装提醒并删除旧Access叙述。
