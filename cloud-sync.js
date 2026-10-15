@@ -105,6 +105,7 @@ async function restore(subject) {
  if(previous!==null)validLocal(subject,previous);
  downloadBackup(subject,previous);
  if(!root.confirm('已请求下载原'+NAMES[subject]+'本机备份。确认保存后，才可以用云端记录替换此科本机记录。继续吗？'))return;
+ if(localStorage.getItem(KEYS[subject])!==previous)throw Error('恢复期间本机记录发生变化，已取消覆盖');
  if(previous!==null)localStorage.setItem(KEYS[subject]+'_before_cloud_restore',previous);
  const raw=JSON.stringify(record);
  localStorage.setItem(KEYS[subject],raw);
@@ -129,6 +130,7 @@ async function syncOne(subject) {
  if(localHash!==m.hash)throw Error(NAMES[subject]+'本机与云端都发生更改，已停止同步。请先分别备份');
  const latest=remoteState(subject,cloud);
  const newRaw=JSON.stringify(latest);
+ if(localStorage.getItem(KEYS[subject])!==raw)throw Error(NAMES[subject]+'在云端读取期间产生新记录，已停止覆盖');
  localStorage.setItem(KEYS[subject]+'_before_cloud_restore',raw);
  localStorage.setItem(KEYS[subject],newRaw);
  saveMeta(subject,cloud.revision,await fingerprint(newRaw));
