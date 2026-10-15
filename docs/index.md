@@ -1,26 +1,26 @@
-# 研途英语二｜项目知识库总入口
+# 板牙考研｜项目知识库总入口
 
-更新：2026-10-15。后续对话、ChatGPT Work、Codex、GitHub 开发均从这里开始；**不要只依赖过去聊天的记忆**。
+最后整理：2026-10-15。**当前品牌是板牙考研，不是研途；一个PWA、两门独立科目；一个GitHub仓库和Cloudflare Worker。** 旧代码中的 `yantu_` 键用于兼容老数据，不是产品名称。
 
-## 先读哪些文件
-1. [PROJECT_STATUS.md](PROJECT_STATUS.md)：当前事实、最后确认状态、待验证事项，优先处理新旧信息冲突。
-2. [WORKFLOW.md](WORKFLOW.md)：ChatGPT／Codex／Work／GitHub／Cloudflare 的职责与实际工作步骤。
-3. [DECISIONS.md](DECISIONS.md)：用户已经做出的关键决定，尤其免费免绑卡和单词另计。
-4. [GPT_HANDOFF.md](GPT_HANDOFF.md)：可复制到 ChatGPT 项目指令或新对话的交接提示。
-5. [OPERATIONS.md](OPERATIONS.md)：手机使用、改计划、备份、故障排查和版本更新。
-6. [STUDY_BASELINE_2026-10-15.md](STUDY_BASELINE_2026-10-15.md)：考研英语二成绩与学习状况的历史快照。
-7. [VALIDATION.md](VALIDATION.md)：各阶段的历史测试记录；早期Access描述已过时，须结合最新状态阅读。
+## 新ChatGPT、Codex、Work必读
+1. [PROJECT_STATUS.md](PROJECT_STATUS.md)：版本、政治开发实际进度、GitHub/CI证据与未完成事项（先读最新事实）。
+2. [DECISIONS.md](DECISIONS.md)：用户确认的产品身份、单App双科目、备考原则、禁止计时器等长期决定。
+3. [SINGLE_APP_CONTRACT.md](SINGLE_APP_CONTRACT.md)：两门科目文件所有权、存储/备份隔离、离线/测试不可破坏事项。
+4. [ACTIVE_WORK.md](ACTIVE_WORK.md)：并行英语、政治、共享壳的开发占用；必须搭配GitHub实时PR/分支检查，不能当自动锁。
+5. [WORKFLOW.md](WORKFLOW.md)：直接通过GitHub开发、跨聊天协调、PR、CI、Cloudflare部署与手机验收。
+6. [GPT_HANDOFF.md](GPT_HANDOFF.md)：用户新建聊天以及给Codex/Work的最新交接规则。
+7. [OPERATIONS.md](OPERATIONS.md)：用户在同一个手机App中切换、备份、更新、恢复。
 
-## 哪些是真正的数据源
-- 当前学习计划：仓库根目录 `plan.json`；离线初始副本 `plan-data.js` 必须同步。
-- 真正做过的题、错题和笔记：用户的即时反馈或其主动提供的 App 数据导出。**仓库里的计划不是完成证明**。
-- 代码、部署配置、自动化：GitHub 当前 `main` 分支与仓库文件。
-- 网站实际是否上线：Cloudflare 最近部署检查或用户真机反馈；不能仅凭代码提交认定上线成功。
-- 历史讨论：辅助上下文。冲突时优先用户最新明确要求、真实进度和当前代码。
+## 科目资料和历史
+- [STUDY_BASELINE_2026-10-15.md](STUDY_BASELINE_2026-10-15.md)：英语二历史学习基线，真实进度以用户最新反馈为准。
+- [DAILY_QUESTION_FEEL_2026-10-15.md](DAILY_QUESTION_FEEL_2026-10-15.md)：英语二每天保持阅读/新题型/完形题感的研究与65天调整依据。
+- [MULTI_SUBJECT_ARCHITECTURE.md](MULTI_SUBJECT_ARCHITECTURE.md)：当前单App双科技术结构与历史变化。
+- [VALIDATION.md](VALIDATION.md)：历史自动验证与上线试验，不能覆盖当前真实状态。
 
-## 一句话工作原则
-**不让用户花更多时间维护软件；优先帮助用户通过2027考研英语二。** 代码由有工具能力的 AI 尽量直接处理，复杂配置、重复登录、绑卡和清数据不得作为默认方案。
+## 哪些才是权威数据
+- 当前计划：`plan.json`（英语）与 `politics-plan.json`（政治），对应 `plan-data.js` 和 `politics-plan-data.js` 离线镜像。
+- 真正做过的题和笔记：**用户手机实际记录/主动导出/亲口反馈**；GitHub里的未来计划绝不等于已完成。
+- App源代码、PR及分支：GitHub实时main。产品最新决定优先于旧聊天，遇到不同分支并行改共享代码必须先协调。
+- Cloudflare生产状态、Android Edge真机效果：需要真实部署与手机证据，不能由“CI通过”推断。
 
-8. [MULTI_SUBJECT_ARCHITECTURE.md](MULTI_SUBJECT_ARCHITECTURE.md)：UI升级、透明本机建议以及未来政治科目的独立计划/记录架构（暂未生成政治任务）。
-
-9. [DAILY_QUESTION_FEEL_2026-10-15.md](DAILY_QUESTION_FEEL_2026-10-15.md)：2026-10-15最新每日客观题不断档计划（研究依据、时间预算、保留卷、迁移与验收）。
+**目标：少打扰用户复习，用一个稳定的板牙考研App管理两个相互独立的科目。**
