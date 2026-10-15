@@ -11,7 +11,7 @@ test('M2.6: each of 65 days includes one real objective task; 2024-26 mock parts
  assert.equal(plan.meta.revision,6);assert.equal(plan.days.length,65);assert.equal(added.length,42);
  for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=60&&mins<=90,d.date);}
  for(const yr of [2024,2025,2026])for(const d of plan.days.filter(x=>x.items.some(t=>t.title.includes(yr+'年模考')))){
-  assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,d.items.some(t=>t.type==='综合'&&/阅读Text\s*4/.test(t.title))?0:d.items.some(t=>['阅读','完形','新题型'].includes(t.type))?0:1);
+  assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,target(original.days.find(x=>x.date===d.date))?0:1);
  }
  assert(added.every(t=>!/(2024|2025|2026)年/.test(t.title)));
 });
