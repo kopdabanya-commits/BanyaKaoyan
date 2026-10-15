@@ -7,14 +7,14 @@ SSH 登录：成功。
 OS=ubuntu 24.04
 KERNEL=6.8.0-136-generic
 USER_ID=0
-DISK=/dev/vda1        40G   11G   27G  29% /
-MEMORY=Mem:            1775         475         589           2         901        1300
+DISK=/dev/vda1        40G  7.4G   31G  20% /
+MEMORY=Mem:            1775         407         688           2         836        1367
 PYTHON=Python 3.12.3
 LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.1:8765,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
 SERVICE_nginx=active
 ENABLED_nginx=enabled
 SERVICE_njfu-seat=inactive
-ENABLED_njfu-seat=disabled
+ENABLED_njfu-seat=not-found
 SERVICE_banya-sync=active
 ENABLED_banya-sync=enabled
 BANYA_HEALTH=200
@@ -24,8 +24,7 @@ CERTBOT_CERTIFICATES_BEGIN
   Certificate Name: 124.70.128.201
     Expiry Date: 2026-10-19 15:26:26+00:00 (VALID: 3 days)
 CERTBOT_CERTIFICATES_END
-OLD_DEPLOY_SIZE=3.4G	/opt/NJFU--main
-NGINX_VERSION=nginx version: nginx/1.24.0 (Ubuntu)
+OLD_DEPLOY_SIZE=NGINX_VERSION=nginx version: nginx/1.24.0 (Ubuntu)
 NGINX_ENABLED_SITES=banya-sync,
 NGINX_ROUTING_BEGIN
     listen 80 default_server;
@@ -72,18 +71,6 @@ curl: (7) Failed to connect to 127.0.0.1 port 8765 after 0 ms: Couldn't connect 
 BANYA_INSTALL_LOG_TAIL_END
 BANYA_UNIT_RESULT=Result=success,NRestarts=0,ExecMainStatus=0
 BANYA_JOURNAL_BEGIN
-banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 34.
-Started banya-sync.service - Banya Kaoyan private study sync API.
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
-banya-sync.service: Failed with result 'exit-code'.
-Stopped banya-sync.service - Banya Kaoyan private study sync API.
-Started banya-sync.service - Banya Kaoyan private study sync API.
-INFO:     Started server process [5856]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
 Stopping banya-sync.service - Banya Kaoyan private study sync API...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
@@ -96,9 +83,21 @@ INFO:     Started server process [6344]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+Stopping banya-sync.service - Banya Kaoyan private study sync API...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6344]
+banya-sync.service: Deactivated successfully.
+Stopped banya-sync.service - Banya Kaoyan private study sync API.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+INFO:     Started server process [7180]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
 BANYA_JOURNAL_END
 BANYA_PATHS=drwxr-xr-x 3 root       root       4096 Oct 16 02:05 /opt/banya-sync
-drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:10 /var/lib/banya-sync
+drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:17 /var/lib/banya-sync
 NGINX_ERROR_BEGIN
 2026/10/16 00:32:42 [error] 2215667#2215667: *46537 connect() failed (111: Connection refused) while connecting to upstream, client: 205.210.31.224, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201:80/"
 2026/10/16 00:44:51 [error] 2215667#2215667: *46541 connect() failed (111: Connection refused) while connecting to upstream, client: 172.235.40.131, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
