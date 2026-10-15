@@ -32,3 +32,10 @@ body{overflow-wrap:anywhere}
 .modal-card{max-height:90dvh;overscroll-behavior:contain;padding-top:18px}.modal-head{align-items:flex-start;gap:12px}.modal-head h2{margin:8px 0 16px}
 .form-line input,.form-line select,.form-line textarea{font-size:16px}.input-line{flex-wrap:wrap}.input-line select{max-width:100%}.top-date{white-space:nowrap}.stats-two .val{overflow-wrap:anywhere}
 @media(max-width:370px){.page-title{font-size:26px}.top-date{font-size:11px;padding:9px}.task-card{padding:13px 9px}.hero{padding:20px 18px}.hero h2{font-size:13px}.hero .count{font-size:54px}.task-more{background:transparent}.shell{padding-inline:12px}}
+
+/* M2.2: mobile remaining-time and plan preview readability. */
+.progress-value{white-space:normal;text-align:right;line-height:1.4;max-width:55%}
+.section-row .sub{text-align:right;line-height:1.45}
+.update-details{margin:12px 0;border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--paper)}
+.update-details summary{cursor:pointer;font-size:14px;font-weight:650;color:var(--brand);padding:5px 0}
+@media(max-width:360px){.section-row{align-items:flex-start;gap:8px}.section-row .sub{max-width:55%}}

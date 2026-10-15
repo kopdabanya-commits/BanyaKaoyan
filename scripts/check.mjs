@@ -10,4 +10,10 @@ assert.ok(count>60);const fallback=fs.readFileSync(new URL('../plan-data.js',imp
 const context={window:{}};const vm=await import('node:vm');vm.runInNewContext(fallback,context);assert.deepEqual(JSON.parse(JSON.stringify(context.window.STUDY_PLAN)),p);
 for(const day of p.days)for(const vocab of [30,35,40]){const total=vocab+day.items.reduce((n,t)=>n+t.minutes,0);assert.ok(total>=90&&total<=120,day.date+' budget');}
 assert.ok(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').includes('./planner-core.js'));
-const deploy=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8'));assert.equal(deploy.name,'english-ii-plan');assert.equal(deploy.assets.directory,'.');assert.equal(typeof deploy.workers_dev,'boolean');assert.equal(deploy.preview_urls,false);if(deploy.workers_dev){const access=JSON.parse(fs.readFileSync(new URL('../.cloudflare/access-state.json',import.meta.url),'utf8'));assert.equal(access.host,'english-ii-plan.kopdabanya.workers.dev');assert.equal(access.protection,'owner-email');assert.ok(access.application_id);}
+const deploy=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8'));assert.equal(deploy.name,'english-ii-plan');assert.equal(deploy.assets.directory,'.');assert.equal(typeof deploy.workers_dev,'boolean');assert.equal(deploy.preview_urls,false);assert.equal(deploy.workers_dev,true,'用户已开启免费的公开 workers.dev 地址；下次部署不能把它关闭');
+
+// M2.2优化不得改变65天任务总数及唯一ID。
+assert.equal(p.meta.revision,4);
+assert.equal(p.meta.planVersion,'2026.10.15-m2.2');
+assert.equal(p.days.flatMap(d=>d.items).length,98);
+assert.ok(p.days.every(d=>d.items.every(t=>typeof t.detail==='string'&&t.detail.trim().length>=8)), '每项任务都要提供可执行说明');
