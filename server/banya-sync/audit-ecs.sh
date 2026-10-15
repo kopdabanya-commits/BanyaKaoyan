@@ -15,6 +15,9 @@ done
 printf 'BANYA_HEALTH='
 curl -sS --max-time 3 -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/health 2>/dev/null || true
 printf 'CERTBOT='; command -v certbot || true
+printf 'CERTBOT_TIMER='; systemctl is-enabled snap.certbot.renew.timer 2>/dev/null || systemctl is-enabled certbot.timer 2>/dev/null || true
+printf 'CERTBOT_CERTIFICATES_BEGIN\n'; certbot certificates 2>/dev/null | grep -E 'Certificate Name:|Expiry Date:|Domains:' || true; printf 'CERTBOT_CERTIFICATES_END\n'
+printf 'OLD_DEPLOY_SIZE='; du -sh /opt/NJFU--main 2>/dev/null || true
 printf 'NGINX_VERSION='; nginx -v 2>&1 || true
 printf 'NGINX_ENABLED_SITES='; find /etc/nginx/sites-enabled -maxdepth 1 -mindepth 1 -printf '%f,' 2>/dev/null; echo
 printf 'NGINX_ROUTING_BEGIN\n'

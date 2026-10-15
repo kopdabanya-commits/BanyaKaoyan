@@ -1,5 +1,5 @@
 name: ECS authorized read-only audit
-# Recheck the configured repository Secret without exposing its value.
+# Read-only follow-up includes certificate renewal and retired service size.
 
 on:
   push:
