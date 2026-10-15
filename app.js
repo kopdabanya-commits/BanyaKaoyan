@@ -54,7 +54,7 @@ function render(enter=false,justDone=''){
  const subjectBar=view==='settings'?'':renderSubjects();
  app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}</div>`;
  if(storageMessage)app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
- if(pendingPlan)app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
+ if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
 function renderSubjects(){
  return `<section class="subject-rail" aria-label="复习科目">
@@ -77,7 +77,7 @@ function renderWeekChart(week,compact=false){
  const labels=['日','一','二','三','四','五','六'];
  return `<div class="weekly-chart ${compact?'compact':''}" aria-label="最近七天专项任务完成情况">
  ${week.days.map(d=>`<div class="week-col" title="${d.date}：${d.done}/${d.total}项${d.skipped?'，已休息':''}">
- <div class="week-bar-track"><span class="week-bar-fill ${d.skipped?'is-rest':''}" style="height:${d.skipped?15:Math.max(5,Math.round(d.fraction*100))}%"></span></div>
+ <div class="week-bar-track"><span class="week-bar-fill ${d.skipped?'is-rest':''}" style="height:${!d.planned?0:d.skipped?15:Math.round(d.fraction*100)}%"></span></div>
  <small>${labels[d.day]}</small></div>`).join('')}</div>`;
 }
 function remainingDays(){return Math.max(0, Math.round((dateFrom(data.meta.exam)-dateFrom(today))/(1000*60*60*24)))}
