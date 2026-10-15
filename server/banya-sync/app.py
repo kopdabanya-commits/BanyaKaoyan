@@ -6,7 +6,7 @@ import hmac
 import json
 import os
 import sqlite3
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,7 +35,7 @@ def open_db(db_path: Path) -> sqlite3.Connection:
 
 def initialize(db_path: Path) -> None:
     db_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    with open_db(db_path) as con:
+    with closing(open_db(db_path)) as con:
         con.execute("""CREATE TABLE IF NOT EXISTS snapshots (
             subject TEXT PRIMARY KEY CHECK(subject IN ('english','politics')),
             revision INTEGER NOT NULL CHECK(revision>=1),
@@ -104,7 +104,7 @@ def create_app(*, db_path: str | Path | None = None,
     def read_snapshot(subject: str, authorization: str | None = Header(default=None)):
         authorize(authorization)
         check_subject(subject)
-        with open_db(db) as con:
+        with closing(open_db(db)) as con:
             row = con.execute("SELECT revision,state_json,updated_at FROM snapshots WHERE subject=?",
                               (subject,)).fetchone()
         if row is None:
@@ -145,7 +145,7 @@ def create_app(*, db_path: str | Path | None = None,
         if len(encoded.encode("utf-8")) > MAX_BODY_BYTES:
             raise HTTPException(status_code=413, detail="Snapshot too large")
         now = utc_now()
-        with open_db(db) as con:
+        with closing(open_db(db)) as con:
             con.execute("BEGIN IMMEDIATE")
             try:
                 prev = con.execute("SELECT revision,state_json,updated_at FROM snapshots WHERE subject=?",
@@ -177,4 +177,4 @@ def create_app(*, db_path: str | Path | None = None,
     return app
 
 
-app = create_app()
+# Uvicorn uses --factory app:create_app, allowing a fail-closed env check at startup.
