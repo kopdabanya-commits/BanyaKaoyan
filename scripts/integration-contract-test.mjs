@@ -64,5 +64,7 @@ test('branding changes only UI; old backup format stays distinct and storage iso
 test('deployment never publishes backend source or secrets as static assets',()=>{
  const ignore=txt('.assetsignore'),headers=txt('_headers');
  assert(ignore.split(String.fromCharCode(10)).map(x=>x.trim()).includes('server/'),'never expose ECS backend through public Worker static assets');
- assert(headers.includes("connect-src 'self'"),'do not broadly permit arbitrary HTTPS sync endpoints before production host verification');
+ assert(headers.includes("connect-src 'self' https://124.70.128.201;"),'CSP must allow exactly the verified ECS HTTPS origin');
+ assert(!headers.includes('https:;')&&!headers.includes('https://*'),'never allow wildcard API destinations');
+ assert(txt('cloud-sync.js').includes("const API_ORIGIN = 'https://124.70.128.201'"),'client must pin the same origin');
 });
