@@ -1,7 +1,7 @@
 ## 技术线最新记录｜2026-10-16 M2.9 华为云云同步（草稿PR #11）
 - 已实时核对 `main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`；开放PR只有 [#11](https://github.com/kopdabanya-commits/English-II-Plan/pull/11)，分支 `feat/huawei-ecs-cloud-sync-m29`。**main尚未合并M2.9，Cloudflare生产未发布本轮代码。**
 - 已在 PR #11 实际提交：原有FastAPI/SQLite后端的科目绑定格式校验，拒绝空白/跨科写入；`cloud-sync.js` 客户端与同一个设置页集成、服务工作线程离线缓存更新；本地优先、每科单独首次确认、CAS/409冲突暂停、云恢复前备份和同页刷新；自动SQLite备份脚本+systemd每日备份timer；静态部署 `.assetsignore` 排除私有 `server/` 目录；新增 Node/Python 测试。
-- 2026-10-16 CI证据：PR中间提交 `f3342295` 对应 [Validate planner 38777800459](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38777800459) 成功（Node双科/云同步测试、Python后端与备份测试、shell语法）。**后续文档/安全断言提交仍需核对其最新commit的Actions成功才算最终CI通过。**
+- 2026-10-16 CI证据：PR中间提交 `f3342295` 对应 [Validate planner 38777800459](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38777800459) 成功（Node双科/云同步测试、Python后端与备份测试、shell语法）。截至开发分支提交 `f45276f0583f6503a1af55b2a8629de0cf4ec6cb`，最新 [Validate planner 38778476336](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38778476336) 已复核为 **completed/success**，包含新增静态文件防泄漏回归测试。此后纯状态文档更新仍需按新head检查，生产部署与手机验收仍未发生。
 - 只动共享技术代码与部署文档；未修改英语 `plan.json` / 政治 `politics-plan.json`，未修改任何旧localStorage键、PWA ID、原 Worker 名称或现有网址。当前同步功能默认关闭、未经用户首次授权不会上传或拉取记录。
 - 重大上线闸门：本站 `_headers` 的 CSP `connect-src 'self'` 尚未放行真实ECS HTTPS API 域名；不能随意扩展到任意HTTPS源。需先取得真实服务器连接/公网域名及受信任TLS证书，然后限定具体API来源。云端首次写入和跨设备实际冲突回归必须在手机实测。
 - 当前聊天工具已授权GitHub，但没有华为云控制台/CloudShell/SSH实际远程操作能力，未登录ECS、未配置数据库实例、Nginx或HTTPS，也未做 Cloudflare生产部署；服务端备份仅为**安装准备**，未启动。不得把代码/CI通过写成ECS部署成功。私有ECS盘内30份备份不等于异地容灾；后续仍需独立备份介质或用户导出文件。
