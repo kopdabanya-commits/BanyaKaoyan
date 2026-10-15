@@ -8,7 +8,7 @@ OS=ubuntu 24.04
 KERNEL=6.8.0-136-generic
 USER_ID=0
 DISK=/dev/vda1        40G   11G   27G  29% /
-MEMORY=Mem:            1775         442         630           2         892        1332
+MEMORY=Mem:            1775         427         645           2         892        1347
 PYTHON=Python 3.12.3
 LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
 SERVICE_nginx=active
@@ -69,4 +69,33 @@ curl: (7) Failed to connect to 127.0.0.1 port 8765 after 0 ms: Couldn't connect 
 同步密钥由部署方提供；仅保存哈希，安装日志未输出密钥。
 请勿向公网开放8765端口。旧项目完全不需要启动。
 BANYA_INSTALL_LOG_TAIL_END
+BANYA_UNIT_RESULT=Result=exit-code,NRestarts=19,ExecMainStatus=203
+BANYA_JOURNAL_BEGIN
+Started banya-sync.service - Banya Kaoyan private study sync API.
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+banya-sync.service: Scheduled restart job, restart counter is at 16.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+banya-sync.service: Scheduled restart job, restart counter is at 17.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+banya-sync.service: Scheduled restart job, restart counter is at 18.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+banya-sync.service: Scheduled restart job, restart counter is at 19.
+Started banya-sync.service - Banya Kaoyan private study sync API.
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+BANYA_JOURNAL_END
+BANYA_PATHS=drwxr-xr-x 3 root       root       4096 Oct 16 02:05 /opt/banya-sync
+drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:05 /var/lib/banya-sync
 ```
