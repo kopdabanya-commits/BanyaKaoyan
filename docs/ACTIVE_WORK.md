@@ -7,8 +7,8 @@
 |---|---|---|
 | 英语二 | M2.6计划revision6，65天141项；PR #6已合并，CI通过 | 继续收集用户实际打卡和错题反馈；只有必要时改日程 |
 | 政治 | M2.7代码已进入main；PR #7已合并，关联CI通过；政治v1 64天192项 | 待验Cloudflare生产/荣耀Edge真机；必要时独立迭代政治计划更新机制 |
-| 共享App品牌/工作流 | 分支 `feat/banya-kaoyan-brand-workflow-m28`，负责「板牙考研」命名、统一导航与文档护栏 | 测试→PR→合并；如已合并，按最新main及PR检查，不依据本行推断仍占用 |
-| 生产部署 | 目前没有得到M2.7或M2.8对应Cloudflare版本及Edge手机实测成功证据 | 按 `docs/OPERATIONS.md` 获取证据后更新状态，未验证不得写已上线 |
+| 共享App品牌/工作流 | 「板牙考研」M2.8的[PR #8](https://github.com/kopdabanya-commits/English-II-Plan/pull/8) 已合并main（`80c3bd25873c652937429ee63fc28e881ba6cd3e`），CI绿 | 当前没有由这张表承诺的持续编辑任务；新的共享修改须重新查实时PR并另开分支 |
+| 生产部署 | 未获得Cloudflare实际M2.7/M2.8版本或Edge真机通过证据；一次公开网页检测未能访问此Worker（不能以此推断站点一定宕机） | 按 `docs/OPERATIONS.md` 获取证据后更新状态，未验证不得写已上线 |
 
 ## 并行开发占用约定
 - 需要同时编辑 `app.js`、`index.html`、`sw.js`、`styles.css`、manifest或共享测试时，先查看是否有其他活动PR正在改这些文件。若有，**暂停共享文件改动或在其分支经协调统一集成**，绝不单靠不同AI聊天“同时开发”赌合并顺序。
