@@ -18,7 +18,7 @@ jobs:
       - run: node --check sw.js
       - run: node scripts/check.mjs
 
-      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs
+      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
       - run: node --check cloud-sync.js
       - run: bash -n server/banya-sync/install-ecs.sh
       - uses: actions/setup-python@v5
