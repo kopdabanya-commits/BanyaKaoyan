@@ -8,16 +8,16 @@ OS=ubuntu 24.04
 KERNEL=6.8.0-136-generic
 USER_ID=0
 DISK=/dev/vda1        40G   11G   27G  29% /
-MEMORY=Mem:            1775         427         645           2         892        1347
+MEMORY=Mem:            1775         469         596           2         899        1305
 PYTHON=Python 3.12.3
-LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
+LISTEN=0.0.0.0:22,0.0.0.0:443,0.0.0.0:631,0.0.0.0:80,127.0.0.1:29338,127.0.0.1:29339,127.0.0.1:8765,127.0.0.53%lo:53,127.0.0.54:53,[::]:22,[::]:443,[::]:631,[::]:80
 SERVICE_nginx=active
 ENABLED_nginx=enabled
 SERVICE_njfu-seat=inactive
 ENABLED_njfu-seat=disabled
-SERVICE_banya-sync=activating
+SERVICE_banya-sync=active
 ENABLED_banya-sync=enabled
-BANYA_HEALTH=000
+BANYA_HEALTH=200
 CERTBOT=/snap/bin/certbot
 CERTBOT_TIMER=enabled
 CERTBOT_CERTIFICATES_BEGIN
@@ -46,7 +46,7 @@ X509v3 Subject Alternative Name: critical
     IP Address:124.70.128.201
 TLS_LEAF_END
 BANYA_CONFIG_EXISTS=yes
-BANYA_STAGE_FILES=app.py,install-ecs.sh,backup_db.py,requirements.txt,deploy-ecs.sh,nginx-ip.conf,install-result.log,
+BANYA_STAGE_FILES=app.py,install-ecs.sh,backup_db.py,requirements.txt,deploy-ecs.sh,nginx-ip.conf,banya-sync-env.before-retry,install-result.log,
 BANYA_INSTALL_LOG_TAIL_BEGIN
   Using cached https://pypi.tuna.tsinghua.edu.cn/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl (37 kB)
 Collecting annotated-types>=0.6.0 (from pydantic>=2.7.0->fastapi==0.128.2->-r /opt/banya-sync/requirements.txt (line 1))
@@ -69,33 +69,55 @@ curl: (7) Failed to connect to 127.0.0.1 port 8765 after 0 ms: Couldn't connect 
 同步密钥由部署方提供；仅保存哈希，安装日志未输出密钥。
 请勿向公网开放8765端口。旧项目完全不需要启动。
 BANYA_INSTALL_LOG_TAIL_END
-BANYA_UNIT_RESULT=Result=exit-code,NRestarts=19,ExecMainStatus=203
+BANYA_UNIT_RESULT=Result=success,NRestarts=34,ExecMainStatus=0
 BANYA_JOURNAL_BEGIN
+banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
+banya-sync.service: Main process exited, code=exited, status=203/EXEC
+banya-sync.service: Failed with result 'exit-code'.
+banya-sync.service: Scheduled restart job, restart counter is at 32.
 Started banya-sync.service - Banya Kaoyan private study sync API.
 banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
 banya-sync.service: Main process exited, code=exited, status=203/EXEC
 banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 16.
+banya-sync.service: Scheduled restart job, restart counter is at 33.
 Started banya-sync.service - Banya Kaoyan private study sync API.
 banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
 banya-sync.service: Main process exited, code=exited, status=203/EXEC
 banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 17.
+banya-sync.service: Scheduled restart job, restart counter is at 34.
 Started banya-sync.service - Banya Kaoyan private study sync API.
 banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
 banya-sync.service: Main process exited, code=exited, status=203/EXEC
 banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 18.
+Stopped banya-sync.service - Banya Kaoyan private study sync API.
 Started banya-sync.service - Banya Kaoyan private study sync API.
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
-banya-sync.service: Failed with result 'exit-code'.
-banya-sync.service: Scheduled restart job, restart counter is at 19.
-Started banya-sync.service - Banya Kaoyan private study sync API.
-banya-sync.service: Failed to execute /opt/banya-sync/.venv/bin/uvicorn: Permission denied
-banya-sync.service: Main process exited, code=exited, status=203/EXEC
-banya-sync.service: Failed with result 'exit-code'.
+INFO:     Started server process [5856]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
 BANYA_JOURNAL_END
 BANYA_PATHS=drwxr-xr-x 3 root       root       4096 Oct 16 02:05 /opt/banya-sync
-drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:05 /var/lib/banya-sync
+drwx------ 2 banya-sync banya-sync 4096 Oct 16 02:08 /var/lib/banya-sync
+NGINX_ERROR_BEGIN
+2026/10/16 00:25:26 [error] 2215667#2215667: *46531 connect() failed (111: Connection refused) while connecting to upstream, client: 147.185.132.97, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201:443"
+2026/10/16 00:32:42 [error] 2215667#2215667: *46537 connect() failed (111: Connection refused) while connecting to upstream, client: 205.210.31.224, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201:80/"
+2026/10/16 00:44:51 [error] 2215667#2215667: *46541 connect() failed (111: Connection refused) while connecting to upstream, client: 172.235.40.131, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 00:46:39 [error] 2215667#2215667: *46544 connect() failed (111: Connection refused) while connecting to upstream, client: 172.236.228.224, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201/"
+2026/10/16 00:51:23 [error] 2215667#2215667: *46546 connect() failed (111: Connection refused) while connecting to upstream, client: 45.79.149.50, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 00:56:35 [error] 2215667#2215667: *46548 connect() failed (111: Connection refused) while connecting to upstream, client: 45.74.28.213, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201:443"
+2026/10/16 01:00:24 [error] 2215667#2215667: *46551 connect() failed (111: Connection refused) while connecting to upstream, client: 101.47.12.227, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 01:00:25 [error] 2215667#2215667: *46553 connect() failed (111: Connection refused) while connecting to upstream, client: 101.47.12.227, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 01:21:18 [error] 1296#1296: *2 connect() failed (111: Connection refused) while connecting to upstream, client: 170.231.236.98, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 01:21:19 [error] 1296#1296: *2 connect() failed (111: Connection refused) while connecting to upstream, client: 170.231.236.98, server: 124.70.128.201, request: "GET /favicon.ico HTTP/1.1", upstream: "http://127.0.0.1:8000/favicon.ico", host: "124.70.128.201"
+2026/10/16 01:21:31 [error] 1295#1295: *5 connect() failed (111: Connection refused) while connecting to upstream, client: 170.231.237.214, server: 124.70.128.201, request: "GET /robots.txt HTTP/1.1", upstream: "http://127.0.0.1:8000/robots.txt", host: "124.70.128.201"
+2026/10/16 01:21:36 [error] 1295#1295: *7 connect() failed (111: Connection refused) while connecting to upstream, client: 185.191.236.38, server: 124.70.128.201, request: "GET /.well-known/security.txt HTTP/1.1", upstream: "http://127.0.0.1:8000/.well-known/security.txt", host: "124.70.128.201"
+2026/10/16 01:21:39 [error] 1295#1295: *9 connect() failed (111: Connection refused) while connecting to upstream, client: 170.231.236.98, server: 124.70.128.201, request: "GET /security.txt HTTP/1.1", upstream: "http://127.0.0.1:8000/security.txt", host: "124.70.128.201"
+2026/10/16 01:25:16 [error] 1295#1295: *11 connect() failed (111: Connection refused) while connecting to upstream, client: 45.148.10.171, server: 124.70.128.201, request: "GET /.env HTTP/1.1", upstream: "http://127.0.0.1:8000/.env", host: "124.70.128.201"
+2026/10/16 01:44:09 [error] 1295#1295: *16 connect() failed (111: Connection refused) while connecting to upstream, client: 20.118.27.175, server: 124.70.128.201, request: "POST / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 01:45:32 [error] 1295#1295: *18 connect() failed (111: Connection refused) while connecting to upstream, client: 45.148.10.171, server: 124.70.128.201, request: "GET /.env HTTP/1.1", upstream: "http://127.0.0.1:8000/.env", host: "124.70.128.201"
+2026/10/16 01:54:14 [error] 1295#1295: *27 connect() failed (111: Connection refused) while connecting to upstream, client: 34.140.3.155, server: 124.70.128.201, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201", referrer: "http://124.70.128.201:80/"
+2026/10/16 01:55:06 [error] 1295#1295: *33 connect() failed (111: Connection refused) while connecting to upstream, client: 135.119.79.34, server: 124.70.128.201, request: "HEAD / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 01:56:01 [error] 1295#1295: *38 connect() failed (111: Connection refused) while connecting to upstream, client: 74.235.126.88, server: 124.70.128.201, request: "HEAD / HTTP/1.1", upstream: "http://127.0.0.1:8000/", host: "124.70.128.201"
+2026/10/16 02:08:23 [error] 1296#1296: *46 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: 124.70.128.201, request: "GET /health HTTP/1.1", upstream: "http://127.0.0.1:8000/health", host: "124.70.128.201"
+NGINX_ERROR_END
 ```
