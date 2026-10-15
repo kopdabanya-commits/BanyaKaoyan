@@ -6,7 +6,7 @@ umask 077
 die(){ printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [[ $(id -u) -eq 0 ]] || die "请使用 sudo bash install-ecs.sh"
 SRC="$(cd "$(dirname "$0")" && pwd)"
-[[ -f "$SRC/app.py" && -f "$SRC/requirements.txt" ]] || die "请下载完整的 server/banya-sync 目录"
+[[ -f "$SRC/app.py" && -f "$SRC/backup_db.py" && -f "$SRC/requirements.txt" ]] || die "请下载完整的 server/banya-sync 目录"
 command -v systemctl >/dev/null || die "要求systemd"
 [[ ! -e /etc/banya-sync.env && ! -e /etc/systemd/system/banya-sync.service ]] || die "检测到现有banya-sync配置，为保护数据拒绝覆盖"
 python3 -c 'import sys;sys.exit(0 if sys.version_info>=(3,10) else 1)' || die "要求Python3.10+"
@@ -26,6 +26,7 @@ fi
 install -d -o root -g root -m 0755 /opt/banya-sync
 install -d -o banya-sync -g banya-sync -m 0700 /var/lib/banya-sync
 install -m 0644 "$SRC/app.py" /opt/banya-sync/app.py
+install -m 0644 "$SRC/backup_db.py" /opt/banya-sync/backup_db.py
 install -m 0644 "$SRC/requirements.txt" /opt/banya-sync/requirements.txt
 python3 -m venv /opt/banya-sync/.venv
 /opt/banya-sync/.venv/bin/python -m pip install --disable-pip-version-check -r /opt/banya-sync/requirements.txt
@@ -60,8 +61,37 @@ ReadWritePaths=/var/lib/banya-sync
 WantedBy=multi-user.target
 UNIT
 chmod 0644 /etc/systemd/system/banya-sync.service
+cat > /etc/systemd/system/banya-sync-backup.service <<'UNIT'
+[Unit]
+Description=Banya Kaoyan private SQLite daily backup
+After=banya-sync.service
+[Service]
+Type=oneshot
+User=banya-sync
+Group=banya-sync
+EnvironmentFile=/etc/banya-sync.env
+ExecStart=/opt/banya-sync/.venv/bin/python /opt/banya-sync/backup_db.py
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/banya-sync
+[Install]
+WantedBy=multi-user.target
+UNIT
+cat > /etc/systemd/system/banya-sync-backup.timer <<'UNIT'
+[Unit]
+Description=Daily private Banya Kaoyan SQLite backup
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=banya-sync-backup.service
+[Install]
+WantedBy=timers.target
+UNIT
+chmod 0644 /etc/systemd/system/banya-sync-backup.service /etc/systemd/system/banya-sync-backup.timer
 systemctl daemon-reload
 systemctl enable --now banya-sync.service
+systemctl enable --now banya-sync-backup.timer
 sleep 2
 echo "本机健康检查："
 if curl -fsS --max-time 6 http://127.0.0.1:8765/health; then
