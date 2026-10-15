@@ -1,3 +1,9 @@
+
+## 2026-10-16 技术线继续负责共享M2.9 PR #11
+- 分支 `feat/huawei-ecs-cloud-sync-m29` 仍为草稿PR，当前占用 `cloud-sync.js`、`_headers`、`.assetsignore`、`sw.js`、`app.js`、共享测试及GitHub部署工作流；英语/政治两条计划线勿盲改共享文件。具体当前SHA和CI每次新聊天须查PR实时元数据。
+- 当前ECS已完成授权SSH通道、已安装后端、隔离API通过、机内SQLite备份已真实校验；证书正常renew检查时尚未到期。Cloudflare已有非激活Worker版本，**不能当作发布生产**。
+- 云同步仍缺少用户手机各科分别导出原始备份、GitHub长期 `BANYA_SYNC_TOKEN` Secret（仅用户自行填写，禁止聊天粘贴）、真实Cloudflare Builds失败详情（当前API仅403）和Edge真机验收；PR仍未合并。
+- 未来发布已准备原Worker的main分支自动化门禁，不新增第二站或改既有存储标识。
 # 板牙考研｜并行开发登记表
 
 本页为共享仓库的人工协作登记簿，**不是自动锁、自动任务队列，也不反映未提交到GitHub的聊天**。每个独立ChatGPT/Codex/Work开发对话开始前读最新main及开放PR，并在领取会修改共享代码的任务时登记，完成后更新。
