@@ -54,7 +54,8 @@ function render(enter=false,justDone=''){
  const app=document.getElementById('app');
  const content=subject==='politics'?renderPolitics():view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
  const subjectBar=renderSubjects();
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}</div>`;
+ const cloudPanel=view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}${cloudPanel}</div>`;
  if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
