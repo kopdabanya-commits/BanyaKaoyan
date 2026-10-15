@@ -4,6 +4,7 @@
 const KEYS = {english:'yantu_english_2026_m1',politics:'yantu_politics_2026_v1'};
 const NAMES = {english:'英语二',politics:'政治'};
 const CONFIG = 'banya_cloud_sync_config_v1';
+const API_ORIGIN = 'https://124.70.128.201';
 const META = 'banya_cloud_sync_meta_v1_';
 const SUBJECTS = ['english','politics'];
 let config = null, busy = false, message = '尚未连接云服务器；本机记录继续正常保存。';
@@ -15,8 +16,8 @@ function escaped(value) {
 }
 function endpoint(value) {
  const url = new URL(String(value).trim());
- if(url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
-    url.pathname !== '/' || !url.hostname)throw Error('仅接受HTTPS服务地址，不要填写路径或参数');
+ if(url.origin !== API_ORIGIN || url.username || url.password || url.search || url.hash ||
+    url.pathname !== '/')throw Error('为保护同步密钥，只允许经过验证的华为云 HTTPS 地址');
  return url.origin;
 }
 function validLocal(subject, raw) {
@@ -46,7 +47,7 @@ function panel() {
  return '<section class="setting-section" aria-label="云端备份与同步">'+
  '<h2>云端同步 · 两科独立</h2>'+
  '<p class="setting-note">本机优先，断网照常打卡。首次上传或恢复必须手动确认；冲突暂停自动写入，绝不以空白云数据覆盖旧记录。</p>'+
- (!connected?'<form id="banya-cloud-config"><label class="input-line">HTTPS同步地址<input id="banya-cloud-url" type="url" required placeholder="https://你的同步服务地址"></label>'+
+ (!connected?'<form id="banya-cloud-config"><label class="input-line">HTTPS同步地址<input id="banya-cloud-url" type="url" required value="https://124.70.128.201" readonly></label>'+
  '<label class="input-line">私有同步密钥<input id="banya-cloud-token" type="password" required minlength="32" autocomplete="off"></label>'+
  '<button type="submit" class="cta small">验证并启用</button></form>':
  '<p class="setting-note">已配置 '+escaped(config.endpoint)+'。密钥只保存在这台设备的浏览器本地存储中，不提交GitHub。</p>'+
@@ -58,6 +59,7 @@ function panel() {
 }
 async function api(subject,method,body) {
  if(!config)throw Error('未配置云端');
+ if(endpoint(config.endpoint)!==API_ORIGIN)throw Error('云端地址与验证过的HTTPS服务不一致');
  const res=await fetch(config.endpoint+'/v1/snapshot/'+subject,{
   method:method,mode:'cors',cache:'no-store',headers:{
    Authorization:'Bearer '+config.token,...(method==='PUT'?{'Content-Type':'application/json'}:{})
