@@ -19,7 +19,7 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
  context.window=context;
  vm.createContext(context);vm.runInContext(source.replace(/\n\}\)\(\);\s*$/,'\nglobalThis.api={get data(){return data},get state(){return state},get pending(){return pendingPlan},get selected(){return selectedDate},get today(){return today},allTasks,dateProgress,checkUpdates,applyUpdate,reviewUpdate,render,nav,exportState,summaryText,refreshToday};\n})();'),context);
  const api=context.api;
- async function event(type,target){for(const f of handlers[type]||[])await f({target,preventDefault(){}});}
+ async function event(type,target,extra={}){for(const f of handlers[type]||[])await f({target,preventDefault(){},...extra});}
  async function click(action,opts={}){const b={dataset:{action,...opts}};await event('click',{closest:q=>q==='.nav-tab'?null:b});}
  const input=(id,value)=>{el(id).value=String(value)};
  return {api,context,storage,el,input,event,click,winHandlers,blobs,async settle(){await new Promise(setImmediate)},setFresh:p=>currentFresh=p,setFail:v=>fetchFail=v,setNow:v=>now=v,quota:()=>quota=true};
@@ -127,4 +127,45 @@ test('Oct 15 visible plan contains 65 minutes writing and new type, and hides se
  assert.equal(restarted.api.dateProgress('2026-10-15').done,3);
  const summary=h.api.summaryText();assert(summary.includes('2014年新题型'));
  assert(!summary.includes('背单词 35 分钟[未完成]'));
+});
+
+test('M2.4 student interface gives focused guidance, accessible nav, and truthful progress language',async()=>{
+ const h=harness({fail:true});await h.settle();
+ const home=h.el('app').innerHTML;
+ assert(home.includes('今天的专项训练'));
+ assert(home.includes('下一步：'));
+ assert(home.includes('建议先做'));
+ assert(!home.includes('class="task-title">背单词'));
+ await h.click('detail',{id:'2026-10-15-1',day:'2026-10-15'});
+ const sheet=h.el('modal').innerHTML;
+ assert(sheet.includes('这项练习怎么做'));
+ assert(sheet.includes('一句话复盘'));
+ assert(sheet.includes('advanced-adjust'));
+ assert(sheet.includes('保存并打卡完成'));
+ h.api.nav('calendar');assert(h.el('app').innerHTML.includes('每天学什么，一眼就知道'));
+ h.api.nav('stats');assert(h.el('app').innerHTML.includes('不是手机自动计时'));
+ h.api.nav('settings');assert(h.el('app').innerHTML.includes('最常用的三个操作'));
+ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+ assert.equal((html.match(/class="nav-icon" viewBox/g)||[]).length,4);
+ assert(css.includes('prefers-reduced-motion:reduce'));
+ assert(css.includes('.modal:not(.hidden) .modal-card'));
+});
+test('M2.4 recording can save and complete together, persists across reloads, and enforces question bounds',async()=>{
+ const h=harness({fail:true});await h.settle();
+ const task=h.api.allTasks('2026-10-15').find(t=>t.type==='新题型');
+ assert(task);
+ for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':'2026-10-15','task-wrong':'6','task-note':'初稿'}))h.input(id,value);
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day:'2026-10-15'}},{submitter:{dataset:{complete:'true'}}});
+ assert.equal(h.api.state.done[task.id],undefined);
+ assert.equal(h.api.state.wrong[task.id],undefined);
+ h.input('task-wrong','2');h.input('task-note','定位词看到了，但没核对段落主旨');
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day:'2026-10-15'}},{submitter:{dataset:{complete:'true'}}});
+ assert.equal(h.api.state.done[task.id],true);
+ assert.equal(h.api.state.wrong[task.id],2);
+ assert.equal(h.api.state.notes[task.id],'定位词看到了，但没核对段落主旨');
+ const again=harness({storage:h.storage,fail:true});await again.settle();
+ assert.equal(again.api.state.done[task.id],true);
+ assert.equal(again.api.state.wrong[task.id],2);
+ assert(again.el('app').innerHTML.includes('1/3项'));
 });
