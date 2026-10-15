@@ -35,7 +35,7 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
  vm.runInNewContext(code,context);
  return {win,store,calls,reloads,cloud:()=>cloud};
 }
-const connected={endpoint:'https://sync.example',token:'1234567890abcdef1234567890abcdef1234567890'};
+const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
 test('no endpoint: no network, no automatic first upload or cloud replacement',async()=>{
  const a=harness({[key]:JSON.stringify(state(true))});
  await a.win.BanyaCloudSync.syncAll();assert.equal(a.calls.length,0);
