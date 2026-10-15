@@ -1,0 +1,7 @@
+# Cloudflare Workers 静态资源排除列表（只把 App 运行资源发布到网站）
+README.md
+AGENTS.md
+scripts/
+.github/
+.gitignore
+.assetsignore
