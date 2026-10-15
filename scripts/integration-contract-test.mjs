@@ -63,6 +63,6 @@ test('branding changes only UI; old backup format stays distinct and storage iso
 
 test('deployment never publishes backend source or secrets as static assets',()=>{
  const ignore=txt('.assetsignore'),headers=txt('_headers');
- assert(ignore.split(/\\r?\\n/).includes('server/'),'never expose ECS backend through public Worker static assets');
+ assert(ignore.split(String.fromCharCode(10)).map(x=>x.trim()).includes('server/'),'never expose ECS backend through public Worker static assets');
  assert(headers.includes("connect-src 'self'"),'do not broadly permit arbitrary HTTPS sync endpoints before production host verification');
 });
