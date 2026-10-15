@@ -26,3 +26,6 @@ printf 'NGINX_ROUTING_END\n'
 printf 'TLS_LEAF_BEGIN\n'
 openssl s_client -connect 127.0.0.1:443 -servername 124.70.128.201 -showcerts </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName 2>/dev/null || true
 printf 'TLS_LEAF_END\n'
+printf 'BANYA_CONFIG_EXISTS='; if [[ -e /etc/banya-sync.env ]]; then echo yes; else echo no; fi
+printf 'BANYA_STAGE_FILES='; find /root/banya-stage -maxdepth 1 -type f -printf '%f,' 2>/dev/null; echo
+printf 'BANYA_INSTALL_LOG_TAIL_BEGIN\n'; tail -20 /root/banya-stage/install-result.log 2>/dev/null || true; printf 'BANYA_INSTALL_LOG_TAIL_END\n'

@@ -1,5 +1,5 @@
 name: ECS authorized read-only audit
-# Read-only follow-up includes certificate renewal and retired service size.
+# Read-only follow-up diagnoses the first deployment attempt.
 
 on:
   push:
