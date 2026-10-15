@@ -1,3 +1,11 @@
+## 最新：ECS 后端基础设施已部署｜2026-10-16（PR #11 分支）
+- 经用户授权，使用仓库 Actions Secret 和固定 SSH 主机公钥，从 GitHub Actions 登录 `124.70.128.201`；此云执行器仍无法直接 SSH，连接方法见 `docs/ECS_HANDOFF.md`。
+- [部署 run 38784363727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784363727) 成功：板牙后端 systemd/Nginx/IP HTTPS 在线，本机健康、授权英语读取、未授权政治 401 与证书续期 dry-run 已通过。[外部 run 38784581580](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784581580) 验证公网 `/health` 200、两科未授权各 401。证书实际自动续期仍待到期前复核。
+- 用户授权的[旧 NJFU 退役 run 38784675831](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784675831) 成功；[退役后只读盘点 run 38784770680](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784770680) 确认旧服务单元不存在、旧目录不存在、只有 banya-sync Nginx 站点启用，新服务 active/enabled、健康 200。
+- **PR #11 仍为 Draft，未合并 main；同一个 Cloudflare Worker 尚未发布 M2.9。** `_headers` 的 CSP 仍只许同源，手机云同步尚未启用；临时服务令牌未交给用户，用户手机学习数据未上传。下一聊天应按 `docs/ECS_HANDOFF.md` 完成长期令牌、前端接入、Cloudflare 发布与手机实测。
+
+以下早期检查记录为历史时间点，不代表当前部署状态。
+
 ## 云环境接手核验｜2026-10-16（PR #11 分支）
 - Git 原生读取确认 `origin/main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`，`refs/pull/11/head=39a3a6e60e5efcce1acb5239e49c7f18eb8b149`；M2.9 尚未在 main。GitHub GraphQL/REST API 在当前云环境返回 403，因此 PR 当前的草稿标志、审查状态及最新 CI 状态无法独立核实；不得把旧文档快照当成实时状态。
 - 在 PR #11 源码上，本地 Node 22 语法/计划检查与 64 项测试通过，Python 后端与备份 9 项测试通过，部署脚本 `bash -n` 通过。独立启动后端进程验证 `/health` 为 200、未授权快照读取为 401、两科分别保存并可读取、旧 revision 写入为 409。此为本地验证，不代表 ECS 已部署。

@@ -1,0 +1,28 @@
+# 板牙考研 ECS 技术交接｜2026-10-16
+
+本页是 PR #11 的部署交接；下一执行者先核对最新 main、PR 和 Actions 结果，不能把本页当实时监控。
+
+## 已验证的服务器连接
+
+- ECS 公网 IP `124.70.128.201`，SSH 22；从 GitHub Actions `ubuntu-latest` 可连接、收到 SSH-2.0 响应并用已授权账号登录。SSH 用户当前为 `root`（可由仓库变量 `BANYA_ECS_SSH_USER` 覆盖）。密码保存在该仓库 Actions Secret `BANYA_ECS_SSH_PASSWORD`，不得读出、打印或复制进代码/聊天。
+- 连接时强制使用 `server/banya-sync/known_hosts` 固定的 ED25519 主机公钥，指纹 `SHA256:9oyfKbAJFel2TMt1diomTJvKJvFNh2HUqtDdLAEivwA`；公钥变化时先独立核实，不可盲目关闭校验。
+- 当前 Codex 云执行器直接连 ECS 22/80/443 不通，代理的 CONNECT 成功不是 SSH 登录。经已授权 GitHub Actions 跳板执行是已实测可用的运维通道：`.github/workflows/ecs-ssh-audit.yml` 只读盘点；`.github/workflows/ecs-deploy.yml` 部署；`.github/workflows/ecs-retire-old.yml` 已按用户授权清理旧部署。工作流仅在 PR #11 源分支对应工作流文件变动时触发；若要维护，先更新工作流触发方式和审查命令，不要向用户索要聊天明文密码。
+- 连接依赖上述 Secret、服务器密码与公钥、GitHub Actions 可用；密码轮换后需同步更新该 Secret。不能保证这些外部条件永不变化。
+
+## 已执行的生产阶段
+
+- GitHub Actions [部署 run 38784363727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784363727) 成功，部署代码提交 `77709db80333665392f8d6154e44960808787d45`：FastAPI/SQLite 后端在 `/opt/banya-sync`，仅监听 `127.0.0.1:8765`；systemd 服务与每日私有 SQLite 备份 timer 已安装；Nginx 公网 IP HTTPS 指向此后端。
+- `https://124.70.128.201/health` 本机和外部均经可信证书验证返回 200。外部 [连通 run 38784581580](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784581580)：22/80/443 已连接，HTTP→HTTPS 301，HTTPS `/health` 200，英语/政治未授权读取各 401。部署作业带临时令牌的英语读取通过，首次库 revision=0。
+- 证书是 Let's Encrypt 的 IP SAN 证书，当前有效期至 2026-10-19 15:26:26 UTC。Nginx 已提供 `/.well-known/acme-challenge/` 的 webroot；同一部署作业的 `certbot renew --dry-run` 通过，续期 timer 已启用。**实际自动续出新证书尚需到期前复核**，不可把 dry-run 写成永久续期证明。
+- 用户明确授权清空旧 NJFU 部署。[退役 run 38784675831](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784675831) 成功：旧服务、旧 Nginx 站点、旧 systemd 单元与 `/opt/NJFU--main` 已移除；随后公网板牙 `/health` 仍通过。见 `docs/ECS_RETIREMENT.md`。
+- 服务器数据库当前未导入用户手机学习数据，临时部署令牌未在日志公开，也未交给用户。因此**当前只是可用的后端基础设施，手机云同步尚未启用**。已有手机本地记录未被服务器操作覆盖。
+
+## 下一技术聊天要完成
+
+1. 核对最新 main、PR #11（仍为草稿且未合并）与检查；不覆盖别的分支。`Workers Builds: english-ii-plan` 在本轮 PR 检查出现失败，需查明构建/预览失败原因，不能视为生产发布成功。
+2. 在确定 API 继续使用该 IP HTTPS 后，将现有 `_headers` 的 CSP `connect-src` 精确加入 `https://124.70.128.201`；检查前端 `cloud-sync.js` API 地址、CORS、静态资源排除规则、离线更新和同一个 Worker/PWA 身份。若改用已有域名，应先确认 DNS/TLS，再精确更新来源。不要新建第二站。
+3. 为手机启用同步前，建立用户可持有的长期同步令牌，安全地放入 Actions Secret `BANYA_SYNC_TOKEN` 并将其 SHA-256 摘要部署到服务器；**不得在聊天、日志、GitHub 文档中输出令牌**。当前临时令牌不能交接给手机。轮换前先确认服务器两科库是否已有记录，禁止覆盖已有学习数据。
+4. 英语二、政治分别先在手机导出可恢复备份，再做首次云同步选择；完成真实上传、下载、SQLite 持久化、跨科隔离、断网恢复、409 冲突处理及备份恢复测试。现有自动化测试不能代替手机实测。
+5. 核查证书在 2026-10-19 前实际自动续期，核查每日数据库备份文件是否生成；本机备份不是异地容灾。最后才考虑合并 PR #11 并发布到**原有** `https://english-ii-plan.kopdabanya.workers.dev/`，核对 Worker 实际版本与手机旧记录。
+
+不修改两科复习计划内容、原 localStorage 键、PWA 安装身份或用户学习进度。运行时状态与证据详见 `docs/ECS_CONNECTIVITY.md`、`docs/ECS_SSH_AUDIT.md`、`docs/ECS_DEPLOYMENT.md`、`docs/ECS_RETIREMENT.md`。
