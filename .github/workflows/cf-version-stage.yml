@@ -2,7 +2,7 @@ name: Validate Cloudflare upload without changing production traffic
 on:
   push:
     branches: [feat/huawei-ecs-cloud-sync-m29]
-    paths: [.github/workflows/cf-version-stage.yml]
+    paths: [.github/workflows/cf-version-stage.yml, .assetsignore]
 permissions:
   contents: read
 jobs:
