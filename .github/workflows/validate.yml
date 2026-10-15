@@ -19,3 +19,9 @@ jobs:
       - run: node scripts/check.mjs
 
       - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs
+      - run: bash -n server/banya-sync/install-ecs.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
+      - run: python -m pytest -q server/banya-sync/test_app.py
