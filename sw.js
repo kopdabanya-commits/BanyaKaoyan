@@ -1,6 +1,6 @@
 /* Atomic offline shell. Access responses never enter the cache. */
-const CACHE='yantu-english-ii-m2.6-20261015';
-const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./study-intelligence.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='yantu-english-ii-m2.7-20261015';
+const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./study-intelligence.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 function acceptable(response,url){
  if(!response.ok||response.redirected||response.type==='opaque'||response.type==='opaqueredirect')return false;
  if(response.url&&new URL(response.url).origin!==self.location.origin)return false;
@@ -34,7 +34,7 @@ self.addEventListener('activate',event=>event.waitUntil((async()=>{
 self.addEventListener('fetch',event=>{
  const req=event.request,url=new URL(req.url);
  if(req.method!=='GET'||url.origin!==self.location.origin)return;
- if(url.searchParams.has('reauth')||url.pathname.startsWith('/cdn-cgi/')||url.pathname.endsWith('/plan.json'))return;
+ if(url.searchParams.has('reauth')||url.pathname.startsWith('/cdn-cgi/')||url.pathname.endsWith('/plan.json')||url.pathname.endsWith('/politics-plan.json'))return;
  const key=new URL(url.pathname,self.location.origin).href;
  const allowed=new Set(ASSETS.map(p=>new URL(p,self.registration.scope).href));
  if(!allowed.has(key))return;
