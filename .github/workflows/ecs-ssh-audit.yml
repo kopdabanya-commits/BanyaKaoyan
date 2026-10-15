@@ -1,5 +1,5 @@
 name: ECS authorized read-only audit
-# Read-only follow-up diagnoses certificate renewal after verified HTTPS startup.
+# Final read-only inventory after authorized NJFU retirement.
 
 on:
   push:
