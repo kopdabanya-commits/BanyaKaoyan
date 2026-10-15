@@ -44,7 +44,7 @@ jobs:
             -o NumberOfPasswordPrompts=1 \
             -o ConnectTimeout=12 \
             "$BANYA_SSH_USER@124.70.128.201" \
-            'printf "OS="; . /etc/os-release; printf "%s %s\n" "$ID" "$VERSION_ID"; printf "KERNEL="; uname -r; printf "DISK="; df -h / | tail -1; printf "MEMORY="; free -m | sed -n "2p"; printf "LISTEN="; ss -ltnH | awk "{print \$4}" | sort -u | paste -sd, -; for unit in nginx njfu-seat banya-sync; do printf "SERVICE_%s=" "$unit"; systemctl is-active "$unit" 2>/dev/null || true; done; printf "BANYA_HEALTH="; curl -sS --max-time 3 -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/health || true' \
+            'bash -s' < server/banya-sync/audit-ecs.sh \
             > /tmp/banya-ecs-audit-output 2> /tmp/banya-ecs-audit-error
           result=$?
           set -e
