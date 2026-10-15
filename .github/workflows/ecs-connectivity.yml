@@ -1,4 +1,5 @@
 name: ECS read-only connectivity
+# Verify the deployed public API from outside the ECS after TLS routing changed.
 
 on:
   push:
@@ -52,7 +53,18 @@ jobs:
               client.close()
           except Exception as exc:
               lines.append(f'- HTTPS 证书验证及 HEAD /: {type(exc).__name__}: {exc}')
-          lines += ['', '此探测不验证 SSH 身份、现有服务内容或板牙考研部署。']
+          for path in ('/health', '/v1/snapshot/english', '/v1/snapshot/politics'):
+              try:
+                  client = http.client.HTTPSConnection(target, timeout=8, context=ssl.create_default_context())
+                  client.request('GET', path)
+                  response = client.getresponse()
+                  body = response.read(256)
+                  lines.append(f'- HTTPS GET {path}: {response.status}' +
+                               ('，板牙服务响应' if path == '/health' and b'banya-study-sync' in body else ''))
+                  client.close()
+              except Exception as exc:
+                  lines.append(f'- HTTPS GET {path}: {type(exc).__name__}: {exc}')
+          lines += ['', '此探测无凭据，只验证公网连通、证书和未授权访问。']
           Path('docs/ECS_CONNECTIVITY.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
       - name: Record public SSH host key for later verified connections
