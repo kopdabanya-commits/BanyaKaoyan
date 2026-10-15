@@ -3,7 +3,7 @@
 'use strict';
 const SUBJECTS=Object.freeze([
  Object.freeze({id:'english',label:'英语二',short:'ENGLISH II',status:'active',planFile:'plan.json',storageKey:'yantu_english_2026_m1'}),
- Object.freeze({id:'politics',label:'政治',short:'POLITICS',status:'awaiting-plan',planFile:'politics-plan.json',storageKey:'yantu_politics_2026_v1'})
+ Object.freeze({id:'politics',label:'政治',short:'POLITICS',status:'active',planFile:'politics-plan.json',storageKey:'yantu_politics_2026_v1'})
 ]);
 const WEIGHTS=Object.freeze({'写作':6,'翻译':5,'新题型':5,'完形':3,'复盘':3,'阅读':2,'模考':6,'综合':4,'机动':1});
 const validDay=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s);

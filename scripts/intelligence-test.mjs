@@ -7,13 +7,13 @@ const Intel=require('../study-intelligence.js');
 const Core=require('../planner-core.js');
 const plan=JSON.parse(fs.readFileSync(new URL('../plan.json',import.meta.url),'utf8'));
 const state=()=>Core.defaults();
-test('catalog isolates the future politics plan and does not invent tasks',()=>{
+test('catalog isolates the activated politics plan and validates its date window',()=>{
  assert.deepEqual(Intel.SUBJECTS.map(x=>x.id),['english','politics']);
  assert.equal(Intel.SUBJECTS[0].status,'active');
- assert.equal(Intel.SUBJECTS[1].status,'awaiting-plan');
+ assert.equal(Intel.SUBJECTS[1].status,'active');
  assert.notEqual(Intel.SUBJECTS[0].storageKey,Intel.SUBJECTS[1].storageKey);
  assert.equal(Intel.SUBJECTS[1].planFile,'politics-plan.json');
- assert(!fs.existsSync(new URL('../politics-plan.json',import.meta.url)), 'must not fabricate a politics schedule');
+ assert(fs.existsSync(new URL('../politics-plan.json',import.meta.url)));
 });
 test('recommendation follows available tasks, never moves or completes anything',()=>{
  const s=state(),day='2026-10-15';

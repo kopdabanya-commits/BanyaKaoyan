@@ -1,7 +1,7 @@
 {
   "name": "研途 · 2027考研复习",
   "short_name": "研途",
-  "description": "考研英语二复习计划、智能任务建议与错题记录；政治复习预留独立科目。",
+  "description": "考研英语二复习计划、智能任务建议与错题记录；政治独立复习计划与错题记录。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

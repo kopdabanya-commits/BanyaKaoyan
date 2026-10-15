@@ -17,8 +17,8 @@ function setup({bad=null,offline=false,redirect=false}={}){
  async function get(path,method='GET'){let result;handlers.fetch({request:{url:origin+path,method},respondWith:p=>result=p});return result;}
  return {stores,calls,lifecycle,get,claimed:()=>claimed};
 }
-test('atomic install validates ten resources, activation removes only old app caches',async()=>{
- const h=setup();h.stores.set('other-app',new Map());await h.lifecycle('install');const name=[...h.stores.keys()].find(k=>k.startsWith('yantu-english-ii-')&&k!=='yantu-english-ii-old');assert.equal(h.stores.get(name).size,10);assert(h.stores.has('yantu-english-ii-old'));await h.lifecycle('activate');assert(!h.stores.has('yantu-english-ii-old'));assert(h.stores.has('other-app'));assert(h.claimed());
+test('atomic install validates thirteen resources, activation removes only old app caches',async()=>{
+ const h=setup();h.stores.set('other-app',new Map());await h.lifecycle('install');const name=[...h.stores.keys()].find(k=>k.startsWith('yantu-english-ii-')&&k!=='yantu-english-ii-old');assert.equal(h.stores.get(name).size,13);assert(h.stores.has('yantu-english-ii-old'));await h.lifecycle('activate');assert(!h.stores.has('yantu-english-ii-old'));assert(h.stores.has('other-app'));assert(h.claimed());
  for(const [,opts] of h.calls)assert.equal(opts.redirect,'error');
 });
 test('HTML login returned as JavaScript aborts install, partial new cache removed, active cache preserved',async()=>{
@@ -29,7 +29,7 @@ test('login redirects and offline install cannot replace the working cache',asyn
 });
 test('cached shell works offline; updates, reauth, Access endpoints and docs bypass SW cache',async()=>{
  const h=setup();await h.lifecycle('install');await h.lifecycle('activate');const before=h.calls.length;const response=await h.get('/');assert.equal(response.status,200);assert.equal(h.calls.length,before);
- for(const path of ['/plan.json?check=1','/?reauth=1','/cdn-cgi/access/login','/README.md','/unknown.js'])assert.equal(await h.get(path),undefined);
+ for(const path of ['/plan.json?check=1','/politics-plan.json?check=1','/?reauth=1','/cdn-cgi/access/login','/README.md','/unknown.js'])assert.equal(await h.get(path),undefined);
  assert.equal(await h.get('/','POST'),undefined);
 });
 test('uncached offline asset returns useful 503 and is not cached',async()=>{
