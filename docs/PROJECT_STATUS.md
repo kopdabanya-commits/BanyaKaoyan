@@ -4,6 +4,9 @@
 - 当前云环境 `/etc/codex/network-policy.json` 显示 TCP 允许域名/IP 范围均为空，未配置 VPN；对 ECS `124.70.128.201` 的 22/80/443 直接连接均立即返回 `ConnectionRefusedError`，经 HTTP 代理访问 80/443 返回 403，TCP CONNECT 代理 8088 自身拒绝连接。这些结果只证明本环境当前无法抵达目标，不能判断 ECS 服务或 SSH 凭据是否正常。
 - 当前环境与旧项目没有找到适用的 SSH config 或身份文件，也没有可用的华为云/SSH 凭据绑定。未登录 ECS，未核实磁盘、现有服务、Nginx、域名、证书，也未部署。应先在云环境网络设置中放行针对 `124.70.128.201` 的必要 TCP 访问并提供受支持的 SSH 身份授权，然后重新做只读连接检查；无需把密码或私钥发到聊天。
 
+### 用户发布网络配置后的重测
+- 运行时 HTTP 策略现为 `unrestricted/enforced`，代理对 `124.70.128.201:22/80/443` 返回 CONNECT 200；但直连三个端口仍立即拒绝，SSH 隧道等候 10 秒未收到 `SSH-2.0` banner，80 隧道也未收到有效上游响应。经代理访问 HTTP 根路径返回 Envoy 301；HTTPS 隧道呈现 `openai.com` 证书，和目标 IP 不匹配，TLS 验证失败。代理 CONNECT 成功不等于 ECS 可达，更不等于身份验证成功；当前仍无法安全 SSH 或验证 ECS HTTPS。运行时 TCP 允许范围依然为空。
+
 ## 技术线最新记录｜2026-10-16 M2.9 华为云云同步（草稿PR #11）
 - 已实时核对 `main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`；开放PR只有 [#11](https://github.com/kopdabanya-commits/English-II-Plan/pull/11)，分支 `feat/huawei-ecs-cloud-sync-m29`。**main尚未合并M2.9，Cloudflare生产未发布本轮代码。**
 - 已在 PR #11 实际提交：原有FastAPI/SQLite后端的科目绑定格式校验，拒绝空白/跨科写入；`cloud-sync.js` 客户端与同一个设置页集成、服务工作线程离线缓存更新；本地优先、每科单独首次确认、CAS/409冲突暂停、云恢复前备份和同页刷新；自动SQLite备份脚本+systemd每日备份timer；静态部署 `.assetsignore` 排除私有 `server/` 目录；新增 Node/Python 测试。
