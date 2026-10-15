@@ -18,7 +18,8 @@ jobs:
       BANYA_SYNC_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Validate deploy prerequisites
+      - name: Validate deploy prerequisites (never generate ephemeral production credentials)
+        id: token_ready
         run: |
           set -euo pipefail
           test -n "$BANYA_SSH_PASSWORD"
@@ -26,12 +27,15 @@ jobs:
           bash -n server/banya-sync/install-ecs.sh
           bash -n server/banya-sync/deploy-ecs.sh
           if [ -z "$BANYA_SYNC_TOKEN" ]; then
-            BANYA_SYNC_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
-            echo "BANYA_SYNC_TOKEN=$BANYA_SYNC_TOKEN" >> "$GITHUB_ENV"
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Long-term BANYA_SYNC_TOKEN is not configured. Existing ECS remains unchanged.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            test "${#BANYA_SYNC_TOKEN}" -ge 32
+            echo "::add-mask::$BANYA_SYNC_TOKEN"
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
           fi
-          test "${#BANYA_SYNC_TOKEN}" -ge 32
-          echo "::add-mask::$BANYA_SYNC_TOKEN"
       - name: Install backend and switch the existing IP HTTPS route
+        if: steps.token_ready.outputs.ready == 'true'
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -56,6 +60,7 @@ jobs:
             'certbot renew --dry-run --cert-name 124.70.128.201 --non-interactive --quiet'
           echo 'Existing IP certificate renewal dry-run passed.'
       - name: Record deployment stage
+        if: steps.token_ready.outputs.ready == 'true'
         run: |
           cat > docs/ECS_DEPLOYMENT.md <<EOF
           # 板牙考研华为云部署阶段
