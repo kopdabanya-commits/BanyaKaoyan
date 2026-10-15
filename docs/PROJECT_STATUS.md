@@ -3,6 +3,7 @@
 - [部署 run 38784363727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784363727) 成功：板牙后端 systemd/Nginx/IP HTTPS 在线，本机健康、授权英语读取、未授权政治 401 与证书续期 dry-run 已通过。[外部 run 38784581580](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784581580) 验证公网 `/health` 200、两科未授权各 401。证书实际自动续期仍待到期前复核。
 - 用户授权的[旧 NJFU 退役 run 38784675831](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784675831) 成功；[退役后只读盘点 run 38784770680](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784770680) 确认旧服务单元不存在、旧目录不存在、只有 banya-sync Nginx 站点启用，新服务 active/enabled、健康 200。
 - **PR #11 仍为 Draft，未合并 main；同一个 Cloudflare Worker 尚未发布 M2.9。** `_headers` 的 CSP 仍只许同源，手机云同步尚未启用；临时服务令牌未交给用户，用户手机学习数据未上传。下一聊天应按 `docs/ECS_HANDOFF.md` 完成长期令牌、前端接入、Cloudflare 发布与手机实测。
+- 原 Worker 网址在 2026-10-16 实测 HTTP 200、页面为「板牙考研」，但 HTML 未加载 `cloud-sync.js`、响应 CSP 仍为 `connect-src 'self'`；因此旧 PWA 可访问不等于 M2.9 上线。PR 最新 `Validate planner` [run 38784916624](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784916624) 成功，而 `Workers Builds: english-ii-plan` 检查失败，需在 Cloudflare 构建日志诊断。
 
 以下早期检查记录为历史时间点，不代表当前部署状态。
 
