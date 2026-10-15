@@ -1,3 +1,20 @@
+## 2026-10-16 02:40（亚洲时区）更新：PR #11 技术线实际检查
+
+本段基于 GitHub/Cloudflare Actions 当前实际结果，覆盖上文仍写作“尚未运行”但已被新检查取代的阶段；**PR目前仍为Draft、PWA生产尚未发布M2.9。**
+
+- 服务器路径仍经 `BANYA_ECS_SSH_PASSWORD` Actions Secret 和 `server/banya-sync/known_hosts` 固定SSH ED25519公钥校验，**无明文密码进入聊天/GitHub源码**。
+- [ECS readiness run 38786028694](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786028694) 成功：服务active/enabled、备份timer active/enabled、HTTPS证书验证/health 200，两科未授权401；生产数据库snapshot count=0；用单独临时SQLite库真实执行英语/政治读写、409、错误科目422与重启持久化全部通过，未写入真实库。
+- [数据库备份 run 38786340727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786340727) 成功：实际启动每日备份service生成一份机内SQLite备份并通过 `PRAGMA integrity_check=ok`。机内副本不是异地灾备。
+- [证书续期 run 38786641233](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786641233) 成功完成**正常certbot检查**，但没有颁发新证书（Certbot判定尚不到期）；HTTPS依然有效，证书实际截止仍为2026-10-19 15:26:26 UTC。之后仍必须复核实际新证书签发、Nginx reload以及正式站点。
+- [Wrangler dry-run](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38785883329)成功；Cloudflare原有Workers Builds失败不能仅凭本地诊断推断原因。[Builds Logs API audit run 38786759865](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786759865)实际返回HTTP 403（现有Cloudflare API Token缺少Workers CI Read授权）。请在真实Cloudflare Dashboard读取失败构建 `065a5292-5b9c-44a0-a12d-dbcb39b6622f` 的日志；用户无需把密码交给ChatGPT。
+- [原Worker非激活版本上传 run 38787008715](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38787008715) 成功，`wrangler versions upload` 生成未激活版本，没有部署生产流量。发现扫描根目录文件数明显大于PWA资源数，已把 `.assetsignore` 改为**默认全部屏蔽+只允许应用16个静态文件及图标路径**，新的 [非激活版本上传 run 38787339344](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38787339344) 成功（16个既有 + 1个新增资产），杜绝未来把服务端源码、文档及工作流误作为公网静态资源。唯一现有Worker `english-ii-plan` / `workers.dev`地址均不变。
+- `_headers` 中的CSP现只增加 `https://124.70.128.201` 为 `connect-src` 允许源；`cloud-sync.js`仅接受同一个精确HTTPS origin，防止Bearer发送到其他站点，仍默认不配置token、不传用户记录；仍保留全部历史学习数据键、单一manifest安装ID和原来的双科计划。
+- [GitHub Actions readiness](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786028694)表明 **`BANYA_SYNC_TOKEN` Secret目前未配置**。早期部署脚本自动生成临时令牌的fallback已移除；再次执行ECS部署在长期令牌缺失时**不会悄悄轮换服务器凭据**。
+- 当前用户仍须先分别在**原已安装Edge PWA**内导出英语二/政治两份原始学习备份，并用个人密码管理器生成/保存足够强度的随机长期令牌（无需发给聊天），通过 [GitHub Repository Actions Secret](https://github.com/kopdabanya-commits/English-II-Plan/settings/secrets/actions/new) 写入 `BANYA_SYNC_TOKEN`；得到明确完成确认后，技术线才运行经过pin校验的Actions后端摘要轮换，并让用户在PWA设置中输入相同密钥逐科确认首次云上传。第一次上传前必须检查两科现存云revision。
+- 已准备 `.github/workflows/publish-existing-worker.yml`：只在未来合并到main后的特定前端变更，完成双科回归、后端模拟测试、Wrangler验证后，使用现有Cloudflare Secret发布**原有单一Worker**并做线上CSP/文件泄露检查；这条流程当前没有执行生产发布。手机真机、备份恢复、离线重连等仍需用户在原PWA验证。
+
+---
+
 # 板牙考研 ECS 技术交接｜2026-10-16
 
 本页是 PR #11 的部署交接；下一执行者先核对最新 main、PR 和 Actions 结果，不能把本页当实时监控。
