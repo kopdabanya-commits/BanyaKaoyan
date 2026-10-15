@@ -1,20 +1,28 @@
-# Cloudflare Workers 静态资源排除列表（只把 App 运行资源发布到网站）
-README.md
-AGENTS.md
-scripts/
+# 安全白名单：只允许板牙考研原PWA页面/脚本/计划/图标作为公开Worker静态文件。
+# This is .gitignore syntax: block everything, then allow only shipped PWA assets.
+*
+!index.html
+!styles.css
+!app.js
+!planner-core.js
+!plan-data.js
+!plan.json
+!study-intelligence.js
+!politics-core.js
+!politics-plan-data.js
+!politics-plan.json
+!politics-ui.js
+!cloud-sync.js
+!sw.js
+!manifest.webmanifest
+!_headers
+!icons/
+!icons/icon-192.png
+!icons/icon-512.png
+# Explicit private areas (also covered by the default deny rule).
 server/
-.github/
-.gitignore
-.assetsignore
-
 docs/
-tests/
+scripts/
+.github/
 node_modules/
-package.json
-package-lock.json
-*.log
-*.zip
-*.json.bak
-wrangler.jsonc
 .wrangler/
-.cloudflare/
