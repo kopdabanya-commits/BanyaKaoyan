@@ -1,3 +1,17 @@
+## 最新补充｜2026-10-16 M2.9 技术线复核（仍为PR #11草稿）
+
+- 实时检查：main仍为 `afd3ed47` M2.8；PR #11仍open/draft，M2.9源分支持续更新。英语二/政治权威计划内容、旧记录键、Workers站点URL、manifest ID没有改变。
+- GitHub Actions通过现有固定主机公钥及仓库Secret真实SSH完成 [ECS只读+隔离API测试 38786028694](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786028694)：公网IP HTTPS、服务systemd和timer正常；正式snapshot行数为0；隔离临时数据库完成双科PUT/GET、409、错误科目422和进程重启持久化。此测试不等于手机真实数据上传。
+- [机内备份校验 38786340727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786340727)已实际生成机内SQLite备份，数据库完整性 `ok`；仍无异地副本。
+- [证书正常续期检查 38786641233](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786641233)未签发新证书、因尚不符合Certbot续期条件，真实到期仍2026-10-19 15:26:26 UTC；HTTPS健康校验已通过，**实际续期尚未验收**。
+- 仅放行公网 `https://124.70.128.201` 的CSP `connect-src`，前端云客户端也只接受此精确IP HTTPS。更新 `.assetsignore` 为默认拒绝/明确白名单，新的 [Cloudflare非激活版本上传 38787339344](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38787339344)成功（仅16个既有+1个新增资产），没有发布生产；[本地Wrangler dry-run 38785883329](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38785883329)成功。
+- Cloudflare GitHub集成 `Workers Builds: english-ii-plan` 红色检查的具体根因尚无日志。现有Cloudflare Token可用来上传非激活版本，但 `GET /builds/builds/{uuid}/logs` 返回 **403**（[API审计 run 38786759865](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786759865)）；不能因本地构建成功便假装已修复 Cloudflare Builds。
+- `BANYA_SYNC_TOKEN` 长期同步Secret尚未配置（Actions已检查）；不能交付用户可登录的云同步。修改ecs-deploy工作流，**缺少长期Secret时不再自动生成新的短期令牌/覆盖服务器原配置**。需要用户仅在GitHub Secret表单/手机密码管理器完成一次安全设置，无需发送聊天密钥或SSH。
+- 新增原有Worker单一站点的main分支CI门禁发布工作流，但目前未执行；本机英语/政治分别导出备份、首次上传、正式库下载和重启、离线恢复、跨科真实数据隔离、409冲突、荣耀Edge已安装PWA的更新和实际证书新签发，全部维持**未完成真机/生产验收**。不建议在个人学习数据未另存及Secret未配置时合并PR或公开上线。
+- 旧NJ FU资源退役成果以 `docs/ECS_HANDOFF.md` 与此前三个成功Actions记录为准。此轮没有修改复习计划，也没有再次删除服务器旧数据。
+
+---
+
 ## 最新：ECS 后端基础设施已部署｜2026-10-16（PR #11 分支）
 - 经用户授权，使用仓库 Actions Secret 和固定 SSH 主机公钥，从 GitHub Actions 登录 `124.70.128.201`；此云执行器仍无法直接 SSH，连接方法见 `docs/ECS_HANDOFF.md`。
 - [部署 run 38784363727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784363727) 成功：板牙后端 systemd/Nginx/IP HTTPS 在线，本机健康、授权英语读取、未授权政治 401 与证书续期 dry-run 已通过。[外部 run 38784581580](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784581580) 验证公网 `/health` 200、两科未授权各 401。证书实际自动续期仍待到期前复核。
