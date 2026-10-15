@@ -137,10 +137,13 @@ def create_app(*, db_path: str | Path | None = None,
         state = envelope.get("state")
         if isinstance(expected, bool) or not isinstance(expected, int) or expected < 0:
             raise HTTPException(status_code=422, detail="Invalid revision")
-        if not isinstance(state, dict):
-            raise HTTPException(status_code=422, detail="Invalid state")
-        # State shape belongs to the two independently versioned JS cores.
-        # The backend stores the full validated-by-client document without normalizing away future fields.
+        if not isinstance(state, dict) or state.get("schema") != "banya.sync.v1" or state.get("subject") != subject:
+            raise HTTPException(status_code=422, detail="Invalid subject-bound sync document")
+        record = state.get("record")
+        if not isinstance(record, dict) or not isinstance(record.get("done"), dict) or not isinstance(record.get("notes"), dict):
+            raise HTTPException(status_code=422, detail="Invalid learning record")
+        # Preserve versioned JS state without normalization; browser validates full schema.
+        # The subject-bound envelope blocks accidental cross-subject uploads.
         encoded = json.dumps(state, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
         if len(encoded.encode("utf-8")) > MAX_BODY_BYTES:
             raise HTTPException(status_code=413, detail="Snapshot too large")
