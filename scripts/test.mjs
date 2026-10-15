@@ -200,3 +200,23 @@ test('M2.5 appearance controls never overwrite learning records',async()=>{
  assert.equal(second.api.state.done['2026-10-15-1'],true);
  assert(second.el('app').innerHTML.includes('premium-hero'));
 });
+
+test('M2.8 one app subject switch is persistent and cannot modify the other subject record',async()=>{
+ const h=harness({fail:true});await h.settle();
+ assert(h.el('app').innerHTML.includes('英语二'));
+ await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});
+ assert.equal(h.api.state.done['2026-10-15-1'],true);
+ const before=h.storage.get(key);
+ await h.click('switch-subject',{subject:'politics'});
+ assert.equal(h.storage.get('banya_active_subject_v1'),'politics');
+ assert(h.el('app').innerHTML.includes('politics-fixture'));
+ assert.equal(h.storage.get(key),before);
+ const reopened=harness({storage:h.storage,fail:true});await reopened.settle();
+ assert(reopened.el('app').innerHTML.includes('politics-fixture'));
+ assert.equal(reopened.api.state.done['2026-10-15-1'],true);
+ reopened.api.nav('settings');
+ assert(reopened.el('app').innerHTML.includes('politics-fixture'));
+ await reopened.click('switch-subject',{subject:'english'});
+ assert.equal(reopened.storage.get('banya_active_subject_v1'),'english');
+ assert.equal(reopened.api.state.done['2026-10-15-1'],true);
+});
