@@ -2,6 +2,7 @@
 (() => {
 'use strict';
 const Core=window.PlannerCore;
+const Intel=window.StudyIntel;
 const PLAN_KEY='yantu_english_plan_v2';
 let data = window.STUDY_PLAN;
 try{const cached=JSON.parse(localStorage.getItem(PLAN_KEY));if(Core.validPlan(cached))data=cached;}catch{}
@@ -16,6 +17,11 @@ const DEFAULT = Core.defaults();
 const STORAGE_KEY = 'yantu_english_2026_m1';
 let state = load();
 let view = 'today';
+let subject = 'english';
+const THEME_KEY='yantu_theme_v1';
+let theme='light';
+try{const raw=localStorage.getItem(THEME_KEY);if(['light','dark'].includes(raw))theme=raw;}catch{}
+if(document.documentElement)document.documentElement.dataset.theme=theme;
 let today = localISO(new Date());
 let selectedDate = (today>=data.meta.start && today<=data.meta.end)?today:data.meta.start;
 let calendarMonth = selectedDate.substring(0,7);
@@ -44,10 +50,35 @@ function nav(next){view=next;document.querySelectorAll('.nav-tab').forEach(el=>{
 function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
- const content=view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():view==='stats'?renderStats():renderSettings();
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${content}</div>`;
+ const content=view==='settings'?renderSettings():subject==='politics'?renderPolitics():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
+ const subjectBar=view==='settings'?'':renderSubjects();
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}</div>`;
  if(storageMessage)app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan)app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
+}
+function renderSubjects(){
+ return `<section class="subject-rail" aria-label="复习科目">
+ <div class="subject-tabs" role="group" aria-label="选择科目">
+ ${Intel.SUBJECTS.map(item=>`<button type="button" data-action="switch-subject" data-subject="${item.id}" class="subject-tab ${subject===item.id?'is-active':''}" aria-pressed="${subject===item.id}"><span class="subject-symbol">${item.id==='english'?'英':'政'}</span><span>${item.label}</span>${item.status!=='active'?'<span class="subject-new">待建档</span>':''}</button>`).join('')}
+ </div><span class="subject-context">${subject==='english'?'65天专项计划':'政治计划筹备中'}</span></section>`;
+}
+function renderPolitics(){
+ return `<div class="politics-hero">
+ <div class="politics-orbit" aria-hidden="true">政</div>
+ <div class="eyebrow">考研政治 · 科目预留</div>
+ <h1 class="page-title">政治，也可以在这里有条理地复习。</h1>
+ <p class="subtitle">已为政治预留独立科目与数据命名空间。目前没有你的教材、真实进度和可用时间，因此不生成任何虚构任务，也不影响英语二的计划和记录。</p>
+ <div class="politics-steps"><div><span>01</span><b>确认当前进度</b><small>课程、资料、题库与做题情况</small></div><div><span>02</span><b>确定可用时间</b><small>结合英语、数学、专业课整体分配</small></div><div><span>03</span><b>再建立政治计划</b><small>分科目保存、按真实反馈调整</small></div></div>
+ <button class="cta" data-action="copy-politics">复制政治建档信息清单 <span aria-hidden="true">↗</span></button>
+ <p class="setting-note">只准备接入，不自动开启政治打卡；无需安装第二个App。</p></div>
+ <button class="cta ghost politics-back" data-action="switch-subject" data-subject="english">← 继续英语二训练</button>`;
+}
+function renderWeekChart(week,compact=false){
+ const labels=['日','一','二','三','四','五','六'];
+ return `<div class="weekly-chart ${compact?'compact':''}" aria-label="最近七天专项任务完成情况">
+ ${week.days.map(d=>`<div class="week-col" title="${d.date}：${d.done}/${d.total}项${d.skipped?'，已休息':''}">
+ <div class="week-bar-track"><span class="week-bar-fill ${d.skipped?'is-rest':''}" style="height:${d.skipped?15:Math.max(5,Math.round(d.fraction*100))}%"></span></div>
+ <small>${labels[d.day]}</small></div>`).join('')}</div>`;
 }
 function remainingDays(){return Math.max(0, Math.round((dateFrom(data.meta.exam)-dateFrom(today))/(1000*60*60*24)))}
 function refreshToday(){const fresh=localISO(new Date());if(fresh!==today){const followingToday=selectedDate===today;today=fresh;if(followingToday&&inRange(today))selectedDate=today;render();}}
