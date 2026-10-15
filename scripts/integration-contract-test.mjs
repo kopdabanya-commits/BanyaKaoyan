@@ -1,0 +1,59 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const englishCore=require('../planner-core.js'),politicsCore=require('../politics-core.js');
+const txt=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const js=p=>JSON.parse(txt(p));
+const en=js('plan.json'),pol=js('politics-plan.json'),manifest=js('manifest.webmanifest');
+function offlinePlan(file,rootKey){const win={window:{}};vm.runInNewContext(txt(file),win);return JSON.parse(JSON.stringify(win.window[rootKey]));}
+test('single 板牙考研 PWA: one shell, two active subject modules, same origin',()=>{
+ const html=txt('index.html'),script=txt('app.js'),intel=txt('study-intelligence.js'),sw=txt('sw.js');
+ assert.equal(manifest.short_name,'板牙考研');
+ assert(manifest.name.startsWith('板牙考研'));
+ assert(html.includes('<title>板牙考研'));
+ assert(html.includes('板牙考研 <small>'));
+ for(const src of ['./planner-core.js','./plan-data.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./study-intelligence.js','./app.js'])assert(html.includes(src));
+ assert(html.includes('id="app"')&&html.includes('class="bottom-nav"'));
+ assert(script.includes('const subjectBar=renderSubjects()'),'same subject selector on all pages');
+ assert(script.includes("subject==='politics'?renderPolitics()"),'politics is an internal route');
+ assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
+ assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
+ assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
+ assert(sw.includes("m2.8-20261015"));
+ assert.equal(js('wrangler.jsonc').name,'english-ii-plan','keep original Worker and user data origin');
+ assert.equal(manifest.start_url,'./index.html');assert.equal(manifest.id,'./');
+});
+test('English and politics retain separate plans and stable legacy backup/data identifiers',()=>{
+ assert(englishCore.validPlan(en));assert(politicsCore.validPlan(pol));
+ assert.equal(en.days.length,65);assert.equal(en.days.flatMap(d=>d.items).length,141);
+ assert.equal(pol.days.length,64);assert.equal(pol.days.flatMap(d=>d.items).length,192);
+ assert.deepEqual(offlinePlan('plan-data.js','STUDY_PLAN'),en);
+ assert.deepEqual(offlinePlan('politics-plan-data.js','POLITICS_PLAN'),pol);
+ const eng=txt('app.js'),pc=txt('politics-core.js'),pu=txt('politics-ui.js');
+ assert(eng.includes("STORAGE_KEY = 'yantu_english_2026_m1'"));
+ assert(eng.includes("PLAN_KEY='yantu_english_plan_v2'"));
+ assert(eng.includes("app:'yantu-english-ii'"),'old English JSON backups must stay importable');
+ assert(pc.includes("key='yantu_politics_2026_v1'"));
+ assert(pu.includes("app:'yantu-politics'"),'old political backups must remain importable');
+ assert(!pu.includes('yantu_english_2026_m1'),'politics never edits English records');
+ assert(!eng.includes("localStorage.removeItem(STORAGE_KEY)"));
+ assert(!pu.includes("localStorage.removeItem(Core.key)"));
+});
+test('both disciplines use one cache and neither plan JSON is intercepted',()=>{
+ const sw=txt('sw.js');
+ for(const resource of ['./plan-data.js','./politics-plan-data.js','./planner-core.js','./politics-core.js','./politics-ui.js'])assert(sw.includes("'"+resource+"'"));
+ assert(sw.includes("url.pathname.endsWith('/plan.json')"));
+ assert(sw.includes("url.pathname.endsWith('/politics-plan.json')"));
+ assert(!sw.includes('skipWaiting(')||sw.includes('Do not skipWaiting:'),'must not force-update running PWA');
+});
+test('branding changes only UI; old backup format stays distinct and storage isolated',()=>{
+ const html=txt('index.html'),manifestText=txt('manifest.webmanifest'),pu=txt('politics-ui.js'),enUi=txt('app.js');
+ assert(html.includes('板牙考研')&&manifestText.includes('板牙考研'));
+ assert(pu.includes('板牙考研_政治备份_'));
+ assert(enUi.includes('板牙考研_英语二备份_'));
+ assert.notEqual(politicsCore.key,'yantu_english_2026_m1');
+ assert(!html.includes('研途')&&!manifestText.includes('研途'));
+});
