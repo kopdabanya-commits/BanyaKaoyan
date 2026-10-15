@@ -7,7 +7,7 @@
 - GitHub（仓库历史名保留）：`https://github.com/kopdabanya-commits/English-II-Plan`；Private，默认分支main。
 - Cloudflare Worker（历史技术名暂不更改）：`english-ii-plan`，Workers Static Assets；网址 `https://english-ii-plan.kopdabanya.workers.dev`。改变地址会导致手机现有本地数据无法自动跨源访问，禁止为改名另建站点。
 - 安卓：HONOR PTP-AN10、Android16，微软Edge PWA安装路径。公开站点未配置Access，GitHub仓库私有不代表网页私有。
-- 本次品牌改造：分支 `feat/banya-kaoyan-brand-workflow-m28` 负责网页标题、manifest名称、单App切换持久化、设置过时文案、工作流防并发与跨科回归。实际是否合并/测试通过需要检查PR和main；**此段在CI/合并完成前不是发布完成证明**。
+- **品牌/工作流 M2.8 已合并 GitHub：** [PR #8](https://github.com/kopdabanya-commits/English-II-Plan/pull/8) 的 `Validate planner` run `38762823851` completed/success；main合并提交 `80c3bd25873c652937429ee63fc28e881ba6cd3e`。已回读main确认manifest的短名称为「板牙考研」、网页顶部也显示「板牙考研」。包括单App内选中科目持久化、过时政治待建档说明修正、双科测试和工作流规约。**Cloudflare生产部署/用户真机仍未验证**。
 
 ## 2. 英语二计划及功能：代码已确认
 - 英语权威计划：`plan.json`，版本`2026.10.15-m2.6`、revision6，65天（10/15—12/18），141项专项，2026-12-19按用户安排考试。
@@ -21,7 +21,7 @@
 - 用户截至上次报告：上海地区，政治目标60—65，徐涛2027强化课第6集“对立统一规律”，苍盾考研小程序肖1000题马原93/396（仅马原题库进度，不是全科完成率），未购买纸质资料。预定肖八肖四仅在实际出版/取得后使用，不能自动认作已学。
 - `politics-core.js`/`politics-ui.js`已实现政治的今日、日历、进度、设置、打卡/撤销、错题和笔记、苍盾马原做题数手动录入、政治独立导出/导入；政治内部记录键 `yantu_politics_2026_v1`。苍盾与本App**没有自动同步**，不读外部账号。
 - 政治的`politics-plan.json`目前**没有像英语一样完整的联机版本差异预览和用户确认迁移操作**。未来单独变更政治计划前先完善/核实安全兼容机制，不能把英语按钮当政治按钮。
-- 两科均从一个 `index.html`、`manifest.webmanifest`、`app.js`科目切换、同一 `sw.js`离线资源加载。旧App UI界面 M2.7，新的品牌/工作流升级版本 M2.8 待本次PR核实。
+- 两科均从一个 `index.html`、`manifest.webmanifest`、`app.js`科目切换、同一 `sw.js`离线资源加载。旧App UI界面 M2.7，新的品牌/工作流升级版本 M2.8 已在GitHub main合并且CI通过，Cloudflare与手机使用仍未验证。
 
 ## 4. 兼容性/数据/部署事实
 - 英语记录键 `yantu_english_2026_m1`、旧本机英语计划键 `yantu_english_plan_v2`；政治记录键 `yantu_politics_2026_v1`。旧备份结构 `app:yantu-english-ii`、`app:yantu-politics` 必须继续可导入，新品牌仅影响界面和新下载文件名。
@@ -37,4 +37,4 @@
 5. 政治日程更新机制、公共首页概览、PWA在荣耀Edge的实际安装标签是否自动变更仍属于**后续待验收与改进项**，不可未经确认宣称已完成。
 
 ## 6. 下一个执行者要做什么
-先读 `AGENTS.md` → `docs/index.md` → `docs/DECISIONS.md` → `docs/SINGLE_APP_CONTRACT.md` → `docs/ACTIVE_WORK.md`。核实目前打开的PR及main最新提交。M2.8界面测试通过、合并后单独核实Cloudflare Worker版本，再请用户手机确认：板牙考研同一App能切换两科、独立记录仍保留；无特殊原因不卸载、不清网站数据、不更换网址。详细手册见 `docs/OPERATIONS.md`。
+先读 `AGENTS.md` → `docs/index.md` → `docs/DECISIONS.md` → `docs/SINGLE_APP_CONTRACT.md` → `docs/ACTIVE_WORK.md`。核实目前打开的PR及main最新提交。M2.8代码与测试已合并main，接下来须单独核实Cloudflare Worker实际部署版本，再请用户手机确认：板牙考研同一App能切换两科、独立记录仍保留；无特殊原因不卸载、不清网站数据、不更换网址。详细手册见 `docs/OPERATIONS.md`。
