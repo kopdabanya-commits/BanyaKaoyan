@@ -1,4 +1,5 @@
 name: ECS authorized read-only audit
+# Recheck the configured repository Secret without exposing its value.
 
 on:
   push:
