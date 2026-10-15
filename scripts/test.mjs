@@ -15,7 +15,7 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
  function el(id){return elements[id]??=( {id,value:'',disabled:false,dataset:{},textContent:'',_html:'',classList:{add(){},remove(){},contains(){return false;}},set innerHTML(s){this._html=s;},get innerHTML(){return this._html;},insertAdjacentHTML(_,s){this._html=s+this._html;},querySelector(){return el('focus');},querySelectorAll(){return []},focus(){},click(){},closest(){return null;}} );}
  const doc={hidden:false,activeElement:el('active'),body:{classList:{add(){},remove(){}}},getElementById:el,querySelector:()=>el('update-button'),querySelectorAll:()=>[],addEventListener:(k,f)=>(handlers[k]??=[]).push(f),createElement:()=>el('download')};
  const ls={getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(quota){quota=false;throw Error('quota');}storage.set(k,v)}};
- const context={window:null,PlannerCore:core,StudyIntel:intel,STUDY_PLAN:clone(oldPlan),document:doc,navigator:{onLine:online,clipboard:{writeText:async t=>{context.copied=t}}},localStorage:ls,Date:Clock,structuredClone,console,AbortController,Blob,URL:class extends URL{static createObjectURL(b){blobs.push(b);return 'blob:test'}static revokeObjectURL(){}},location:{protocol:'https:',hostname:'test.invalid'},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{intervals.push(f)},fetch:async()=>{if(fetchFail)throw Error('offline');return {ok:true,redirected:false,headers:new Headers({'content-type':'application/json'}),json:async()=>clone(currentFresh)}},confirm:()=>true,addEventListener:(k,f)=>(winHandlers[k]??=[]).push(f),scrollTo(){}};
+ const context={window:null,PlannerCore:core,StudyIntel:intel,PoliticsUI:{render:(view)=>'<section class="politics-fixture">政治学习计划 '+view+'</section>'},STUDY_PLAN:clone(oldPlan),document:doc,navigator:{onLine:online,clipboard:{writeText:async t=>{context.copied=t}}},localStorage:ls,Date:Clock,structuredClone,console,AbortController,Blob,URL:class extends URL{static createObjectURL(b){blobs.push(b);return 'blob:test'}static revokeObjectURL(){}},location:{protocol:'https:',hostname:'test.invalid'},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{intervals.push(f)},fetch:async()=>{if(fetchFail)throw Error('offline');return {ok:true,redirected:false,headers:new Headers({'content-type':'application/json'}),json:async()=>clone(currentFresh)}},confirm:()=>true,addEventListener:(k,f)=>(winHandlers[k]??=[]).push(f),scrollTo(){}};
  context.window=context;
  vm.createContext(context);vm.runInContext(source.replace(/\n\}\)\(\);\s*$/,'\nglobalThis.api={get data(){return data},get state(){return state},get pending(){return pendingPlan},get selected(){return selectedDate},get today(){return today},allTasks,dateProgress,checkUpdates,applyUpdate,reviewUpdate,render,nav,exportState,summaryText,refreshToday};\n})();'),context);
  const api=context.api;
@@ -170,7 +170,7 @@ test('M2.4 recording can save and complete together, persists across reloads, an
  assert(again.el('app').innerHTML.includes('1/3项'));
 });
 
-test('M2.5 dashboard shows real local analytics and keeps politics empty until user supplies a plan',async()=>{
+test('M2.7 English analytics survive switching to the independent political route',async()=>{
  const h=harness({fail:true});await h.settle();
  assert(h.el('app').innerHTML.includes('focus-panel'));
  assert(h.el('app').innerHTML.includes('premium-hero'));
@@ -179,10 +179,10 @@ test('M2.5 dashboard shows real local analytics and keeps politics empty until u
  assert(h.el('app').innerHTML.includes('政治'));
  await h.click('switch-subject',{subject:'politics'});
  const political=h.el('app').innerHTML;
- assert(political.includes('政治计划筹备中'));
- assert(political.includes('不生成任何虚构任务'));
+ assert(political.includes('政治学习计划'));
+ assert(political.includes('politics-fixture'));
  assert(!political.includes('2014年新题型'));
- h.api.nav('calendar');assert(h.el('app').innerHTML.includes('政治计划筹备中'));
+ h.api.nav('calendar');assert(h.el('app').innerHTML.includes('政治学习计划'));
  await h.click('switch-subject',{subject:'english'});
  assert(h.el('app').innerHTML.includes('65天'));
  const active=h.api.state.done['2026-10-15-1'];
