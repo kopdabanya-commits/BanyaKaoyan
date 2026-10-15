@@ -22,7 +22,7 @@ assert.ok(p.days.every(d=>d.items.every(t=>typeof t.detail==='string'&&t.detail.
 
 // M2.6：客观题题感训练不断档；综合模考第2分段原本已包含新题型、阅读和完形，无需重复加题。
 const objective=new Set(['阅读','新题型','完形']);
-for(const d of p.days){assert.ok(d.items.some(t=>objective.has(t.type)||(t.type==='综合'&&/阅读Text\\s*4.*新题型.*完形/.test(t.title))),d.date+' 缺少客观题训练');}
+for(const d of p.days){assert.ok(d.items.some(t=>objective.has(t.type)||(t.type==='综合'&&/阅读Text\s*4.*新题型.*完形/.test(t.title))),d.date+' 缺少客观题训练');}
 assert.equal(p.days.flatMap(d=>d.items).filter(t=>t.id.startsWith('daily-feel-')).length,42);
 assert.ok(p.days.flatMap(d=>d.items).filter(t=>t.id.startsWith('daily-feel-')).every(t=>t.minutes===25||(t.id==='daily-feel-2026-12-18'&&t.minutes===20)));
 assert.ok(!p.days.flatMap(d=>d.items).filter(t=>t.id.startsWith('daily-feel-')).some(t=>/202[456]年/.test(t.title)),'新增题感不得提前消耗模拟保留卷');
