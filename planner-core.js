@@ -40,7 +40,7 @@ function normalizeState(s){
 function tasks(p,s,day){
  const result=new Map();for(const d of p.days)for(const t of d.items)result.set(t.id,{...t,date:d.date});
  for(const t of s.added)result.set(t.id,t);
- for(const [id,t] of Object.entries(s.archive))result.set(id,t);
+ for(const [id,t] of Object.entries(s.archive))if(!result.has(id))result.set(id,t);
  const vocab={id:day+'-vocab',date:day,title:`背单词 ${s.settings.vocab} 分钟`,minutes:s.settings.vocab,type:'单词',detail:'按当前使用的单词软件复习。',vocab:true};
  if(!result.has(vocab.id))result.set(vocab.id,vocab);
  return [...result.values()].filter(t=>!t.retired&&(s.moved[t.id]||t.date)===day).map(t=>({...t,...s.edits[t.id]})).sort((a,b)=>Number(!!b.vocab)-Number(!!a.vocab));
