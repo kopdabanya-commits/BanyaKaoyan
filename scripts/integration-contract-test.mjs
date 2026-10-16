@@ -15,14 +15,14 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(manifest.name.startsWith('板牙考研'));
  assert(html.includes('<title>板牙考研'));
  assert(html.includes('<span>板牙考研</span>'),'mobile header remains recognizable but compact');
- for(const src of ['./planner-core.js','./plan-data.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./study-intelligence.js','./app.js'])assert(html.includes(src));
+ for(const src of ['./planner-core.js','./plan-data.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./study-intelligence.js','./study-ui.js','./app.js'])assert(html.includes(src));
  assert(html.includes('id="app"')&&html.includes('class="bottom-nav"'));
  assert(script.includes('const subjectBar=renderSubjects()'),'same subject selector on all pages');
  assert(script.includes("subject==='politics'?renderPolitics()"),'politics is an internal route');
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert(sw.includes('m3-1-local-edit-fix-20261016'));
+ assert(sw.includes('m4-student-shell-20261016'));
  assert(html.includes('./cloud-sync.js'));
  assert(sw.includes("'./cloud-sync.js'"));
  assert(script.includes('BanyaCloudSync.panel()'));
@@ -47,7 +47,7 @@ test('English and politics retain separate plans and stable legacy backup/data i
 });
 test('both disciplines use one cache and neither plan JSON is intercepted',()=>{
  const sw=txt('sw.js');
- for(const resource of ['./plan-data.js','./politics-plan-data.js','./planner-core.js','./politics-core.js','./politics-ui.js'])assert(sw.includes("'"+resource+"'"));
+ for(const resource of ['./plan-data.js','./politics-plan-data.js','./planner-core.js','./politics-core.js','./politics-ui.js','./study-ui.js'])assert(sw.includes("'"+resource+"'"));
  assert(sw.includes("url.pathname.endsWith('/plan.json')"));
  assert(sw.includes("url.pathname.endsWith('/politics-plan.json')"));
  assert(!sw.includes('skipWaiting(')||sw.includes('Do not skipWaiting:'),'must not force-update running PWA');
@@ -65,9 +65,29 @@ test('deployment never publishes backend source or secrets as static assets',()=
  const ignore=txt('.assetsignore'),headers=txt('_headers');
  const patterns=ignore.split(String.fromCharCode(10)).map(x=>x.trim());
  assert(patterns.includes('*'),'deny all undeclared public assets by default');
- for(const file of ['!index.html','!sw.js','!cloud-sync.js','!plan.json','!politics-plan.json','!_headers','!icons/']) assert(patterns.includes(file),'missing public allowlist entry: '+file);
+ for(const file of ['!index.html','!sw.js','!study-ui.js','!cloud-sync.js','!plan.json','!politics-plan.json','!_headers','!icons/']) assert(patterns.includes(file),'missing public allowlist entry: '+file);
  assert(patterns.includes('server/'),'never expose ECS backend through public Worker static assets');
  assert(headers.includes("connect-src 'self' https://124.70.128.201;"),'CSP must allow exactly the verified ECS HTTPS origin');
  assert(!headers.includes('https:;')&&!headers.includes('https://*'),'never allow wildcard API destinations');
  assert(txt('cloud-sync.js').includes("const API_ORIGIN = 'https://124.70.128.201'"),'client must pin the same origin');
+});
+
+test('M4 shared task-first component is used by both subjects; stats are actual-record-only',()=>{
+ const ui=txt('study-ui.js'),english=txt('app.js'),politics=txt('politics-ui.js');
+ assert(ui.includes('dayHeading(')&&ui.includes('function task(')&&ui.includes('function stats('));
+ assert(english.includes('UI.dayHeading(')&&english.includes('UI.task(')&&english.includes('UI.stats('));
+ assert(politics.includes('UI.dayHeading(')&&politics.includes('UI.task(')&&politics.includes('UI.stats('));
+ assert(!english.includes('premium-hero')&&!english.includes('focus-panel'));
+ assert(english.includes('BanyaCloudSync.panel()'),'cloud controls stay in settings');
+ assert(!english.includes('BanyaCloudSync.quickPanel()'),'cloud sync must not obscure the daily tasks');
+ const env={window:{}};vm.runInNewContext(ui,env);
+ const sample={item:{id:'x',title:'训练例子',type:'阅读',minutes:20},day:'2026-10-16',done:true,wrong:1};
+ const a=env.window.BanyaStudyUI.task({...sample,subject:'english'});
+ const b=env.window.BanyaStudyUI.task({...sample,subject:'politics'});
+ assert(a.includes('student-task')&&b.includes('student-task'));
+ assert(a.includes('data-action="toggle"')&&b.includes('data-action="p-toggle"'));
+ assert(!a.includes('训练说明文字'));
+ const output=env.window.BanyaStudyUI.stats({today:'2026-10-16',days:[{date:'2026-10-16',done:2,total:3}],categories:[]});
+ assert(output.includes('近7日已打卡')&&output.includes('>2<'));
+ assert(!output.includes('计划总完成率'));
 });

@@ -8,13 +8,14 @@ const Core=require('../politics-core.js');
 const politics=JSON.parse(fs.readFileSync(new URL('../politics-plan.json',import.meta.url)));
 const serialized=fs.readFileSync(new URL('../politics-plan-data.js',import.meta.url),'utf8');
 const uiCode=fs.readFileSync(new URL('../politics-ui.js',import.meta.url),'utf8');
+const sharedCode=fs.readFileSync(new URL('../study-ui.js',import.meta.url),'utf8');
 const deep=x=>JSON.parse(JSON.stringify(x));
 function harness(){
  const handlers={},storage=new Map(),elements={};
  const doc={addEventListener:(event,fn)=>(handlers[event]??=[]).push(fn),getElementById:id=>elements[id]||(elements[id]={value:''}),createElement:()=>({click(){}})};
  const win={PoliticsCore:Core,POLITICS_PLAN:politics,addEventListener(){},POLITICS_NAV(v){lastNav=v}};let lastNav='';
  const ctx={window:win,document:doc,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},Date,Blob,URL:{createObjectURL:()=>'',revokeObjectURL(){}},setTimeout(){},console,confirm:()=>true,alert:()=>{}};
- vm.createContext(ctx);vm.runInContext(uiCode,ctx);
+ vm.createContext(ctx);vm.runInContext(sharedCode,ctx);vm.runInContext(uiCode,ctx);
  const render=(view='today',day='2026-10-16')=>win.PoliticsUI.render(view,day,x=>x,()=>{});
  const click=(action,opts={})=>{const b={dataset:{action,...opts}};for(const f of handlers.click||[])f({target:{closest:()=>b},preventDefault(){},stopImmediatePropagation(){}})};
  const submit=(id,opts={})=>{for(const f of handlers.submit||[])f({target:{id,dataset:opts},preventDefault(){},stopImmediatePropagation(){}})};
@@ -31,7 +32,7 @@ test('politics fallback plan data exactly matches JSON',()=>{
 });
 test('initial Marx questions reflect screenshot but never imply tasks completed',()=>{
  const state=Core.defaults();assert.equal(state.questions.marx.done,93);assert.equal(state.questions.marx.total,396);assert.deepEqual(state.done,{});
- const h=harness();const html=h.render();assert(html.includes('93/396'));assert(html.includes('当天政治任务'));assert(!h.storage.has(Core.key));
+ const h=harness();const html=h.render();assert(html.includes('今日任务'));assert(h.render('stats').includes('93/396'));assert(!h.storage.has(Core.key));
 });
 test('subject renders today, calendar, stats and settings independently',()=>{
  const h=harness();for(const view of ['today','calendar','stats','settings'])assert(h.render(view).includes('政治复习'));assert(h.render('calendar').includes('cal-grid'));assert(h.render('settings').includes('p-import-file'));
@@ -104,5 +105,5 @@ test('M3 politics monthly calendar opens day via shared app route and changes mo
  assert(h.win.PoliticsUI.setDate('2026-11-03'));
  assert.equal(h.win.PoliticsUI.getDate(),'2026-11-03');
  html=h.render('today','2026-10-16');
- assert(html.includes('politics-weekstrip'));
+ assert(html.includes('student-weekstrip'));
 });
