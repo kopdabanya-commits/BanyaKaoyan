@@ -31,10 +31,10 @@ test('politics fallback plan data exactly matches JSON',()=>{
 });
 test('initial Marx questions reflect screenshot but never imply tasks completed',()=>{
  const state=Core.defaults();assert.equal(state.questions.marx.done,93);assert.equal(state.questions.marx.total,396);assert.deepEqual(state.done,{});
- const h=harness();const html=h.render();assert(html.includes('93/396'));assert(html.includes('今日政治任务'));assert(!h.storage.has(Core.key));
+ const h=harness();const html=h.render();assert(html.includes('93/396'));assert(html.includes('当天政治任务'));assert(!h.storage.has(Core.key));
 });
 test('subject renders today, calendar, stats and settings independently',()=>{
- const h=harness();for(const view of ['today','calendar','stats','settings'])assert(h.render(view).includes('考研政治'));assert(h.render('calendar').includes('p-calendar'));assert(h.render('settings').includes('p-import-file'));
+ const h=harness();for(const view of ['today','calendar','stats','settings'])assert(h.render(view).includes('政治复习'));assert(h.render('calendar').includes('cal-grid'));assert(h.render('settings').includes('p-import-file'));
 });
 test('politics completion writes only politics state, never English',()=>{
  const h=harness();h.render();h.click('p-toggle',{id:politics.days[0].items[0].id});const state=JSON.parse(h.storage.get(Core.key));assert.equal(state.done[politics.days[0].items[0].id],true);assert(!h.storage.has('yantu_english_2026_m1'));
