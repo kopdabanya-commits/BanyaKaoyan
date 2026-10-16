@@ -8,7 +8,7 @@ const added=plan.days.flatMap(d=>d.items.filter(t=>t.id.startsWith('daily-feel-'
 const original=structuredClone(plan);original.days.forEach(d=>d.items=d.items.filter(t=>!t.id.startsWith('daily-feel-')));original.meta.revision=5;original.meta.planVersion='2026.10.15-m2.3';
 const target=d=>d.items.some(t=>['阅读','新题型','完形'].includes(t.type)||(t.type==='综合'&&/阅读Text\s*4.*新题型.*完形/.test(t.title)));
 test('M2.6: each of 65 days includes one real objective task; 2024-26 mock parts count but are not re-used',()=>{
- assert.equal(plan.meta.revision,7);assert.equal(plan.days.length,65);assert.equal(added.length,42);
+ assert.equal(plan.meta.revision,8);assert.equal(plan.days.length,65);assert.equal(added.length,42);
  for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=60&&mins<=90,d.date);}
  for(const yr of [2024,2025,2026])for(const d of plan.days.filter(x=>x.items.some(t=>t.title.includes(yr+'年模考')))){
   assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,target(original.days.find(x=>x.date===d.date))?0:1);
@@ -54,7 +54,7 @@ test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + rea
  assert.equal(d15.items.length,3,'保留旧计划历史以兼容本机历史记录');
  assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
  assert.equal(d16.items.filter(t=>t.id.startsWith('restart-2026-10-16-')).length,2);
- assert(d16.items.some(t=>t.title.includes('2010年小作文')));
+ assert(d16.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.title.includes('书信框架')&&t.minutes===30));
  assert(d16.items.some(t=>t.title.includes('2014年英语二新题型')));
  assert(d16.items.some(t=>t.type==='阅读'));
  assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),65);
@@ -75,4 +75,21 @@ test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + rea
  assert(!core.tasks(plan,updated,'2026-10-16').some(t=>t.id==='2026-10-16-1'));
  assert(core.tasks(plan,updated,'2026-10-17').some(t=>t.id==='2026-10-16-1'));
  assert(!updated.done['2026-10-15-1'],'不能假装未做的昨天已经完成');
+});
+
+test('English r8 keeps completed-reading task untouched and substitutes Oct 16 full essay without shifting later days',()=>{
+ const today=plan.days.find(d=>d.date==='2026-10-16');
+ const writing=today.items.find(x=>x.id==='restart-2026-10-16-writing');
+ assert.equal(writing.minutes,30);
+ assert(writing.detail.includes('不要求独立完成整封信'));
+ assert(!writing.title.includes('2010年小作文'));
+ assert(today.items.some(x=>x.id==='daily-feel-2026-10-16'&&x.minutes===25));
+ assert(today.items.some(x=>x.id==='restart-2026-10-16-newtype'&&x.minutes===30));
+ const state=core.defaults();state.done['daily-feel-2026-10-16']=true;
+ state.notes['restart-2026-10-16-writing']='previous local private memo';
+ const normalized=core.normalizeState(state);
+ assert.equal(normalized.done['daily-feel-2026-10-16'],true);
+ assert.equal(normalized.notes['restart-2026-10-16-writing'],'previous local private memo');
+ assert.equal(core.tasks(plan,normalized,'2026-10-16').filter(t=>t.type==='阅读').length,1);
+ assert(!plan.days.find(d=>d.date==='2026-10-18').items.some(t=>t.id==='restart-2026-10-16-writing'));
 });
