@@ -11,6 +11,9 @@
 6. [GPT_HANDOFF.md](GPT_HANDOFF.md)：用户新建聊天以及给Codex/Work的最新交接规则。
 7. [OPERATIONS.md](OPERATIONS.md)：用户在同一个手机App中切换、备份、更新、恢复。
 
+## 最新产品界面
+- [STUDENT_UI_M4.md](STUDENT_UI_M4.md)：两科共用精简页面层级、真实统计口径与手机验收标准。
+
 ## 科目资料和历史
 - [ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md](ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md)：**英语二10月16日最新真实进度与多刷题、少复盘的新原则**，覆盖此前对2010/2011小作文的错误安排。
 - [ENGLISH_RESTART_2026-10-16.md](ENGLISH_RESTART_2026-10-16.md)：**英语二最新重启安排**，10月15日未学，10月16日复位计划与旧记录兼容规则。
