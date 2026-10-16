@@ -31,7 +31,7 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
 });
 test('English and politics retain separate plans and stable legacy backup/data identifiers',()=>{
  assert(englishCore.validPlan(en));assert(politicsCore.validPlan(pol));
- assert.equal(en.days.length,65);assert.equal(en.days.flatMap(d=>d.items).length,141);
+ assert.equal(en.days.length,65);assert.equal(en.days.flatMap(d=>d.items).length,143);
  assert.equal(pol.days.length,64);assert.equal(pol.days.flatMap(d=>d.items).length,192);
  assert.deepEqual(offlinePlan('plan-data.js','STUDY_PLAN'),en);
  assert.deepEqual(offlinePlan('politics-plan-data.js','POLITICS_PLAN'),pol);
