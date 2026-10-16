@@ -150,3 +150,8 @@
 
 ## 6. 下一个执行者要做什么
 先读 `AGENTS.md` → `docs/index.md` → `docs/DECISIONS.md` → `docs/SINGLE_APP_CONTRACT.md` → `docs/ACTIVE_WORK.md`。核实目前打开的PR及main最新提交。M2.8代码与测试已合并main，接下来须单独核实Cloudflare Worker实际部署版本，再请用户手机确认：板牙考研同一App能切换两科、独立记录仍保留；无特殊原因不卸载、不清网站数据、不更换网址。详细手册见 `docs/OPERATIONS.md`。
+
+## 2026-10-16 M3 手机界面专项改版（待main合并/生产发布）
+- 用户要求顶部紧凑、倒计时缩小且降到任务后、当天任务优先、英语二/政治双色统一逻辑；日历点击日期打开独立详情页，安卓后退键/页面返回恢复原月日历；左右滑动和相邻日按钮均支持查看每日安排。
+- 共享App修改 `index.html`, `app.js`, `styles.css`, `sw.js`，政治独立UI `politics-ui.js` 改为相同的按月七列日历和七日快捷切换。新增两科移动日历及返回的回归测试，更新旧视觉文字断言。保留主Worker名、PWA manifest身份、英语/政治计划文件、原本机记录键和云同步数据结构，禁止旧备份自动上传。
+- 修改分支 `feat/mobile-ui-navigation-m3-20261016`，本节提交时均未宣称安卓真机验收，正式CI和发布以 GitHub Actions 最新运行结果为准。

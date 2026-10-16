@@ -17,6 +17,9 @@ const DEFAULT = Core.defaults();
 const STORAGE_KEY = 'yantu_english_2026_m1';
 let state = load();
 let view = 'today';
+let dayDetail=false;
+let dayReturnScroll=0;
+
 const SUBJECT_KEY='banya_active_subject_v1';
 let subject='english';
 try{const saved=localStorage.getItem(SUBJECT_KEY);if(saved==='english'||saved==='politics')subject=saved;}catch{}
@@ -48,14 +51,16 @@ function fits(day,id,minutes){return allTasks(day).filter(t=>t.id!==id).reduce((
 function canPlace(day,id,minutes){if(fits(day,id,minutes))return true;toast('该日训练超过了新计划的时间预算，请缩短或改期其他任务');return false;}
 function dateProgress(s){const a=specialTasks(s);return {done:a.filter(x=>state.done[x.id]).length,total:a.length,minutes:a.reduce((n,x)=>n+x.minutes,0),skipped:!!state.skipped[s]}}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('on'),2800)}
-function nav(next){view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
+function nav(next){if(dayDetail){dayDetail=false;document.body.classList.remove('day-detail-open');}if(next==='today'&&view!=='today'){const meta=subject==='politics'?window.POLITICS_PLAN?.meta:data.meta;const date=meta&&today>=meta.start&&today<=meta.end?today:meta?.start;if(date){if(subject==='politics')window.PoliticsUI?.setDate?.(date);else selectedDate=date;}}view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
 function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
- const content=subject==='politics'?renderPolitics():view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
+ const content=subject==='politics'?renderPolitics():dayDetail?renderToday(justDone):view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
  const subjectBar=renderSubjects();
- const cloudPanel=view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${subjectBar}${content}${cloudPanel}</div>`;
+ const cloudPanel=!dayDetail&&view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
+  document.body?.classList?.toggle?.('day-detail-open',dayDetail);
+  if(document.documentElement?.dataset)document.documentElement.dataset.subject=subject;
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${content}${cloudPanel}</div>`;
  if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
@@ -66,6 +71,25 @@ function renderSubjects(){
  </div><span class="subject-context">${subject==='english'?'英语二专项计划':'政治 · 60—65分目标'}</span></section>`;
 }
 function renderPolitics(){ window.POLITICS_NAV=nav; return window.PoliticsUI.render(view,today,esc,()=>render()); }
+function openDayDetail(date){
+  const valid=subject==='politics'?!!window.PoliticsUI?.setDate?.(date):inRange(date);
+  if(!valid)return;
+  if(subject==='english')selectedDate=date;
+  calendarMonth=date.slice(0,7);
+  if(!dayDetail){dayReturnScroll=window.scrollY;history.pushState({banyaDay:true},'',location.pathname+location.search+'#day/'+subject+'/'+date);}
+  dayDetail=true;render(true);window.scrollTo(0,0);
+}
+function closeDayDetail(){if(!dayDetail)return;dayDetail=false;render(true);window.scrollTo(0,dayReturnScroll);}
+window.BANYA_OPEN_DAY=openDayDetail;
+window.BANYA_SELECT_DAY=selectDay;
+window.BANYA_VIEW=()=>view;
+window.addEventListener('popstate',()=>{if(dayDetail)closeDayDetail();});
+function selectDay(date){
+ if(subject==='politics'){if(!window.PoliticsUI?.setDate?.(date))return;}
+ else {if(!inRange(date))return;selectedDate=date;}
+ if(dayDetail&&history.state?.banyaDay)history.replaceState({...history.state},'',location.pathname+location.search+'#day/'+subject+'/'+date);
+ render(true);
+}
 function renderWeekChart(week,compact=false){
  const labels=['日','一','二','三','四','五','六'];
  return `<div class="weekly-chart ${compact?'compact':''}" aria-label="最近七天专项任务完成情况">
@@ -98,14 +122,15 @@ function renderToday(justDone=''){
  const week=Intel.week(data,state,Core,today);
  const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
  const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
- return `<div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天，把注意力留给重要的题。':s<today?'回看这一日的积累':'提前看看这一天'}</h1><p class="subtitle">${intro}</p>
- <section class="hero premium-hero" aria-label="倒计时与今日进度">
+ return `<div class="day-plan-root" data-day-swipe="true"><div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天的安排':s<today?'回顾学习记录':'提前安排学习'}</h1><p class="subtitle">${intro}</p>
+ <section class="hero premium-hero compact-hero" aria-label="倒计时与今日进度">
  <div class="aurora aurora-one" aria-hidden="true"></div><div class="aurora aurora-two" aria-hidden="true"></div><div class="hero-glow-grid" aria-hidden="true"></div>
  <div class="hero-top"><div class="hero-copy"><span class="hero-kicker"><span class="glint-dot"></span>2027 考研 · 稳定推进</span><h2>距离初试还有</h2><div class="count">${remainingDays()}<small>天</small></div><p class="hero-motto">今天完成的，才是属于自己的进度。</p></div>
  <div class="hero-ring" role="img" aria-label="${selectedLabel}已完成${percent}%的专项任务" style="--ring-progress:${percent}%"><div class="hero-ring-core"><strong>${percent}<small>%</small></strong><span>专项完成</span></div></div></div>
  <div class="hero-bottom premium-foot"><div><small>当日专项</small><b>${v.minutes}<span>分钟</span></b></div><div><small>尚需预计</small><b>${remainingMinutes}<span>分钟</span></b></div><div><small>英语二目标</small><b>80<span>分</span></b></div></div>
  </section>
  <section class="section-row calendar-heading"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项已完成</span></section><div class="weekstrip">${days.join('')}</div>
+ <div class="day-stepper" aria-label="切换日期"><button type="button" data-action="day" data-date="${plus(s,-1)}" ${!inRange(plus(s,-1))?'disabled':''}>← 前一天</button><button type="button" data-action="jump-today" ${s===today?'disabled':''}>今天</button><button type="button" data-action="day" data-date="${plus(s,1)}" ${!inRange(plus(s,1))?'disabled':''}>后一天 →</button></div>
  ${v.skipped?'<div class="skip-banner">这一天已标记为未学习。保留原任务记录，不自动补双倍。</div>':''}
  <section class="focus-panel" aria-label="当日行动建议">
  <div class="focus-top"><span class="micro-label"><span class="micro-icon">✦</span>${esc(insight?.eyebrow||'当前计划')}</span><span class="focus-duration">${insight?.minutes?'约'+insight.minutes+'分钟':'本机建议'}</span></div>
@@ -116,7 +141,7 @@ function renderToday(justDone=''){
  ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
  ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
  <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
- <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">每日客观题不断档 · 单词另计 · 不内置计时器</p>`;
+ <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">每日客观题不断档 · 单词另计 · 不内置计时器</p></div>`;
 }
 function renderCalendar(){
  let [year,month] = calendarMonth.split('-').map(Number);
@@ -248,6 +273,24 @@ function nextBuffer(day){
  return null;
 }
 function exportState(previous=false){let record={app:'yantu-english-ii',version:2,exportedAt:new Date().toISOString(),state,plan:data,...(storageBlocked?{unreadableRaw:localStorage.getItem(STORAGE_KEY)}:{})};if(previous){try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY+'_before_restore'));if(!p)throw Error();record={app:'yantu-english-ii',version:2,state:p.state,plan:p.plan,...(p.raw?{unreadableRaw:p.raw}:{})};}catch{toast('没有恢复前副本');return;}}const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download=`板牙考研_英语二备份_${today}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),3000);toast('备份已生成，请妥善保存')}
+// Horizontal gestures change the study date without changing the bottom tab.
+let swipeStart=null;
+document.addEventListener('touchstart',e=>{
+  if(!(dayDetail||view==='today')||!e.target.closest('[data-day-swipe]')||e.target.closest('button,input,textarea,select,a'))return;
+  if(e.touches.length!==1)return;
+  const p=e.touches[0];swipeStart={x:p.clientX,y:p.clientY,t:Date.now()};
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!swipeStart)return;
+  const first=swipeStart;swipeStart=null;
+  if(e.changedTouches.length!==1||Date.now()-first.t>800)return;
+  const p=e.changedTouches[0],dx=p.clientX-first.x,dy=p.clientY-first.y;
+  if(Math.abs(dx)<85||Math.abs(dx)<Math.abs(dy)*1.5||Math.abs(dy)>70)return;
+  const from=subject==='politics'?window.PoliticsUI?.getDate?.():selectedDate;
+  if(!from)return;
+  const target=plus(from,dx<0?1:-1);
+  selectDay(target);
+},{passive:true});
 document.addEventListener('click',e=>{
  const tab=e.target.closest('.nav-tab');if(tab){nav(tab.dataset.view);return}
  const btn=e.target.closest('[data-action]');if(!btn){if(e.target.id==='modal')closeModal();return}
@@ -259,8 +302,9 @@ document.addEventListener('click',e=>{
  if(action==='apply-update'){applyUpdate();return}
  if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已检查应用更新；有新版时关闭再打开即可')).catch(()=>toast('暂时无法检查，稍后重试'));return}
  if(action==='toggle'){const t=findTask(btn.dataset.id,btn.dataset.day);if(!t)return;const next=!state.done[t.id];state.archive[t.id]={...t,date:btn.dataset.day};state.done[t.id]=next;if(next)delete state.skipped[btn.dataset.day];if(!save()){render();return;}render(false,next?t.id:'');const p=dateProgress(btn.dataset.day);toast(next?(p.total&&p.done===p.total?'当日专项已完成，打卡已保存在本机':'已完成，打卡已保存在本机'):'已取消完成标记');return}
- if(action==='day'||action==='cal-day'){selectedDate=btn.dataset.date;calendarMonth=selectedDate.substring(0,7);if(action==='cal-day')nav('today');else render(true);return}
- if(action==='jump-today'){selectedDate=inRange(today)?today:data.meta.start;render(true);return}
+ if(action==='close-day'){if(history.state?.banyaDay)history.back();else closeDayDetail();return}
+  if(action==='day'||action==='cal-day'){if(action==='cal-day')openDayDetail(btn.dataset.date);else selectDay(btn.dataset.date);return}
+ if(action==='jump-today'){selectDay(inRange(today)?today:data.meta.start);return}
  if(action==='toggle-skip'){const day=btn.dataset.date;if(!inRange(day))return;if(state.skipped[day])delete state.skipped[day];else state.skipped[day]=true;const ok=save();render();if(!ok)return;toast(state.skipped[day]?'已标记休息，不会自动补课':'已恢复');return}
  if(action==='detail'){taskModal(btn.dataset.id,btn.dataset.day);return}
  if(action==='add'){addModal(btn.dataset.day||selectedDate);return}

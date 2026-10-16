@@ -14,7 +14,7 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert.equal(manifest.short_name,'板牙考研');
  assert(manifest.name.startsWith('板牙考研'));
  assert(html.includes('<title>板牙考研'));
- assert(html.includes('板牙考研 <small>'));
+ assert(html.includes('<span>板牙考研</span>'),'mobile header remains recognizable but compact');
  for(const src of ['./planner-core.js','./plan-data.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./study-intelligence.js','./app.js'])assert(html.includes(src));
  assert(html.includes('id="app"')&&html.includes('class="bottom-nav"'));
  assert(script.includes('const subjectBar=renderSubjects()'),'same subject selector on all pages');
@@ -22,7 +22,7 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert(sw.includes("m2.9-20261016"));
+ assert(sw.includes('m3-mobile-ui-20261016'));
  assert(html.includes('./cloud-sync.js'));
  assert(sw.includes("'./cloud-sync.js'"));
  assert(script.includes('BanyaCloudSync.panel()'));
