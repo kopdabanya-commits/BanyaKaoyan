@@ -1,7 +1,7 @@
 name: Diagnose actual Cloudflare Workers Build failure
 on:
   push:
-    branches: [feat/huawei-ecs-cloud-sync-m29]
+    branches: [codex/public-repo-privacy]
     paths: [.github/workflows/cf-build-log-audit.yml]
 permissions:
   contents: read
@@ -23,7 +23,7 @@ jobs:
           python3 - <<'PY'
           import os,json,re,urllib.request,urllib.error
           account='5252fd1b762803460b0f452f8d7f128c'
-          build='065a5292-5b9c-44a0-a12d-dbcb39b6622f'
+          build='922fe40d-0ada-40c2-a592-4e64f4b8a42f'
           base='https://api.cloudflare.com/client/v4/accounts/'+account+'/builds/builds/'+build
           token=os.environ['CLOUDFLARE_TOKEN']
           def request(url):
