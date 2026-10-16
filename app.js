@@ -60,7 +60,7 @@ function render(enter=false,justDone=''){
  const cloudPanel=!dayDetail&&view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
   document.body?.classList?.toggle?.('day-detail-open',dayDetail);
   if(document.documentElement?.dataset)document.documentElement.dataset.subject=subject;
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${!dayDetail&&view==='today'&&window.BanyaCloudSync?window.BanyaCloudSync.quickPanel():''}${content}${cloudPanel}</div>`;
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${content}${cloudPanel}</div>`;
  if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
@@ -68,7 +68,7 @@ function renderSubjects(){
  return `<section class="subject-rail" aria-label="复习科目">
  <div class="subject-tabs" role="group" aria-label="选择科目">
  ${Intel.SUBJECTS.map(item=>`<button type="button" data-action="switch-subject" data-subject="${item.id}" class="subject-tab ${subject===item.id?'is-active':''}" aria-pressed="${subject===item.id}"><span class="subject-symbol">${item.id==='english'?'英':'政'}</span><span>${item.label}</span>${item.status!=='active'?'<span class="subject-new">待建档</span>':''}</button>`).join('')}
- </div><span class="subject-context">${subject==='english'?'英语二专项计划':'政治 · 60—65分目标'}</span></section>`;
+ </div></section>`;
 }
 function renderPolitics(){ window.POLITICS_NAV=nav; return window.PoliticsUI.render(view,today,esc,()=>render()); }
 function openDayDetail(date){
@@ -111,93 +111,58 @@ function taskCard(t,day,featured=false,justDone=false){
  </article>`;
 }
 function renderToday(justDone=''){
- const s=selectedDate; const v=dateProgress(s);
- const budget=state.settings.budget;
- const percent=v.total?Math.round(v.done/v.total*100):0;
- let days=[];for(let i=-3;i<=3;i++){const d=plus(s,i);days.push(`<button class="day-chip ${d===s?'selected':''} ${d===today?'today':''}" data-action="day" data-date="${d}" ${!inRange(d)?'disabled':''}><span class="dow">${weekday(d).slice(1)}</span><span class="number">${dateFrom(d).getDate()}</span></button>`)}
- const tasks=specialTasks(s);
- const pending=tasks.filter(t=>!state.done[t.id]);
- const remainingMinutes=pending.reduce((sum,t)=>sum+t.minutes,0);
- const insight=Intel.recommend(data,state,Core,s);
- const week=Intel.week(data,state,Core,today);
- const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
- const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
- return `<div class="day-plan-root" data-day-swipe="true"><div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天的安排':s<today?'回顾学习记录':'提前安排学习'}</h1><p class="subtitle">${intro}</p>
- <section class="hero premium-hero compact-hero" aria-label="倒计时与今日进度">
- <div class="aurora aurora-one" aria-hidden="true"></div><div class="aurora aurora-two" aria-hidden="true"></div><div class="hero-glow-grid" aria-hidden="true"></div>
- <div class="hero-top"><div class="hero-copy"><span class="hero-kicker"><span class="glint-dot"></span>2027 考研 · 稳定推进</span><h2>距离初试还有</h2><div class="count">${remainingDays()}<small>天</small></div><p class="hero-motto">今天完成的，才是属于自己的进度。</p></div>
- <div class="hero-ring" role="img" aria-label="${selectedLabel}已完成${percent}%的专项任务" style="--ring-progress:${percent}%"><div class="hero-ring-core"><strong>${percent}<small>%</small></strong><span>专项完成</span></div></div></div>
- <div class="hero-bottom premium-foot"><div><small>当日专项</small><b>${v.minutes}<span>分钟</span></b></div><div><small>尚需预计</small><b>${remainingMinutes}<span>分钟</span></b></div><div><small>英语二目标</small><b>80<span>分</span></b></div></div>
- </section>
- <section class="section-row calendar-heading"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项已完成</span></section><div class="weekstrip">${days.join('')}</div>
- <div class="day-stepper" aria-label="切换日期"><button type="button" data-action="day" data-date="${plus(s,-1)}" ${!inRange(plus(s,-1))?'disabled':''}>← 前一天</button><button type="button" data-action="jump-today" ${s===today?'disabled':''}>今天</button><button type="button" data-action="day" data-date="${plus(s,1)}" ${!inRange(plus(s,1))?'disabled':''}>后一天 →</button></div>
- ${v.skipped?'<div class="skip-banner">这一天已标记为未学习。保留原任务记录，不自动补双倍。</div>':''}
- <section class="focus-panel" aria-label="当日行动建议">
- <div class="focus-top"><span class="micro-label"><span class="micro-icon">✦</span>${esc(insight?.eyebrow||'当前计划')}</span><span class="focus-duration">${insight?.minutes?'约'+insight.minutes+'分钟':'本机建议'}</span></div>
- <h2>${esc(insight?.title||'今天按计划稳步推进')}</h2><p>${esc(insight?.detail||'以实际做题情况为准，不自动改变计划。')}</p>
- <div class="focus-actions">${insight?.taskId?`<button class="cta focus-primary" data-action="detail" data-id="${esc(insight.taskId)}" data-day="${s}">开始这项训练 <span aria-hidden="true">↗</span></button>`:''}<button class="cta focus-secondary" data-action="copy-summary">发给 ChatGPT 调整计划 <span aria-hidden="true">↗</span></button></div></section>
- <div class="progress-block" aria-label="${selectedLabel}专项进度"><div class="progress-top"><span class="progress-title">${v.total&&percent===100?'当日专项已完成':v.skipped?'已标记休息，不会补债':'专项完成进度'}</span><span class="progress-value">${v.done}/${v.total}项 · 剩余约${remainingMinutes}分钟</span></div><div class="track" role="progressbar" aria-label="专项任务完成比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${v.total&&percent===100?'<p class="progress-footnote">完成记录已保存在本机，需要时可在任务详情补充复盘。</p>':pending.length?`<p class="progress-footnote">下一步：${esc(pending[0].title)} · 约${pending[0].minutes}分钟</p>`:''}</div>
- ${tasks.map(t=>taskCard(t,s,t.id===pending[0]?.id,t.id===justDone)).join('')||'<div class="empty">这一天没有安排专项练习，可以根据需要添加任务。</div>'}
- ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
- ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
- <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
- <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">每日客观题不断档 · 单词另计 · 不内置计时器</p></div>`;
+ const UI=window.BanyaStudyUI,date=selectedDate,progress=dateProgress(date),tasks=specialTasks(date);
+ const pending=tasks.filter(t=>!state.done[t.id]),remaining=pending.reduce((sum,t)=>sum+t.minutes,0);
+ const head=UI.dayHeading({date,today,start:data.meta.start,end:data.meta.end,done:progress.done,total:progress.total,remaining,countdown:remainingDays(),prev:'day',next:'day',jump:'jump-today'});
+ const list=tasks.map(t=>UI.task({item:t,day:date,done:!!state.done[t.id],wrong:state.wrong[t.id],hasNote:!!state.notes[t.id],next:t.id===pending[0]?.id})).join('');
+ return '<div class="student-page student-english" data-day-swipe="true">'+head
+ +'<div class="student-section-heading"><h2>今日任务</h2><span>共 '+tasks.length+' 项</span></div>'
+ +'<div class="student-task-list">'+(list||'<div class="empty">这一天没有计划任务</div>')+'</div>'
+ +(progress.skipped?'<p class="student-quiet">这一天标记为休息，任务仍保留。</p>':'')
+ +'<div class="student-day-tools"><button class="student-action-link" data-action="add" data-day="'+date+'">＋ 添加任务</button>'
+ +'<button class="student-action-link" data-action="toggle-skip" data-date="'+date+'">'+(progress.skipped?'取消休息标记':'标记休息')+'</button></div></div>';
 }
 function renderCalendar(){
- let [year,month] = calendarMonth.split('-').map(Number);
- let first=new Date(year,month-1,1,12); let weekdayOffset=(first.getDay()+6)%7;
- let count=new Date(year,month,0).getDate();
- let arr=['一','二','三','四','五','六','日'].map(w=>`<span class="cal-wd">${w}</span>`);
- for(let i=0;i<weekdayOffset;i++)arr.push('<div></div>');
- for(let day=1;day<=count;day++){
-  let s=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-  let valid=inRange(s),p=valid?dateProgress(s):{done:0,total:0,skipped:false};
-  const status=p.skipped?'已标记休息':p.total&&p.total===p.done?'专项已完成':p.done?'已完成'+p.done+'项，共'+p.total+'项':'待练'+p.total+'项';
-  arr.push(`<button class="cal-day ${s===selectedDate?'current':''} ${s===today?'reddot':''} ${!valid?'dim':''} ${p.skipped?'skipped':''} ${p.total&&p.total===p.done?'complete':''}" data-action="cal-day" data-date="${s}" aria-label="${month}月${day}日，${valid?status:'计划范围外'}" ${!valid?'disabled':''}>${day}${valid?'<i class="cal-dot"></i>':'<i style="height:5px"></i>'}</button>`)
+ const UI=window.BanyaStudyUI,[year,month]=calendarMonth.split('-').map(Number);
+ const first=new Date(year,month-1,1,12),offset=(first.getDay()+6)%7,count=new Date(year,month,0).getDate();
+ const arr=['一','二','三','四','五','六','日'].map(w=>'<span class="cal-wd">'+w+'</span>');
+ for(let i=0;i<offset;i++)arr.push('<span></span>');
+ for(let d=1;d<=count;d++){
+  const date=calendarMonth+'-'+String(d).padStart(2,'0'),valid=inRange(date),p=valid?dateProgress(date):{done:0,total:0,skipped:false};
+  const classes=['cal-day',date===selectedDate?'current':'',date===today?'reddot':'',!valid?'dim':'',p.skipped?'skipped':'',p.total&&p.done===p.total?'complete':''].filter(Boolean).join(' ');
+  arr.push('<button type="button" class="'+classes+'" data-action="cal-day" data-date="'+date+'" '+(!valid?'disabled':'')+' aria-label="'+UI.shortDay(date)+'，完成'+p.done+'/'+p.total+'项">'+d+(valid?'<i class="cal-dot"></i>':'')+'</button>');
  }
- let totalDone=data.days.filter(d=>dateProgress(d.date).total===dateProgress(d.date).done).length; const skippedDays=data.days.filter(d=>state.skipped[d.date]).length;
- return `<div class="eyebrow">65天 · 专项复习安排</div><h1 class="page-title">每天学什么，一眼就知道</h1><p class="subtitle">选择日期即可查看训练内容，临时调整不会让第二天自动加倍。</p>
- <div class="month-head"><button class="round-btn" data-action="prev-month" aria-label="上个月">‹</button><h2>${year}年${month}月</h2><button class="round-btn" data-action="next-month" aria-label="下个月">›</button></div>
- <div class="calendar"><div class="cal-grid">${arr.join('')}</div><div class="legend"><span><i></i>待练</span><span class="green"><i></i>已完成</span><span class="amber"><i></i>休息</span></div></div>
- <section class="section-row"><h2>三个复习阶段</h2></section>
- <div class="mini-card"><h3>10.15—11.15 · 写作入门＋客观题扫尾</h3><p>不追赶前两天进度；11月15日前完成2014—2023新题型一刷。</p></div>
- <div class="mini-card"><h3>11.16—12.04 · 完形翻译收官＋首次检测</h3><p>11月20日左右完形一刷完成；12月1日翻译一刷完成。11月21—24日2024卷弹性模考。</p></div>
- <div class="mini-card"><h3>12.05—12.18 · 两次检测＋作文强化</h3><p>12月5—8日2025卷；12月12—15日2026卷；最后3天重点查漏补缺。</p></div>
- <div class="tip">全部完成天数：${totalDone} / ${data.days.length} · 已标记休息 ${skippedDays} 天。错过一天不会自动产生双倍补课。</div>`;
+ const previous=calendarMonth<=data.meta.start.slice(0,7),following=calendarMonth>=data.meta.end.slice(0,7);
+ return '<div class="student-page student-english">'+UI.header('日历','选择日期查看安排')
+ +'<div class="month-head"><button type="button" class="round-btn" data-action="prev-month" '+(previous?'disabled':'')+' aria-label="上个月">‹</button><h2>'+year+'年'+month+'月</h2><button type="button" class="round-btn" data-action="next-month" '+(following?'disabled':'')+' aria-label="下个月">›</button></div>'
+ +'<div class="calendar"><div class="cal-grid">'+arr.join('')+'</div><div class="legend"><span><i></i>待完成</span><span class="green"><i></i>已打卡</span><span class="amber"><i></i>休息</span></div></div></div>';
 }
 function renderStats(){
- let scheduled=0,done=0,minutes=0;
- const counters={};
- for(const day of data.days){for(const t of specialTasks(day.date)){
-   scheduled++;counters[t.type]??={total:0,done:0};counters[t.type].total++;
-   if(state.done[t.id]){done++;minutes+=t.minutes;counters[t.type].done++}
- }}
- const pct=scheduled?Math.round(done/scheduled*100):0;
- const week=Intel.week(data,state,Core,today);
- const focus=['写作','新题型','翻译','完形','阅读','复盘','综合','模考','机动'];
- let records=[];for(const d of data.days){for(const t of specialTasks(d.date)){if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')records.push({date:d.date,t,wrong:state.wrong[t.id]})}}
- return `<div class="eyebrow">专项复习 · 完成记录</div><h1 class="page-title">练过哪些，记录得清楚</h1><p class="subtitle">只统计已打卡的任务；学习时长是计划估算，不是手机自动计时，也不等于真实得分。</p>
- <div class="stats-two"><div class="statbox"><div class="name">已完成任务</div><div class="val">${done}<span style="font-size:12px;color:#aab1bf"> / ${scheduled}</span></div></div><div class="statbox"><div class="name">已完成任务预计时长</div><div class="val">${(minutes/60).toFixed(1)}<span style="font-size:12px;color:#aab1bf"> 小时</span></div></div></div>
- <div class="progress-block"><div class="progress-top"><span class="progress-title">总体任务完成率</span><span class="progress-value">${pct}%</span></div><div class="track"><span style="width:${pct}%"></span></div></div>
- <section class="section-row"><h2>七日学习足迹</h2><span class="sub">${week.done}/${week.total}项打卡 · 休息${week.skipped}天</span></section>
- <section class="week-insight full">${renderWeekChart(week)}<p class="week-disclaimer">只使用当前手机上的真实打卡，不计算番茄 Todo 时间，也不推算政治成绩。</p></section>
- <section class="section-row"><h2>各题型完成情况</h2></section><div class="setting-section">${focus.filter(x=>counters[x]).map(x=>`<div class="metric"><div><b>${x}</b><br/><small>${counters[x].done}/${counters[x].total} 已完成</small></div><progress value="${counters[x].done}" max="${counters[x].total}"></progress></div>`).join('')}</div>
- <section class="section-row"><h2>建档时的学习基线</h2></section><div class="setting-section"><div class="metric"><b>阅读一刷</b><small>约 37 / 40</small></div><div class="metric"><b>新题型</b><small>6.5 / 10</small></div><div class="metric"><b>完形填空</b><small>6 / 10</small></div><div class="metric"><b>作文起点</b><small>小作文难独立完成，大作文未开始</small></div></div>
- <div class="tip">复习策略：优先让大小作文能独立写，其次改善翻译中文表达与新题型稳定性；37分阅读是旧卷回忆估计，待后期新卷模考再校准。</div><section class="section-row"><h2>最近的作答记录</h2></section>${records.length?records.slice(-10).reverse().map(r=>`<div class="mini-card"><h3>${esc(r.t.title)}</h3><p>${niceDate(r.date)} · 错 ${esc(r.wrong)} 题</p></div>`).join(''):'<div class="empty">暂时还没有作答记录。打开任意专项任务，在“训练记录”中填写错题数即可。</div>'}
- <section class="section-row"><h2>计划移出的保留记录</h2></section>${Object.values(state.archive).filter(t=>t.retired).map(t=>`<div class="mini-card"><h3>${esc(t.title)}</h3><p>${esc(t.date)} · 已移出待办，记录仍保留${state.wrong[t.id]!==undefined?' · 错'+esc(state.wrong[t.id])+'题':''}</p></div>`).join('')||'<p class="setting-note">暂无移出的任务。</p>'}<div class="tip">阅读是现有优势，计划重心是写作；记录真实成绩后，可进一步调整薄弱项。</div>`;
+ const UI=window.BanyaStudyUI;
+ const days=data.days.filter(d=>d.date<=today).map(d=>({date:d.date,...dateProgress(d.date)}));
+ const groups=new Map(),recorded=[];
+ for(const d of data.days.filter(d=>d.date<=today)){
+  for(const t of specialTasks(d.date)){
+   if(!groups.has(t.type))groups.set(t.type,{label:t.type,done:0,total:0});
+   const g=groups.get(t.type);g.total++;if(state.done[t.id])g.done++;
+   if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')recorded.push({date:d.date,task:t,wrong:state.wrong[t.id]});
+  }
+ }
+ const recordedHtml=recorded.length?'<section class="student-stat-section"><h2>最近的错题记录</h2>'+recorded.slice(-5).reverse().map(r=>'<button class="student-record-row" data-action="detail" data-id="'+esc(r.task.id)+'" data-day="'+esc(r.date)+'"><span>'+esc(r.task.title)+'</span><strong>错 '+esc(r.wrong)+' 题 ›</strong></button>').join('')+'</section>':'';
+ return '<div class="student-page student-english">'+UI.stats({days,categories:[...groups.values()],wrongCount:recorded.length,today,subject:'english'})+recordedHtml+'</div>';
 }
 function renderSettings(){
- return `<div class="eyebrow">设置与学习记录</div><h1 class="page-title">少设置一点，多练习一点</h1><p class="subtitle">每天阅读、新题型或完形至少练一项。多数日专项85—90分钟，单词另外安排。</p>
- <section class="setting-section"><h2>最常用的三个操作</h2><div class="usage-steps"><p><b>练习：</b>在“今日”选一项训练，先独立作答，再核对原文或范文。</p><p><b>复盘：</b>打开任务详情，记录错题数和一句话错因，可同时打卡。</p><p><b>调整：</b>将做题情况发给ChatGPT，计划更新后再到这里检查新版。</p></div></section>
- <section class="setting-section appearance-section"><div class="setting-row-title"><div><h2>视觉外观</h2><p class="setting-note">两套配色都保留流畅轻动效；系统设置“减少动态效果”时自动精简动画。</p></div><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="${theme==='light'?'selected':''}" aria-pressed="${theme==='light'}">浅色</button><button type="button" data-action="theme" data-theme="dark" class="${theme==='dark'?'selected':''}" aria-pressed="${theme==='dark'}">深色</button></div></div></section>
- <section class="setting-section"><h2>英语二时间预算</h2><label class="input-line">背单词时间<select id="vocab-minutes"><option value="30" ${state.settings.vocab===30?'selected':''}>30分钟</option><option value="35" ${state.settings.vocab===35?'selected':''}>35分钟（默认）</option><option value="40" ${state.settings.vocab===40?'selected':''}>40分钟</option></select></label><label class="input-line">每日英语总预算<select id="daily-budget"><option value="90" ${state.settings.budget===90?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>90分钟（旧版）</option><option value="100" ${state.settings.budget===100?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>100分钟（旧版）</option><option value="110" ${state.settings.budget===110?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>110分钟（旧版）</option><option value="120" ${state.settings.budget===120?'selected':''} ${(data.meta.revision||0)>=6?'disabled':''}>120分钟（旧版）</option><option value="130" ${state.settings.budget===130?'selected':''}>130分钟（新版建议）</option><option value="135" ${state.settings.budget===135?'selected':''}>135分钟</option></select></label><p class="setting-note">新计划增加20—25分钟旧卷题感训练：阅读1篇、新题型5题或完形20空。多数日专项85—90分钟，单词另计；130分钟总预算包含自行安排的单词时间。</p></section>
- <section class="setting-section"><h2>获取最新计划</h2><p class="setting-note">你把实际做题结果告诉ChatGPT，我更新计划并发布后，再点击下方检查。请先预览差异，再决定是否应用；不会把计划任务自动算成已完成。</p><div class="button-row"><button class="cta secondary" data-action="check-updates">↻ 检查计划更新</button><button class="cta ghost" data-action="copy-summary">▤ 复制学习近况</button></div><p class="setting-note" id="sync-status">当前：${esc(data.meta.planVersion||'初始版')} · ${esc(updateSource)} · ${esc(lastCheck)}</p></section>
- <section class="setting-section"><h2>数据与备份</h2><div class="button-row"><button class="cta secondary" data-action="export">↥ 导出学习记录</button><button class="cta ghost" data-action="import">↧ 导入备份</button><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></div><input id="file-import" type="file" accept="application/json,.json"/><p class="setting-note" style="margin-top:13px">打卡、错题和复盘存在当前手机的浏览器数据中，并未自动上传云端。建议每周导出一次备份；清除浏览器数据或换机前务必备份。</p></section>
- <section class="setting-section"><h2>离线与访问</h2><p class="setting-note" id="offline-status">${navigator.onLine===false?'当前离线，使用本地记录':'当前在线'} · ${esc(offlineStatus)}</p><div class="button-row"><button class="cta ghost" data-action="refresh-app">检查应用更新</button><a class="cta secondary" href="./index.html">重新打开网页</a></div><p class="setting-note">离线副本保存在本机，当前使用免费公开网址，网站任何人都可访问，GitHub代码仓库仍为私人。打卡、错题和笔记仅存本机、不自动上传；借用手机时请保护好锁屏。</p></section><section class="setting-section"><h2>一个App，两门科目</h2><p class="setting-note">板牙考研的英语二和政治共用同一App、页面导航和离线资源，分别保存任务与做题记录。政治已有64天独立计划，使用苍盾肖1000题需手动登记。切换科目不会把另一科自动打卡。</p><div class="button-row"><button class="cta secondary" data-action="open-politics">进入政治复习</button><button class="cta ghost" data-action="copy-politics">复制政治学习反馈清单</button></div></section>
- <section class="setting-section"><h2>计划依据</h2><div class="metric"><b>计划开始</b><small>2026年10月15日</small></div><div class="metric"><b>计划结束</b><small>2026年12月18日</small></div><div class="metric"><b>英语二考试</b><small>2026年12月19日</small></div><div class="metric"><b>模拟安排</b><small>3套 · 弹性4天</small></div></section>
- <section class="setting-section"><h2>安装到手机桌面</h2><p class="setting-note">部署到HTTPS站点后，在 Android Chrome 或 Edge 菜单中选择「安装应用」或「添加到主屏幕」。荣耀手机安装后如果找不到图标，检查浏览器“创建桌面快捷方式”权限。首次联网缓存完成后再尝试离线启动；清理网站数据前先导出备份。</p></section>
- <div class="watermark">板牙考研 M2.8 · 单一App / 科目记录独立 · 暂不支持跨设备同步</div>`;
+ const UI=window.BanyaStudyUI;
+ return '<div class="student-page student-english">'+UI.header('设置')
+ +'<section class="setting-section"><h2>计划与同步</h2><div class="button-row"><button class="cta secondary" data-action="check-updates">检查英语计划更新</button><button class="cta ghost" data-action="copy-summary">复制学习近况</button></div>'
+ +'<p class="setting-note" id="sync-status">计划 '+esc(data.meta.planVersion||'初始版')+' · '+esc(updateSource)+' · '+esc(lastCheck)+'</p></section>'
+ +'<section class="setting-section"><h2>学习偏好</h2><div class="setting-row-title"><span>外观</span><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="'+(theme==='light'?'selected':'')+'" aria-pressed="'+(theme==='light')+'">浅色</button><button type="button" data-action="theme" data-theme="dark" class="'+(theme==='dark'?'selected':'')+'" aria-pressed="'+(theme==='dark')+'">深色</button></div></div>'
+ +'<label class="input-line">单词自学时间<select id="vocab-minutes">'+[30,35,40].map(v=>'<option value="'+v+'" '+(state.settings.vocab===v?'selected':'')+'>'+v+'分钟</option>').join('')+'</select></label>'
+ +'<label class="input-line">英语日总预算<select id="daily-budget">'+[90,100,110,120,130,135].map(v=>'<option value="'+v+'" '+(state.settings.budget===v?'selected':'')+' '+((data.meta.revision||0)>=6&&v<130?'disabled':'')+'>'+v+'分钟</option>').join('')+'</select></label></section>'
+ +'<section class="setting-section"><h2>备份与恢复</h2><div class="button-row"><button class="cta secondary" data-action="export">导出英语备份</button><button class="cta ghost" data-action="import">导入备份</button></div><details><summary>恢复前的备份</summary><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></details><input id="file-import" type="file" accept="application/json,.json" hidden></section>'
+ +'<section class="setting-section"><h2>应用更新</h2><div class="button-row"><button class="cta secondary" data-action="refresh-app">检查应用更新</button></div><p class="setting-note" id="offline-status">'+esc(offlineStatus)+'</p></section></div>';
 }
+
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
 let modalFocus=null;
 function modal(content){modalFocus=document.activeElement;document.body.classList.add('modal-open');const box=document.getElementById('modal');box.classList.remove('hidden');box.innerHTML=`<div class="modal-card">${content}</div>`;box.querySelector('input,button,textarea')?.focus();}
