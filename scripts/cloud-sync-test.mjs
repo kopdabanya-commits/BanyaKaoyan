@@ -33,7 +33,7 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
    return {ok:true,json:async()=>cloud};
   }};
  vm.runInNewContext(code,context);
- return {win,store,calls,reloads,cloud:()=>cloud};
+ return {win,store,calls,reloads,network:context.navigator,cloud:()=>cloud};
 }
 const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
 test('no endpoint: no network, no automatic first upload or cloud replacement',async()=>{
@@ -85,4 +85,33 @@ test('reject mislabeled cloud record without overwriting local data',async()=>{
   {subject:'english',revision:2,state:pack('politics',state(true))});
  await a.win.BanyaCloudSync.syncAll();
  assert.equal(a.store.get(key),old);assert.equal(a.reloads.length,0);
+});
+
+test('offline changes remain local until connectivity returns, then CAS uploads',async()=>{
+ const original=JSON.stringify(state(false)),modified=JSON.stringify(state(true));
+ const a=harness({[configKey]:JSON.stringify(connected),[key]:modified,
+  [meta]:JSON.stringify({revision:1,hash:hash(original)})},
+  {subject:'english',revision:1,state:pack('english',JSON.parse(original))});
+ a.network.onLine=false;
+ await a.win.BanyaCloudSync.syncAll();
+ assert.equal(a.calls.length,0,'offline mode must never call server or block local state');
+ assert.equal(a.store.get(key),modified);
+ a.network.onLine=true;
+ await a.win.BanyaCloudSync.syncAll();
+ assert.equal(a.cloud().revision,2);
+ assert.equal(a.store.get(key),modified);
+});
+test('politics remote-only update does not change English storage or English baseline',async()=>{
+ const politicsKey='yantu_politics_2026_v1',politicsMeta='banya_cloud_sync_meta_v1_politics';
+ const old=JSON.stringify({done:{},notes:{},questions:{marx:{done:93,total:396}}});
+ const latest={done:{'politics-task':true},notes:{},questions:{marx:{done:93,total:396}}};
+ const english=JSON.stringify(state(true));
+ const a=harness({[configKey]:JSON.stringify(connected),[key]:english,
+   [politicsKey]:old,[politicsMeta]:JSON.stringify({revision:1,hash:hash(old)})},
+   {subject:'politics',revision:2,state:pack('politics',latest)});
+ await a.win.BanyaCloudSync.syncAll();
+ assert.equal(a.store.get(key),english,'English local state must never be changed by a politics update');
+ assert.equal(a.store.get(politicsKey+'_before_cloud_restore'),old);
+ assert.deepEqual(JSON.parse(a.store.get(politicsKey)),latest);
+ assert.equal(a.store.get(politicsMeta)!==undefined,true);
 });
