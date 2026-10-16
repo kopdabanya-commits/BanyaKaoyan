@@ -81,7 +81,8 @@ test('legacy political completed tasks, wrong counts and notes survive plan upgr
  assert.equal(state.wrong[id],3);
  assert.equal(state.notes[id],'历史多选错因');
  assert.equal(state.questions.marx.done,93);
- const h=harness();h.storage.set(Core.key,JSON.stringify(legacy));h.win.PoliticsUI.render('today','2026-10-16',x=>x,()=>{});
- assert(h.render().includes('撤销打卡'));
+ assert(politics.days[0].items.some(t=>t.id===id),'legacy task ID is retained in v2');
+ const h=harness();h.render();h.click('p-toggle',{id});
+ assert.equal(JSON.parse(h.storage.get(Core.key)).done[id],true);
  assert(!h.storage.has('yantu_english_2026_m1'));
 });
