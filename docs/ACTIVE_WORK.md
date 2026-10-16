@@ -1,3 +1,12 @@
+## 2026-10-16 09:30 CST 英语二 M2.7 重新起步已合并与发布（以此节为准）
+
+- 用户明确反馈2026-10-15**没有学习**，要求10/16重新规划并同步。英语规划线已把权威 `plan.json` / `plan-data.js` 升为 `2026.10.16-m2.7` revision7，历史日历65天、任务143项；**昨天的旧任务不自动补给今天**。原141个任务ID全保留，另增两项10/16重启任务；原10/16大作文入门任务ID移动到10/17，整年预留的2024—2026三套真题及10/18之后计划未变。详细见 `docs/ENGLISH_RESTART_2026-10-16.md`。
+- [英语PR #12](https://github.com/kopdabanya-commits/English-II-Plan/pull/12)已squash合并主分支，commit `852fb22dda9a0b2d61b23dbd72f7f8918bd2dfa5`，PR head `b9610c2456d225c74c6071e569df84115844ae47`；[PR CI 38835858081](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38835858081) success，[main CI 38835946329](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38835946329) success。
+- [原Cloudflare Worker正式发布 38835946239](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38835946239) 中 `verify` 与 `publish` 两个job均success。未改原网站 `https://english-ii-plan.kopdabanya.workers.dev` 或PWA安装身份，不涉及服务器、云同步、政治计划和本机旧存储键。此证据是生产发布完成，**不代表手机Edge已点击“保留记录并应用”**。用户需要在现有「板牙考研→英语二→设置」中检查计划更新、预览变更后自行确认，不卸载App、不清除站点数据。
+- **用户手机私有记录未被ChatGPT写入或读取**，计划meta中标记“10/15未学”不等于实际手机自动打休息标记。政治线按原计划独立继续，技术线维护其他系统。
+
+---
+
 ## 2026-10-16 英语二复习重新起步（英语计划独立M2.7；以最新main/PR检查为准）
 
 用户明确反馈2026-10-15没有学习，要求10-16重新规划并同步。英语权威计划调整为 `2026.10.16-m2.7`/revision7（10/15—12/18历史日历65天，143任务；10/16起为实际重启），今天2010小作文30分、2014新题型30分、2011阅读Text4 25分，明天2014错题复盘20分、2013完形30分、2010大作文三段提纲15分。旧10/15原计划保留，不向10/16自动滚动；不替用户打卡或更改私人记录。2024—2026模考日期未动，政治不动。具体见 `docs/ENGLISH_RESTART_2026-10-16.md`。英语规划聊天负责计划，技术聊天负责PWA/服务器，两者须查实时PR避免覆盖。
