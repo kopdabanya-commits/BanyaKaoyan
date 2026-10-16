@@ -35,9 +35,15 @@ jobs:
                 body=e.read(1000).decode('utf-8','replace')
                 print('403 response class:', 'cloudflare' if 'cloudflare' in body.lower() else 'non-cloudflare', 'error code hints:',re.findall(r'(?i)(?:error|code)[^0-9]{0,8}([0-9]{3,5})',body)[:5])
               time.sleep(3)
-          for suffix in ['/cloud-sync.js','/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md']:
+          ua='Mozilla/5.0 (Linux; Android 16; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36 EdgA/141.0.0.0'
+          for suffix in ['/index.html','/cloud-sync.js','/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md']:
             try:
-              with urllib.request.urlopen(base+suffix,timeout=18) as r:
+              req=urllib.request.Request(base+suffix,headers={'User-Agent':ua,'Accept':'text/html,application/xhtml+xml,application/javascript,*/*;q=0.8'})
+              with urllib.request.urlopen(req,timeout=18) as r:
+                if suffix=='/index.html':
+                  body=r.read().decode('utf-8','replace')
+                  print('mobile Edge UA body includes sync script:', './cloud-sync.js' in body)
+                  print('mobile Edge UA CSP allows verified ECS:', "connect-src 'self' https://124.70.128.201" in r.headers.get('content-security-policy',''))
                 status=r.status
             except urllib.error.HTTPError as e: status=e.code
             except Exception as e:
