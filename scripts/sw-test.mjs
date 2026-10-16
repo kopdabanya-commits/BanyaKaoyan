@@ -17,8 +17,8 @@ function setup({bad=null,offline=false,redirect=false}={}){
  async function get(path,method='GET'){let result;handlers.fetch({request:{url:origin+path,method},respondWith:p=>result=p});return result;}
  return {stores,calls,lifecycle,get,claimed:()=>claimed};
 }
-test('atomic install validates fourteen resources, activation removes only old app caches',async()=>{
- const h=setup();h.stores.set('other-app',new Map());await h.lifecycle('install');const name=[...h.stores.keys()].find(k=>k.startsWith('yantu-english-ii-')&&k!=='yantu-english-ii-old');assert.equal(h.stores.get(name).size,14);assert(h.stores.has('yantu-english-ii-old'));await h.lifecycle('activate');assert(!h.stores.has('yantu-english-ii-old'));assert(h.stores.has('other-app'));assert(h.claimed());
+test('atomic install validates fifteen resources, activation removes only old app caches',async()=>{
+ const h=setup();h.stores.set('other-app',new Map());await h.lifecycle('install');const name=[...h.stores.keys()].find(k=>k.startsWith('yantu-english-ii-')&&k!=='yantu-english-ii-old');assert.equal(h.stores.get(name).size,15);assert(h.stores.has('yantu-english-ii-old'));await h.lifecycle('activate');assert(!h.stores.has('yantu-english-ii-old'));assert(h.stores.has('other-app'));assert(h.claimed());
  for(const [,opts] of h.calls)assert.equal(opts.redirect,'error');
 });
 test('HTML login returned as JavaScript aborts install, partial new cache removed, active cache preserved',async()=>{
