@@ -9,7 +9,7 @@ function save(){if(blocked)return false;try{const raw=JSON.stringify(state);loca
 function dateAdd(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function getDay(s){return plan.days.find(d=>d.date===s)}
 function totals(d){return {done:d.items.filter(t=>state.done[t.id]).length,total:d.items.length,minutes:d.items.reduce((n,t)=>n+t.minutes,0)}}
-function todayInPlan(){const d=new Date().toISOString().slice(0,10);return getDay(d)?d:plan.meta.start}
+function todayInPlan(){const n=new Date(),d=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');return getDay(d)?d:plan.meta.start}
 function setDate(date){if(!getDay(date))return false;selected=date;pMonth=date.slice(0,7);openId='';root.__politicsSelectionInitialized=true;return true}
 function shiftMonth(n){const a=pMonth.split('-').map(Number),d=new Date(Date.UTC(a[0],a[1]-1+n,1));const next=d.toISOString().slice(0,7);if(next<plan.meta.start.slice(0,7)||next>plan.meta.end.slice(0,7))return;pMonth=next;rerender()}
 function monthlyCalendar(today){
