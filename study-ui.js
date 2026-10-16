@@ -33,7 +33,7 @@ function task({item,day,done=false,wrong,hasNote=false,subject='english',next=fa
  +'<button type="button" class="student-task-more" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="展开任务记录">›</button></article>';
 }
 function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}){
- const end=days=[],start=dayAdd(today,-6);
+ const end=[],start=dayAdd(today,-6);
  for(let i=0;i<7;i++){const d=dayAdd(start,i);const found=rows.find(x=>x.date===d);end.push(found||{date:d,total:0,done:0})}
  const completed=end.reduce((n,d)=>n+d.done,0),planned=end.reduce((n,d)=>n+d.total,0);
  const daysStudied=end.filter(d=>d.done>0).length;
