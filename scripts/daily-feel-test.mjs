@@ -8,7 +8,7 @@ const added=plan.days.flatMap(d=>d.items.filter(t=>t.id.startsWith('daily-feel-'
 const original=structuredClone(plan);original.days.forEach(d=>d.items=d.items.filter(t=>!t.id.startsWith('daily-feel-')));original.meta.revision=5;original.meta.planVersion='2026.10.15-m2.3';
 const target=d=>d.items.some(t=>['阅读','新题型','完形'].includes(t.type)||(t.type==='综合'&&/阅读Text\s*4.*新题型.*完形/.test(t.title)));
 test('M2.6: each of 65 days includes one real objective task; 2024-26 mock parts count but are not re-used',()=>{
- assert.equal(plan.meta.revision,8);assert.equal(plan.days.length,65);assert.equal(added.length,42);
+ assert.equal(plan.meta.revision,9);assert.equal(plan.days.length,65);assert.equal(added.length,42);
  for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=60&&mins<=90,d.date);}
  for(const yr of [2024,2025,2026])for(const d of plan.days.filter(x=>x.items.some(t=>t.title.includes(yr+'年模考')))){
   assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,target(original.days.find(x=>x.date===d.date))?0:1);
@@ -54,7 +54,7 @@ test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + rea
  assert.equal(d15.items.length,3,'保留旧计划历史以兼容本机历史记录');
  assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
  assert.equal(d16.items.filter(t=>t.id.startsWith('restart-2026-10-16-')).length,2);
- assert(d16.items.some(t=>t.title.includes('2010年小作文')));
+ assert(d16.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.title.includes('书信框架')&&t.minutes===30));
  assert(d16.items.some(t=>t.title.includes('2014年英语二新题型')));
  assert(d16.items.some(t=>t.type==='阅读'));
  assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),65);
@@ -86,4 +86,19 @@ test('M2.7.1: Oct 18 substitutes invitation letter instead of 2011 prompt, and l
  assert(d.items.some(t=>t.type==='新题型'&&t.minutes===25));
  assert.equal(d.items.reduce((n,t)=>n+t.minutes,0),85);
  assert.equal(plan.days.flatMap(x=>x.items).length,143);
+});
+
+test('English revision9: already-completed reading ID preserved; Oct16 writing becomes short sentences while Oct18 invitation remains',()=>{
+ const d16=plan.days.find(d=>d.date==='2026-10-16');
+ const d18=plan.days.find(d=>d.date==='2026-10-18');
+ assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
+ assert(d16.items.find(t=>t.id==='restart-2026-10-16-writing').detail.includes('不要求独立完成整封信'));
+ assert(d16.items.some(t=>t.id==='daily-feel-2026-10-16'&&t.type==='阅读'&&t.minutes===25));
+ assert(d16.items.some(t=>t.id==='restart-2026-10-16-newtype'&&t.minutes===30));
+ assert(d18.items.some(t=>t.id==='2026-10-18-1'&&t.title.includes('邀请信')&&t.minutes===55));
+ const state=core.defaults();state.done['daily-feel-2026-10-16']=true;
+ state.notes['restart-2026-10-16-writing']='legacy note kept';
+ const restored=core.normalizeState(state);
+ assert.equal(restored.done['daily-feel-2026-10-16'],true);
+ assert.equal(restored.notes['restart-2026-10-16-writing'],'legacy note kept');
 });
