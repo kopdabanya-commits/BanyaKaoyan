@@ -141,3 +141,15 @@ test('archived completed task must not shadow latest English task title or minut
  state.archive[removedId]={id:removedId,date:day,title:'旧任务保留',minutes:10,type:'写作',detail:'历史任务'};
  assert(core.tasks(plan,state,day).some(t=>t.id===removedId),'仅已从当前计划移除的旧任务才用archive呈现');
 });
+
+test('Oct16 stale local edit from old task form cannot mask the 2011 essay r10',()=>{
+ const id='restart-2026-10-16-writing',state=core.defaults();
+ state.edits[id]={title:'重新开始：2010年小作文初稿',minutes:30};
+ state.archive[id]={id,date:'2026-10-16',title:'重新开始：2010年小作文初稿',minutes:30,type:'写作',detail:'old'};
+ state.notes[id]='保留旧笔记';state.done['restart-2026-10-16-newtype']=true;
+ const t=core.tasks(plan,state,'2026-10-16').find(x=>x.id===id);
+ assert.equal(t.title,'2011年小作文：实际独立写作');assert.equal(t.minutes,20);
+ assert.equal(state.notes[id],'保留旧笔记');assert.equal(state.done['restart-2026-10-16-newtype'],true);
+ const custom=core.defaults();custom.edits[id]={title:'我自己改的作文练习',minutes:18};
+ assert.equal(core.tasks(plan,custom,'2026-10-16').find(x=>x.id===id).title,'我自己改的作文练习');
+});
