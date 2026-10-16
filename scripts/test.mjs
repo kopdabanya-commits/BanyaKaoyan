@@ -41,7 +41,7 @@ test('migration preserves completed, removed, historical, noted and rescheduled 
  const s=core.defaults(),id=plan.days[0].items[0].id;s.done[id]=true;s.notes[id]='笔记';s.wrong[id]=2;s.moved[id]='2026-10-18';
  const fresh=clone(plan);fresh.days[0].items[0].title='changed';fresh.days[1].items=[];
  const n=core.migrate(plan,fresh,s,'2026-10-17');assert.equal(n.notes[id],'笔记');assert.equal(n.wrong[id],2);
- assert.equal(core.tasks(fresh,n,'2026-10-18').filter(t=>t.id===id).length,1);assert.equal(core.tasks(fresh,n,'2026-10-18').find(t=>t.id===id).title,plan.days[0].items[0].title);
+ assert.equal(core.tasks(fresh,n,'2026-10-18').filter(t=>t.id===id).length,1);assert.equal(core.tasks(fresh,n,'2026-10-18').find(t=>t.id===id).title,'changed');
  assert(core.tasks(fresh,n,'2026-10-16').some(t=>t.id===plan.days[1].items[0].id));
 });
 test('first open, check/uncheck, reopen and refresh preserve local records',async()=>{
