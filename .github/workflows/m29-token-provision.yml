@@ -2,7 +2,7 @@ name: Provision user-owned ECS sync token once
 on:
   push:
     branches: [feat/huawei-ecs-cloud-sync-m29]
-    paths: [.github/workflows/m29-token-provision.yml]
+    paths: [.github/workflows/m29-token-provision.yml, server/banya-sync/rotate-token.sh]
 permissions:
   contents: read
 concurrency:
