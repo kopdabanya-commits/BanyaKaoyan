@@ -75,3 +75,6 @@
 ## 政治v2交付核验（2026-10-16）
 - 专项PR #14已合并，main commit `43e1dc4b4073b72b68c31f093966397e6a65765a`；主分支CI run 38840312941 success；同一原Cloudflare Worker发布run 38840312893 verify+publish success。
 - 本轮政治计划与代码修改已结束，**不再占用共享SW**。原荣耀Edge安装应用的静态缓存是否已换新、用户实际政治记录保留及云同步仍待用户真机反馈；不要把上线成功直接当成手机验收。
+
+## 2026-10-16 M3 共享UI改版登记
+- 用户提出全新UI方向：手机应用式轻量顶部、当天日程优先、双科统一交互、按月日历和详情页后退、日期左右滑动。分支 `feat/mobile-ui-navigation-m3-20261016` 从最新main启动并修改 `index.html`, `app.js`, `politics-ui.js`, `styles.css`, `sw.js`、对应回归测试；未改动两科计划与存储标识。完成后记录PR、CI及生产部署，不以分支通过测试等同正式上线。后续其他AI不得基于旧main覆盖这批共享UI修改。
