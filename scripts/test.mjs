@@ -27,7 +27,7 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
 
 test('65 continuous days, unique IDs, exact fallback and 90–135 minute schedules for all vocab settings',()=>{
  assert(core.validPlan(plan));let count=0;for(let day of plan.days){for(const vocab of [30,35,40]){const s=core.defaults();s.settings.vocab=vocab;const minutes=core.tasks(plan,s,day.date).reduce((n,t)=>n+t.minutes,0);assert(minutes>=90&&minutes<=135,day.date);}count+=day.items.length;}
- const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,141);
+ const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,143);
 });
 test('plan rejects duplicate IDs, duplicate dates, impossible dates, over-budget days and prototype keys',()=>{
  for(const edit of [p=>p.days[1].date=p.days[0].date,p=>p.days[1].items[0].id=p.days[0].items[0].id,p=>p.days[0].date='2026-02-31',p=>p.days[0].items[0].minutes=90,p=>p.days[0].items[0].id='__proto__']){const p=clone(plan);edit(p);assert.equal(core.validPlan(p),false);}
@@ -49,11 +49,11 @@ test('first open, check/uncheck, reopen and refresh preserve local records',asyn
  const reopened=harness({storage:h.storage});assert.equal(reopened.api.state.done['2026-10-15-1'],true);await reopened.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(reopened.api.state.done['2026-10-15-1'],false);
 });
 test('wrong answers and notes save, clear, and remain separate across tasks',async()=>{
- const h=harness();await h.settle();for(const [id,w,note]of [['2026-10-15-1',2,'甲'],['2026-10-16-1',3,'乙']]){
-  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':id.includes('15')?30:60,'task-move':id.slice(0,10),'task-wrong':w,'task-note':note}))h.input(field,value);
-  await h.event('submit',{id:'task-form',dataset:{id,day:id.slice(0,10)}});
+ const h=harness();await h.settle();for(const [id,w,note,day,minutes]of [['2026-10-15-1',2,'甲','2026-10-15',30],['2026-10-16-1',3,'乙','2026-10-17',15]]){
+  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':minutes,'task-move':day,'task-wrong':w,'task-note':note}))h.input(field,value);
+  await h.event('submit',{id:'task-form',dataset:{id,day}});
  }assert.equal(h.api.state.wrong['2026-10-15-1'],2);assert.equal(h.api.state.notes['2026-10-16-1'],'乙');
- h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-16'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
+ h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-17'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
 });
 test('edit task, move with reduced duration, reject over-budget add/move and keep one stable ID',async()=>{
  const h=harness();await h.settle();for(const [id,v]of Object.entries({'task-title':'我的写作','task-minutes':5,'task-move':'2026-10-16','task-wrong':'','task-note':'note'}))h.input(id,v);
