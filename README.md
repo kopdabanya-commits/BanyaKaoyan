@@ -9,12 +9,12 @@
 - **唯一GitHub仓库：** [kopdabanya-commits/English-II-Plan](https://github.com/kopdabanya-commits/English-II-Plan)（Private）。仓库历史名故意保留以避免扰乱现有集成。
 - **唯一Cloudflare Worker：** `english-ii-plan`（Workers Static Assets），部署网址 `https://english-ii-plan.kopdabanya.workers.dev`。产品改名不等于迁移网站；不要创建第二个站点/仓库或更改域名。
 - 安卓设备：荣耀Android16，微软Edge安装PWA；网址目前公开，并不通过Cloudflare Access私有化，不绑银行卡、不启用收费服务。
-- **版本区分：** App外观/缓存 M2.8（品牌/协作升级），英语计划版本 `2026.10.15-m2.6`（revision6），政治计划版本 `politics.2026-10-15-v1`（revision1）。App版本与科目计划版本不是一回事；实际合并/部署以 [PROJECT_STATUS](docs/PROJECT_STATUS.md) 为准。
+- **版本区分：** App外观/缓存 M2.8（品牌/协作升级），英语计划版本 `2026.10.16-m2.7`（revision7），政治计划版本 `politics.2026-10-15-v1`（revision1）。App版本与科目计划版本不是一回事；实际合并/部署以 [PROJECT_STATUS](docs/PROJECT_STATUS.md) 为准。
 
 ## 科目与记录
 | 科目 | 当前计划 | 核心特点 |
 |---|---|---|
-| 英语二 | 10/15—12/18，65天/141项 | 每天至少阅读1篇/新题型1组/完形1套；作文翻译照常；单词另计；2024—2026卷留后期模拟 |
+| 英语二 | 10/15—12/18，65天/143项（10/16重新起步，10/15未学） | 每天至少阅读1篇/新题型1组/完形1套；作文翻译照常；单词另计；2024—2026卷留后期模拟 |
 | 政治 | 10/16—12/18，64天/192项 | 徐涛27强化课、苍盾考研肖1000题和错题、按实际取得情况使用肖八肖四；政治目标60—65分，上海地区 |
 
 两个科目共用 `index.html` 和底部导航；英语由 `app.js` / `planner-core.js` 及 `plan.json` / `plan-data.js` 提供，政治由 `politics-ui.js` / `politics-core.js` 及 `politics-plan.json` / `politics-plan-data.js` 提供。
