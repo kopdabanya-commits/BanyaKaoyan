@@ -244,3 +244,23 @@ test('M3 mobile calendar opens an in-app day page, changes date, and restores ca
  assert(h.el('app').innerHTML.includes('cal-grid'));
  assert(!h.el('app').innerHTML.includes('day-detail-head'));
 });
+
+
+test('M4: saving a note cannot freeze old task title or estimated minutes across plan revisions',async()=>{
+ const h=harness();await h.settle();h.api.applyUpdate();
+ const day='2026-10-16',task=plan.days.find(d=>d.date===day).items[0];
+ for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':day,'task-wrong':'','task-note':'保留真实学习记录'}))h.input(id,value);
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day}});
+ assert.equal(h.api.state.edits[task.id],undefined,'no accidental local task override from merely recording');
+ assert.equal(h.api.state.notes[task.id],'保留真实学习记录');
+ const revised=clone(plan),changed=revised.days.find(d=>d.date===day).items[0];
+ changed.title='用户指定的新写作项目';changed.minutes=21;
+ const updated=core.migrate(plan,revised,h.api.state,day);
+ const shown=core.tasks(revised,updated,day).find(t=>t.id===task.id);
+ assert.equal(shown.title,changed.title);assert.equal(shown.minutes,21);
+ assert.equal(updated.notes[task.id],'保留真实学习记录');
+ const personalized=core.normalizeState({edits:{[task.id]:{minutes:18}}});
+ const custom=core.tasks(revised,personalized,day).find(t=>t.id===task.id);
+ assert.equal(custom.title,changed.title,'an intentional minutes-only edit does not freeze the title');
+ assert.equal(custom.minutes,18);
+});
