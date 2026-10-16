@@ -121,14 +121,15 @@ function renderToday(justDone=''){
  const week=Intel.week(data,state,Core,today);
  const selectedLabel=s===today?'今天':s<today?'这一天':'计划当天';
  const intro=s===today?'按任务顺序练习，完成后再记录错题。单词另行安排。':s<today?'这里保留的是你的实际打卡记录，未做的题不自动算完成。':'可以提前查看任务，临时有事也能调整日期。';
- return `<div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天，把注意力留给重要的题。':s<today?'回看这一日的积累':'提前看看这一天'}</h1><p class="subtitle">${intro}</p>
- <section class="hero premium-hero" aria-label="倒计时与今日进度">
+ return `<div class="day-plan-root" data-day-swipe="true"><div class="eyebrow dashboard-eyebrow"><span class="status-dot"></span>2027 研究生考试 · 英语二</div><h1 class="page-title">${s===today?'今天的安排':s<today?'回顾学习记录':'提前安排学习'}</h1><p class="subtitle">${intro}</p>
+ <section class="hero premium-hero compact-hero" aria-label="倒计时与今日进度">
  <div class="aurora aurora-one" aria-hidden="true"></div><div class="aurora aurora-two" aria-hidden="true"></div><div class="hero-glow-grid" aria-hidden="true"></div>
  <div class="hero-top"><div class="hero-copy"><span class="hero-kicker"><span class="glint-dot"></span>2027 考研 · 稳定推进</span><h2>距离初试还有</h2><div class="count">${remainingDays()}<small>天</small></div><p class="hero-motto">今天完成的，才是属于自己的进度。</p></div>
  <div class="hero-ring" role="img" aria-label="${selectedLabel}已完成${percent}%的专项任务" style="--ring-progress:${percent}%"><div class="hero-ring-core"><strong>${percent}<small>%</small></strong><span>专项完成</span></div></div></div>
  <div class="hero-bottom premium-foot"><div><small>当日专项</small><b>${v.minutes}<span>分钟</span></b></div><div><small>尚需预计</small><b>${remainingMinutes}<span>分钟</span></b></div><div><small>英语二目标</small><b>80<span>分</span></b></div></div>
  </section>
  <section class="section-row calendar-heading"><h2>${dateHeading(s)}</h2><span class="sub">${v.done}/${v.total}项已完成</span></section><div class="weekstrip">${days.join('')}</div>
+ <div class="day-stepper" aria-label="切换日期"><button type="button" data-action="day" data-date="${plus(s,-1)}" ${!inRange(plus(s,-1))?'disabled':''}>← 前一天</button><button type="button" data-action="jump-today" ${s===today?'disabled':''}>今天</button><button type="button" data-action="day" data-date="${plus(s,1)}" ${!inRange(plus(s,1))?'disabled':''}>后一天 →</button></div>
  ${v.skipped?'<div class="skip-banner">这一天已标记为未学习。保留原任务记录，不自动补双倍。</div>':''}
  <section class="focus-panel" aria-label="当日行动建议">
  <div class="focus-top"><span class="micro-label"><span class="micro-icon">✦</span>${esc(insight?.eyebrow||'当前计划')}</span><span class="focus-duration">${insight?.minutes?'约'+insight.minutes+'分钟':'本机建议'}</span></div>
@@ -139,7 +140,7 @@ function renderToday(justDone=''){
  ${(byDate.get(s)?.hint)?`<div class="tip">${esc(byDate.get(s).hint)}</div>`:''}
  ${v.minutes>budget?`<div class="tip">当前约 ${v.minutes} 分钟，比默认预算多 ${v.minutes-budget} 分钟；可调整或改期任务。</div>`:''}
  <div class="section-row"><h2>调整这一天</h2><span class="sub">有变动就调整，不累积补课</span></div><div class="button-row"><button class="cta secondary" data-action="add" data-day="${s}">＋ 添加任务</button><button class="cta ghost" data-action="toggle-skip" data-date="${s}">${v.skipped?'恢复训练安排':'标记当天未学习'}</button>${s!==today?'<button class="cta ghost" data-action="jump-today">返回今天</button>':''}</div>
- <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">每日客观题不断档 · 单词另计 · 不内置计时器</p>`;
+ <section class="week-insight"><div class="section-row"><h2>最近七天</h2><span class="sub">${week.done}/${week.total}项实际打卡</span></div>${renderWeekChart(week,true)}<p class="week-disclaimer">仅统计你勾选的任务；未打卡不代表没有学习，也不推算分数。</p></section><p class="watermark">每日客观题不断档 · 单词另计 · 不内置计时器</p></div>`;
 }
 function renderCalendar(){
  let [year,month] = calendarMonth.split('-').map(Number);
