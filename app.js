@@ -51,7 +51,7 @@ function fits(day,id,minutes){return allTasks(day).filter(t=>t.id!==id).reduce((
 function canPlace(day,id,minutes){if(fits(day,id,minutes))return true;toast('该日训练超过了新计划的时间预算，请缩短或改期其他任务');return false;}
 function dateProgress(s){const a=specialTasks(s);return {done:a.filter(x=>state.done[x.id]).length,total:a.length,minutes:a.reduce((n,x)=>n+x.minutes,0),skipped:!!state.skipped[s]}}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('on'),2800)}
-function nav(next){if(dayDetail){dayDetail=false;document.body.classList.remove('day-detail-open');}view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
+function nav(next){if(dayDetail){dayDetail=false;document.body.classList.remove('day-detail-open');}if(next==='today'&&view!=='today'){const meta=subject==='politics'?window.POLITICS_PLAN?.meta:data.meta;const date=meta&&today>=meta.start&&today<=meta.end?today:meta?.start;if(date){if(subject==='politics')window.PoliticsUI?.setDate?.(date);else selectedDate=date;}}view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
 function render(enter=false,justDone=''){
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
