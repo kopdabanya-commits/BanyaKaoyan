@@ -498,3 +498,7 @@ html[data-theme="dark"] .student-task-body,html[data-theme="dark"] .student-task
 html[data-theme="dark"] .student-task-check.checked{color:#fff}
 @media(max-width:370px){.shell{padding-inline:11px}.student-day-heading h1{font-size:22px}.student-task{padding:11px 9px}.student-task-name{font-size:13px}.student-control-buttons button{font-size:10px;padding:7px}}
 @media(prefers-reduced-motion:reduce){.student-progress-fill{transition:none}.student-task{animation:none}}
+
+/* M4.1: same task bottom sheet for politics/English; subject colour only */
+html[data-subject="politics"] .modal .cta:not(.secondary):not(.ghost){background:var(--study-accent);color:white}
+html[data-subject="politics"] .modal .eyebrow{color:var(--study-accent)}
