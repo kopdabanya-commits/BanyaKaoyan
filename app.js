@@ -301,7 +301,7 @@ document.addEventListener('submit',e=>{
   if(!t.vocab&&(minutes!==t.minutes||move!==day)&&!canPlace(move,id,minutes))return;
   if(w==='')delete state.wrong[id];else state.wrong[id]=Number(w);
   state.notes[id]=document.getElementById('task-note').value.trim();
-  if(!t.vocab){state.edits[id]={title,minutes};if(move!==day)state.moved[id]=move;}
+  if(!t.vocab){const baseline=data.days.flatMap(d=>d.items).find(x=>x.id===id)||state.added.find(x=>x.id===id)||state.archive[id]||t;const edits={};if(title!==baseline.title)edits.title=title;if(minutes!==baseline.minutes)edits.minutes=minutes;if(Object.keys(edits).length)state.edits[id]=edits;else delete state.edits[id];if(move!==day)state.moved[id]=move;}
   const markComplete=e.submitter?.dataset?.complete==='true';
   if(markComplete){state.archive[id]={...t,date:move};state.done[id]=true;delete state.skipped[move];}
   if(!save()){render();return;}
