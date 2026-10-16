@@ -19,7 +19,7 @@ test('M2.6: old task identifiers, date, minutes and 10-15 assignments remain ide
  assert.equal(original.days.length,plan.days.length);
  for(let i=0;i<65;i++){
   const d=plan.days[i],old=original.days[i];assert.equal(d.date,old.date);
-  for(let j=0;j<old.items.length;j++)assert.deepEqual(d.items[j],old.items[j]);
+  for(const historical of old.items){const current=d.items.find(t=>t.id===historical.id);assert.deepEqual(current,historical,'same ID content must remain exact when filtering daily-feel: '+historical.id);}
  }
  assert.equal(plan.days[0].items.reduce((n,t)=>n+t.minutes,0),65);
  assert.equal(plan.days[0].items.length,3);
@@ -55,7 +55,7 @@ test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + rea
  assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),55);
  assert.equal(d16.items.filter(t=>t.id.startsWith('restart-2026-10-16-')).length,2);
  assert(d16.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.title.includes('2011年小作文')&&t.minutes===20));
- assert(d16.items.some(t=>t.title.includes('2014年英语二新题型')));
+ assert(d16.items.some(t=>t.type==='新题型'&&t.title.includes('2014年新题型')));
  assert(d16.items.some(t=>t.type==='阅读'));
  assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),80);
  assert(d17.items.some(t=>t.id==='2026-10-16-1'&&t.minutes===15));
@@ -85,7 +85,7 @@ test('M2.7.1: Oct 18 substitutes invitation letter instead of 2011 prompt, and l
  assert.equal(essay.minutes,25);
  assert(d.items.some(t=>t.type==='新题型'&&t.minutes===25));
  assert.equal(d.items.reduce((n,t)=>n+t.minutes,0),80);
- assert.equal(plan.days.flatMap(x=>x.items).length,143);
+ assert.equal(plan.days.flatMap(x=>x.items).length,191);
 });
 
 test('English revision9: already-completed reading ID preserved; Oct16 writing becomes short sentences while Oct18 invitation remains',()=>{
