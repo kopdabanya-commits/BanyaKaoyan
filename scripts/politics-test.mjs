@@ -53,3 +53,35 @@ test('corrupt or malicious politics backup structure is rejected',()=>{
  assert.throws(()=>Core.normalize(JSON.parse('{"notes":{"__proto__":"x"}}')));
  assert.throws(()=>Core.normalize({wrong:{id:-1}}));
 });
+
+// Politics v2: assert the actual user-approved time budget and stable local records.
+test('v2 integrated plan has 60-minute budget, <=30-minute classes and stable 192 original IDs',()=>{
+ assert.equal(politics.meta.revision,2);
+ assert.equal(politics.meta.planVersion,'politics.2026-10-16-v2');
+ assert.equal(politics.days.length,64);
+ for(const [i,day] of politics.days.entries()){
+  assert.deepEqual(day.items.map(t=>t.id),[1,2,3].map(n=>'pol-'+day.date+'-'+n));
+  const total=day.items.reduce((n,t)=>n+t.minutes,0);
+  assert.equal(total,i===63?40:60,'daily budget on '+day.date);
+  for(const t of day.items)if(t.type==='课程')assert(t.minutes<=30,'watch actual minutes <=30');
+  assert(day.hint.includes('60')||day.date==='2026-12-18');
+ }
+ assert(politics.days[0].items[0].title.includes('徐涛'));
+ assert(politics.days[0].items[2].title.includes('腿姐'));
+ assert(politics.days.some(d=>d.topic.includes('真题')));
+ assert(politics.days.some(d=>d.items.some(t=>t.detail.includes('帕拉迪宇'))));
+ assert(politics.days.some(d=>d.items.some(t=>t.detail.includes('未到手'))));
+ assert(!politics.days.some(d=>d.items.some(t=>t.minutes>60)));
+});
+test('legacy political completed tasks, wrong counts and notes survive plan upgrade',()=>{
+ const id='pol-2026-10-16-2';
+ const legacy={done:{[id]:true},wrong:{[id]:3},notes:{[id]:'历史多选错因'},questions:{marx:{done:93,total:396,updated:'2026-10-15'}}};
+ const state=Core.normalize(legacy);
+ assert.equal(state.done[id],true);
+ assert.equal(state.wrong[id],3);
+ assert.equal(state.notes[id],'历史多选错因');
+ assert.equal(state.questions.marx.done,93);
+ const h=harness();h.storage.set(Core.key,JSON.stringify(legacy));h.win.PoliticsUI.render('today','2026-10-16',x=>x,()=>{});
+ assert(h.render().includes('撤销打卡'));
+ assert(!h.storage.has('yantu_english_2026_m1'));
+});
