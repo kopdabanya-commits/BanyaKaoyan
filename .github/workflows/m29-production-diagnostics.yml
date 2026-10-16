@@ -28,7 +28,12 @@ jobs:
                 print('Content type:',h.get('content-type'))
               break
             except Exception as e:
-              print('index attempt',attempt+1,'failed:',type(e).__name__)
+              print('index attempt',attempt+1,'failed:',type(e).__name__,'status:',getattr(e,'code',None))
+              if isinstance(e,urllib.error.HTTPError):
+                print('403 server:',e.headers.get('server'),'cf-ray:',bool(e.headers.get('cf-ray')),'content-type:',e.headers.get('content-type'))
+                import re
+                body=e.read(1000).decode('utf-8','replace')
+                print('403 response class:', 'cloudflare' if 'cloudflare' in body.lower() else 'non-cloudflare', 'error code hints:',re.findall(r'(?i)(?:error|code)[^0-9]{0,8}([0-9]{3,5})',body)[:5])
               time.sleep(3)
           for suffix in ['/cloud-sync.js','/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md']:
             try:
