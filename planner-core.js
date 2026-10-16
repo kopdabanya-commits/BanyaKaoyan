@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const types=['写作','新题型','翻译','完形','阅读','复盘','机动','综合','模考','单词'];
-const defaults=()=>({done:{},skipped:{},moved:{},added:[],notes:{},wrong:{},edits:{},archive:{},settings:{vocab:35,budget:130}});
+const defaults=()=>({done:{},skipped:{},moved:{},added:[],notes:{},wrong:{},questionIds:{},actualMinutes:{},edits:{},archive:{},settings:{vocab:35,budget:130}});
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const safeKey=k=>typeof k==='string'&&k.length>0&&k.length<=160&&!['__proto__','constructor','prototype'].includes(k);
 const date=s=>typeof s==='string'&&/^2026-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s+'T12:00:00Z'))&&new Date(s+'T12:00:00Z').toISOString().slice(0,10)===s;
@@ -18,7 +18,7 @@ function validPlan(p){
 }
 function normalizeState(s){
  if(!object(s))throw Error('记录格式无效');const n=defaults();
- for(const k of ['done','skipped','moved','notes','wrong','edits','archive']){
+ for(const k of ['done','skipped','moved','notes','wrong','questionIds','actualMinutes','edits','archive']){
   if(s[k]===undefined)continue;if(!object(s[k]))throw Error(k+'格式无效');
   for(const [id,v] of Object.entries(s[k])){
    if(!safeKey(id))throw Error('记录ID无效');
@@ -27,6 +27,8 @@ function normalizeState(s){
    if(k==='moved'&&!inRange(v))throw Error('改期日期无效');
    if(k==='notes'&&(typeof v!=='string'||v.length>20000))throw Error('笔记无效');
    if(k==='wrong'&&v!==''&&(!Number.isInteger(v)||v<0||v>20))throw Error('错题记录无效');
+   if(k==='questionIds'&&(typeof v!=='string'||v.length>500))throw Error('题号记录无效');
+   if(k==='actualMinutes'&&(!Number.isInteger(v)||v<1||v>600))throw Error('实际用时无效');
    if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)))throw Error('任务修改无效');
    if(k==='archive'&&(!task(v)||v.id!==id||!inRange(v.date)))throw Error('历史任务无效');
    n[k][id]=structuredClone(v);
@@ -55,7 +57,7 @@ function migrate(old,fresh,s,today){
  const n=normalizeState(s);const next=new Map(fresh.days.flatMap(d=>d.items.map(t=>[t.id,t])));
  for(const d of old.days)for(const t of tasks(old,s,d.date)){
   if(t.vocab||t.custom)continue;
-  if(s.done[t.id]||s.notes[t.id]||s.wrong[t.id]!==undefined||d.date<today||!next.has(t.id))n.archive[t.id]={...t,date:d.date,...(!next.has(t.id)&&d.date>=today&&!s.done[t.id]?{retired:true}:{})};
+  if(s.done[t.id]||s.notes[t.id]||s.wrong[t.id]!==undefined||s.questionIds?.[t.id]||s.actualMinutes?.[t.id]||d.date<today||!next.has(t.id))n.archive[t.id]={...t,date:d.date,...(!next.has(t.id)&&d.date>=today&&!s.done[t.id]?{retired:true}:{})};
  }
  return n;
 }

@@ -38,6 +38,15 @@ test('legacy state migrates; malformed backup, duplicate customs and unsafe keys
  for(const p of [{done:null},{notes:{a:3}},{wrong:{a:-1}},{moved:{a:'2026-11-31'}},{added:[{id:'bad'}]},JSON.parse('{"done":{"__proto__":true}}')])assert.throws(()=>core.normalizeState(p));
  const t={id:'custom-1',custom:true,date:'2026-10-15',title:'test',minutes:5,type:'写作'};assert.throws(()=>core.normalizeState({added:[t,t]}));
 });
+test('specific wrong questions and actual minutes survive English normalization and backup',async()=>{
+ const id='2026-10-15-1',h=harness();await h.settle();
+ for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':30,'task-move':'2026-10-15','task-wrong':2,'task-question-ids':'3、8','task-actual-minutes':42,'task-note':'留意转折'}))h.input(field,value);
+ await h.event('submit',{id:'task-form',dataset:{id,day:'2026-10-15'}});
+ assert.equal(h.api.state.questionIds[id],'3、8');assert.equal(h.api.state.actualMinutes[id],42);
+ assert.match(h.api.summaryText(),/错题题号/);assert(!h.api.summaryText().includes('37\/40'));
+ h.api.exportState();const backup=JSON.parse(await h.blobs[0].text());assert.equal(core.normalizeState(backup.state).actualMinutes[id],42);
+ assert.throws(()=>core.normalizeState({actualMinutes:{[id]:601}}));
+});
 test('migration preserves completed, removed, historical, noted and rescheduled tasks without duplication',()=>{
  const s=core.defaults(),id=plan.days[0].items[0].id;s.done[id]=true;s.notes[id]='笔记';s.wrong[id]=2;s.moved[id]='2026-10-18';
  const fresh=clone(plan);fresh.days[0].items[0].title='changed';fresh.days[1].items=[];

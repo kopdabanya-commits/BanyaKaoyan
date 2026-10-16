@@ -49,6 +49,13 @@ test('manual Cangdun updates enforce 0 <= completed <= total and preserve notes'
  const state=JSON.parse(h.storage.get(Core.key));assert.equal(state.wrong[id],3);assert.equal(state.notes[id],'多选题错因：概念不清');
  assert.throws(()=>Core.normalize({questions:{marx:{done:400,total:396,updated:'2026-10-15'}}}));
 });
+test('politics keeps specific question IDs and elapsed minutes within its own snapshot',()=>{
+ const h=harness(),id=politics.days[0].items[0].id;h.render();
+ h.elements['p-wrong']={value:'2'};h.elements['p-note']={value:'概念混淆'};h.elements['p-question-ids']={value:'马原第3、8题'};h.elements['p-actual-minutes']={value:'41'};
+ h.submit('p-task-form',{id});const saved=JSON.parse(h.storage.get(Core.key));
+ assert.equal(Core.normalize(saved).questionIds[id],'马原第3、8题');assert.equal(saved.actualMinutes[id],41);
+ assert(!h.storage.has('yantu_english_2026_m1'));assert.throws(()=>Core.normalize({actualMinutes:{[id]:601}}));
+});
 test('corrupt or malicious politics backup structure is rejected',()=>{
  assert.throws(()=>Core.normalize({done:null}));
  assert.throws(()=>Core.normalize(JSON.parse('{"notes":{"__proto__":"x"}}')));

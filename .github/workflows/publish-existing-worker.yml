@@ -19,6 +19,8 @@ on:
       - politics-core.js
       - politics-ui.js
       - planner-core.js
+      - study-ui.js
+      - icons/**
       - study-intelligence.js
       - scripts/**
       - .github/workflows/publish-existing-worker.yml
