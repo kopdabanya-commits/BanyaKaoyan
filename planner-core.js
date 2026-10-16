@@ -27,7 +27,7 @@ function normalizeState(s){
    if(k==='moved'&&!inRange(v))throw Error('改期日期无效');
    if(k==='notes'&&(typeof v!=='string'||v.length>20000))throw Error('笔记无效');
    if(k==='wrong'&&v!==''&&(!Number.isInteger(v)||v<0||v>20))throw Error('错题记录无效');
-   if(k==='edits'&&(!object(v)||typeof v.title!=='string'||!v.title.trim()||v.title.length>200||!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90))throw Error('任务修改无效');
+   if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)))throw Error('任务修改无效');
    if(k==='archive'&&(!task(v)||v.id!==id||!inRange(v.date)))throw Error('历史任务无效');
    n[k][id]=structuredClone(v);
   }
