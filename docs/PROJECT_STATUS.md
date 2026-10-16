@@ -1,8 +1,9 @@
-## 2026-10-16 政治融合省时计划v2（待PR/上线状态核实）
+## 2026-10-16 政治融合省时计划v2（GitHub合并、CI与Cloudflare部署已核实）
 
 - 用户明确决定：正式采用徐涛重点课（2倍速以上、实际每日≤30分钟）＋苍盾肖1000题重点/错题＋**已购买**腿姐背诵手册少量记忆＋帕拉迪宇真题选项辨析，政治普通日**总计60分钟**，12/18考前40分钟。肖八按实际取得精选练习，不要求八套刷完；肖四到手后冲刺分析题。新决策见 `docs/DECISIONS.md` D18，**覆盖旧D13政治70—120分钟及固定30分钟听课**。
-- 政治独立计划拟升级 `politics.2026-10-16-v2` / revision2，64天192任务，日期10/16—12/18，任务ID全部保留，苍盾既有马原93/396仅为真实历史基线；旧打卡、错题、笔记和本机题数不得随计划发布重置。权威JSON和离线JS镜像同步；修改 `sw.js` CACHE以使原安装PWA在安全的SW升级后读取新计划，保留原Worker、manifest id和全部旧本机键。
-- 政治模块尚无与英语一致的在线计划差异确认/本机迁移预览。更换任务说明时旧ID的已完成标记仍保留；本轮不伪称手机记录已迁移或云端已自动更新。正式合并/CI/Cloudflare部署/荣耀Edge验收须分别附证据，当前不把草稿当已上线。
+- 政治独立计划已升级 `politics.2026-10-16-v2` / revision2，64天192任务，日期10/16—12/18，任务ID全部保留，苍盾既有马原93/396仅为真实历史基线；旧打卡、错题、笔记和本机题数不得随计划发布重置。权威JSON和离线JS镜像同步；修改 `sw.js` CACHE以使原安装PWA在安全的SW升级后读取新计划，保留原Worker、manifest id和全部旧本机键。
+- [政治PR #14](https://github.com/kopdabanya-commits/English-II-Plan/pull/14) 已squash合并 main，SHA `43e1dc4b4073b72b68c31f093966397e6a65765a`；[PR双路Validate CI 38840210548](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38840210548) success，[main CI 38840312941](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38840312941) success。[原Worker发布 38840312893](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38840312893) `verify`、`publish` 均 success（不新建站点）。独立 Cloudflare Workers Builds PR检查依然失败，历史已知、日志根因未证实，不混同已成功的Github发布。
+- 政治模块尚无与英语一致的在线计划差异确认/本机迁移预览。更换任务说明时旧ID的已完成标记仍保留；本轮未读取或修改用户手机的实际记录。**荣耀Android16 Edge原已安装PWA的政治新计划显示、历史打卡与备份/云同步效果仍待用户真机验收**。
 - **本次未修改英语计划、用户实际云同步数据、ECS后端或云同步凭据**；手机更新前建议政治及英语分别导出备份，**禁止卸载PWA、清除站点数据**。此段为政治专项状态，部署状态请看最新Actions证据。
 
 ---
