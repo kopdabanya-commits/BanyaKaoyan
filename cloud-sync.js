@@ -67,6 +67,7 @@ function panel() {
  '<p class="setting-note">密钥不会提交到GitHub源码。请将其保存在密码管理器，再通过GitHub Actions Secrets安全配置到服务器；完成前不会上传学习记录。</p>'+
  '<button type="submit" class="cta small">验证并启用</button></form>':
  '<p class="setting-note">已配置 '+escaped(config.endpoint)+'。密钥只保存在这台设备的浏览器本地存储中，不提交GitHub。</p>'+
+ '<button type="button" class="cta secondary small" data-banya-action="sync-now">↻ 立即同步已启用科目</button>'+
  SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已建立同步基线':'等待首次确认')+
  '<div class="p-buttons"><button class="cta secondary small" data-banya-action="upload" data-banya-subject="'+s+'">确认上传本机</button>'+
  '<button class="cta ghost small" data-banya-action="restore" data-banya-subject="'+s+'">从云端恢复</button></div></div>';}).join('')+
