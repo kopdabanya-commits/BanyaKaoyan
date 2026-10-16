@@ -86,3 +86,23 @@ test('legacy political completed tasks, wrong counts and notes survive plan upgr
  assert.equal(JSON.parse(h.storage.get(Core.key)).done[id],true);
  assert(!h.storage.has('yantu_english_2026_m1'));
 });
+
+test('M3 politics monthly calendar opens day via shared app route and changes months',()=>{
+ const h=harness();
+ h.win.BANYA_VIEW=()=> 'calendar';
+ let opened='';
+ h.win.BANYA_OPEN_DAY=date=>{opened=date};
+ let html=h.render('calendar','2026-10-16');
+ assert(html.includes('2026年10月'));
+ assert(html.includes('cal-grid'));
+ h.click('p-day',{day:'2026-10-17'});
+ assert.equal(opened,'2026-10-17');
+ assert.equal(h.lastNav,'');
+ h.click('p-cal-next');
+ html=h.render('calendar','2026-10-16');
+ assert(html.includes('2026年11月'));
+ assert(h.win.PoliticsUI.setDate('2026-11-03'));
+ assert.equal(h.win.PoliticsUI.getDate(),'2026-11-03');
+ html=h.render('today','2026-10-16');
+ assert(html.includes('politics-weekstrip'));
+});
