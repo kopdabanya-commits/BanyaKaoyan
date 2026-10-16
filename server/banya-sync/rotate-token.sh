@@ -44,7 +44,16 @@ sed "s/^BANYA_SYNC_TOKEN_SHA256=.*/BANYA_SYNC_TOKEN_SHA256=$new_digest/" "$envfi
 install -o root -g root -m 0600 "$tmp" "$envfile"
 systemctl restart banya-sync.service
 systemctl is-active --quiet banya-sync.service
-curl --noproxy '*' -fsS --max-time 8 http://127.0.0.1:8765/health >/dev/null
+# systemd active can precede uvicorn binding; retry health rather than immediately rolling back.
+ready=false
+for i in $(seq 1 30); do
+  if curl --noproxy '*' --silent --fail --max-time 2 http://127.0.0.1:8765/health >/dev/null 2>&1; then
+    ready=true
+    break
+  fi
+  sleep 1
+done
+[[ "$ready" == true ]] || { echo "New service failed to become healthy after restart"; exit 1; }
 # Do not keep old auth hash available indefinitely once service is confirmed healthy.
 trap - ERR
 rm -f "$rollback"
