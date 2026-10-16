@@ -49,11 +49,11 @@ test('first open, check/uncheck, reopen and refresh preserve local records',asyn
  const reopened=harness({storage:h.storage});assert.equal(reopened.api.state.done['2026-10-15-1'],true);await reopened.click('toggle',{id:'2026-10-15-1',day:'2026-10-15'});assert.equal(reopened.api.state.done['2026-10-15-1'],false);
 });
 test('wrong answers and notes save, clear, and remain separate across tasks',async()=>{
- const h=harness();await h.settle();for(const [id,w,note]of [['2026-10-15-1',2,'甲'],['2026-10-16-1',3,'乙']]){
-  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':id.includes('15')?30:60,'task-move':id.slice(0,10),'task-wrong':w,'task-note':note}))h.input(field,value);
-  await h.event('submit',{id:'task-form',dataset:{id,day:id.slice(0,10)}});
+ const h=harness();await h.settle();for(const [id,w,note,day,minutes]of [['2026-10-15-1',2,'甲','2026-10-15',30],['2026-10-16-1',3,'乙','2026-10-17',15]]){
+  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':minutes,'task-move':day,'task-wrong':w,'task-note':note}))h.input(field,value);
+  await h.event('submit',{id:'task-form',dataset:{id,day}});
  }assert.equal(h.api.state.wrong['2026-10-15-1'],2);assert.equal(h.api.state.notes['2026-10-16-1'],'乙');
- h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-16'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
+ h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-17'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
 });
 test('edit task, move with reduced duration, reject over-budget add/move and keep one stable ID',async()=>{
  const h=harness();await h.settle();for(const [id,v]of Object.entries({'task-title':'我的写作','task-minutes':5,'task-move':'2026-10-16','task-wrong':'','task-note':'note'}))h.input(id,v);
