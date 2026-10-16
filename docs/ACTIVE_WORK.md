@@ -1,3 +1,15 @@
+## 2026-10-16 08:55（Asia/Singapore）技术线最终部署核验（以此节优先）
+
+- **PR #11 已合并**：squash SHA `3e7be62694bbdfdd5fdc35dd8956086da81f249a`；M2.9 原有单一「板牙考研」PWA 的双科云同步代码进入 main。旧Worker原URL、manifest ID及英语二/政治全部本地学习键未改。英语二/政治复习计划文件未改。
+- 用户已在原手机导出英语二和政治两份原始备份并提交聊天核验；英语备份v2含65天141个唯一任务ID，政治备份v1保持原做题数。**未把这些真实学习数据导入ECS或GitHub**，恢复有效性与真机体验仍需用户确认。
+- GitHub Actions [稳定同步密钥配置run 38830680085](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830680085)通过：受控固定known_hosts SSH只传长期 `BANYA_SYNC_TOKEN` SHA256摘要，先做SQLite安全备份再轮换，事前正式云库快照数0；新密钥公网HTTPS授权英语/政治GET各 `revision=0`，错误密钥401，原PWA来源的PUT+Authorization CORS预检通过。无原始密钥值进GitHub代码或日志。
+- [Certbot 续期钩子run 38830905645](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830905645)：在已有ECS的真正证书换发成功时自动nginx -t/reload；snap certbot timer已启用。[正常续期复核 run 38831703180](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38831703180)成功但尚未签发新证书，2026-10-19 15:26:26 UTC到期未变。**真实续期尚未验收**；新增main每日定时Actions检查，禁止声称已延期。
+- [唯一Worker生产发布与上线验收run 38831564350](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38831564350)：`verify`和`publish`均success；官方Wrangler生产版本ID `c81ef1d8-820e-4129-bb00-9ff4c2022182`，仍为 `https://english-ii-plan.kopdabanya.workers.dev/`。真实公网模拟移动Edge请求：`/index.html` 200且含 `cloud-sync.js`、同步脚本200、CSP精确放行 `https://124.70.128.201`；`server/banya-sync/app.py`、`docs/ECS_HANDOFF.md`、`AGENTS.md` 均404，公网静态防泄漏通过。
+- 第一次main部署run `38831115125` 的上传实际成功、只在后续curl/urllib默认UA自动探测时403；独立 [诊断run 38831361262](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38831361262)确定为Cloudflare **1010浏览器特征拦截**。模拟正常Edge UA的 [诊断run 38831466680](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38831466680)200且检查通过；已修复发布工作流默认UA导致的验收误报。Cloudflare Workers Builds原生集成旧红色检查日志仍缺失、其独立根因没有证据，不能和上述HTTP 1010自动探测混同。
+- **仍未验证**：荣耀Android16 Edge原已安装的PWA是否更新、两科真实手机本地数据安全上传/读取/多端同步、浏览器重启与断网重连、客户端409冲突体验、手机文件备份导入恢复。真实云库当前应保持revision0（未做授权手机首次上传）；用户必须逐科明确确认首次上传，不允许从服务器/聊天自动移植资料。数据库机内SQLite备份生成/integrity_check=ok，非异地灾备。
+
+---
+
 
 ## 2026-10-16 技术线继续负责共享M2.9 PR #11
 - 分支 `feat/huawei-ecs-cloud-sync-m29` 仍为草稿PR，当前占用 `cloud-sync.js`、`_headers`、`.assetsignore`、`sw.js`、`app.js`、共享测试及GitHub部署工作流；英语/政治两条计划线勿盲改共享文件。具体当前SHA和CI每次新聊天须查PR实时元数据。
