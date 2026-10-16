@@ -100,7 +100,7 @@ test('removed future unfinished task is retained outside active schedule, not st
  const n=core.migrate(plan,fresh,s,'2026-10-15');assert.equal(n.archive[removed.id].retired,true);assert(!core.tasks(fresh,n,'2026-10-16').some(t=>t.id===removed.id));assert(core.tasks(fresh,n,'2026-10-16').some(t=>t.id==='replacement-id'));
 });
 test('plan update blocks a future over-budget personalized schedule and leaves current plan intact',async()=>{
- const s=core.defaults();s.added.push({id:'custom-heavy',title:'already scheduled',minutes:70,type:'写作',date:'2026-10-16',custom:true});const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,'previous');assert(h.api.pending);
+ const s=core.defaults();s.added.push({id:'custom-heavy',title:'already scheduled',minutes:90,type:'写作',date:'2026-10-16',custom:true});const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,'previous');assert(h.api.pending);
 });
 test('moving a task then checking it clears rest only on the destination day',async()=>{
  const s=core.defaults();s.moved['2026-10-15-1']='2026-10-16';s.skipped['2026-10-16']=true;s.skipped['2026-10-15']=true;const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-16'});assert.equal(h.api.state.skipped['2026-10-16'],undefined);assert.equal(h.api.state.skipped['2026-10-15'],true);
