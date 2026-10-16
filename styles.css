@@ -383,3 +383,118 @@ html[data-theme="dark"] .day-plan-root>.progress-block{border-color:var(--line)}
 .quick-sync-hint{color:var(--muted);font-size:10px;line-height:1.5;margin:6px 2px 0}
 html[data-subject="politics"] .quick-sync-button:nth-child(2){color:#078d83}
 html[data-theme="dark"][data-subject="politics"] .quick-sync-button:nth-child(2){color:#64d5c4}
+
+
+/* M4 统一学生工作流：内容优先，两科共用结构，科目只改变强调色 */
+:root{--study-accent:#6558d5;--study-soft:#efedff}
+html[data-subject="politics"]{--study-accent:#087e76;--study-soft:#e5f5f1}
+html[data-theme="dark"]{--study-soft:#302d4c}
+html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-accent:#65d3c3}
+.shell{padding-top:calc(10px + env(safe-area-inset-top));padding-inline:16px;padding-bottom:calc(104px + env(safe-area-inset-bottom))}
+.topbar{margin:0 0 12px;min-height:40px}
+.logo{font-size:15px;gap:7px;font-weight:760}
+.logo-mark{width:29px;height:29px;font-size:15px;box-shadow:none;border-radius:9px;background:var(--study-accent)}
+.top-date{background:transparent;box-shadow:none;border:0;padding:3px 0;font-size:11px;color:var(--muted)}
+.subject-rail{margin:0 0 16px;display:block}
+.subject-tabs{display:flex;width:100%;border-radius:13px;gap:3px;padding:4px;background:var(--paper);box-shadow:none;border-color:var(--line)}
+.subject-tab{flex:1;justify-content:center;min-height:38px;font-size:13px;gap:5px;border-radius:10px}
+.subject-tab.is-active{background:var(--study-soft);color:var(--study-accent)}
+.subject-symbol{font-size:12px;box-shadow:none}
+.subject-context{display:none}
+.student-page{padding-bottom:10px}
+.student-subject-label{display:none}
+.student-page-head{margin:0 0 18px}
+.student-page-head h1{font-size:23px;letter-spacing:-.4px;line-height:1.3;font-weight:810;margin:1px 0 5px}
+.student-page-head p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.student-day-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:5px 2px 15px}
+.student-overline{display:block;color:var(--study-accent);font-size:11px;font-weight:700;margin-bottom:5px}
+.student-day-heading h1{font-size:25px;line-height:1.15;margin:0;font-weight:830;letter-spacing:-.5px}
+.student-day-heading p{font-size:12px;color:var(--muted);line-height:1.45;margin:7px 0 0;max-width:245px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.student-countdown{flex:0 0 auto;font-size:11px;color:var(--muted);background:var(--paper);border:1px solid var(--line);padding:7px 9px;border-radius:10px}
+.student-weekstrip{margin-bottom:8px;padding:0;gap:2px}
+.student-weekstrip .day-chip{padding:5px 0 6px;border-radius:11px;min-width:0}
+.student-weekstrip .day-chip .dow{font-size:11px;margin-bottom:5px}
+.student-weekstrip .day-chip .number{width:31px;height:31px;border-radius:10px;font-size:15px}
+.student-weekstrip .day-chip.selected{color:var(--study-accent);background:var(--study-soft)}
+.student-weekstrip .day-chip.selected .number{background:var(--study-accent);color:white}
+.student-weekstrip .day-chip.today:not(.selected) .number{color:var(--study-accent);border:1px solid var(--study-accent)}
+.student-day-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 2px 8px}
+.student-control-buttons{display:flex;gap:5px;align-items:center}
+.student-control-buttons button{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:var(--paper);color:var(--text);font-weight:630;font-size:11px;min-height:34px}
+.student-control-buttons button:disabled{opacity:.35}
+.student-done-label{font-size:12px;font-weight:760;color:var(--study-accent);white-space:nowrap}
+.student-progress{height:5px;border-radius:8px;overflow:hidden;background:var(--line);margin:0 2px}
+.student-progress-fill{display:block;height:100%;background:var(--study-accent);border-radius:8px;transition:width .18s}
+.student-progress-caption{margin:7px 2px 17px;font-size:11px;color:var(--muted)}
+.student-section-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:11px 2px 7px}
+.student-section-heading h2{font-size:16px;font-weight:780;margin:0}
+.student-section-heading span{font-size:11px;color:var(--muted)}
+.student-task-list{display:flex;flex-direction:column;gap:8px}
+.student-task{display:flex;gap:10px;align-items:center;min-height:77px;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:15px;box-shadow:none}
+.student-task.is-next{border-color:color-mix(in srgb,var(--study-accent) 42%,var(--line))}
+.student-task.is-done{opacity:.8}
+.student-task-check{width:30px;height:30px;flex:0 0 30px;border:2px solid var(--line);background:var(--paper);border-radius:9px;color:white;display:grid;place-items:center;font-size:17px;padding:0}
+.student-task-check.checked{border-color:var(--study-accent);background:var(--study-accent)}
+.student-task-body{flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:0;color:var(--text)}
+.student-task-name{display:block;font-size:14px;font-weight:750;line-height:1.46;max-height:2.92em;overflow:hidden}
+.student-task.is-done .student-task-name{color:var(--muted);text-decoration:none}
+.student-task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:5px;color:var(--muted);font-size:11px}
+.student-task-record{color:var(--study-accent);font-weight:650}
+.student-task-more{border:0;background:transparent;color:var(--muted);font-size:23px;padding:6px;min-width:30px}
+.student-task-detail{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:-3px;font-size:13px}
+.student-task-detail>p{color:var(--muted);line-height:1.6;font-size:12px}
+.student-task-detail .p-note-form{margin:0;background:transparent;border:0;padding:0;box-shadow:none}
+.student-task-detail .p-note-form label{font-size:12px}
+.student-task-detail .p-note-form input,.student-task-detail .p-note-form textarea{width:100%;max-width:100%}
+.student-day-tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:14px 2px 0}
+.student-action-link{border:0;background:none;color:var(--muted);padding:7px 0;font-size:12px}
+.student-action-link:focus-visible{outline:2px solid var(--study-accent);outline-offset:3px}
+.student-quiet{color:var(--muted);font-size:11px;line-height:1.5}
+.student-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.student-stat-grid>div{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:16px 14px;min-width:0}
+.student-stat-grid span{display:block;font-size:12px;color:var(--muted)}
+.student-stat-grid strong{display:block;font-size:28px;font-weight:850;line-height:1.3;margin-top:5px}
+.student-stat-grid strong small{font-size:12px;font-weight:600;color:var(--muted)}
+.student-stat-section{background:var(--paper);border:1px solid var(--line);border-radius:15px;margin:11px 0;padding:15px}
+.student-stat-section h2{font-size:15px;font-weight:800;margin:0 0 13px}
+.student-stat-section p{font-size:11px;color:var(--muted);line-height:1.5;margin:10px 0 0}
+.student-stat-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.student-stat-day{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.student-stat-track{height:65px;width:16px;display:flex;align-items:end;overflow:hidden;border-radius:7px;background:var(--line)}
+.student-stat-track i{display:block;width:100%;border-radius:7px;background:var(--study-accent)}
+.student-stat-day small{font-size:10px;color:var(--muted)}
+.student-stat-types{display:grid;grid-template-columns:1fr;gap:0}
+.student-stat-type{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+.student-stat-type:last-child{border-bottom:0}
+.student-stat-type strong{font-size:12px;color:var(--study-accent)}
+.student-record-row{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);padding:11px 0;font-size:12px}
+.student-record-row strong{flex:0 0 auto;color:var(--study-accent)}
+.student-page .calendar{margin:0;border:1px solid var(--line);box-shadow:none;border-radius:15px;padding:14px}
+.student-page .month-head{margin:0 0 12px}
+.student-page .month-head h2{font-size:17px}
+.student-page .cal-grid{gap:2px}
+.student-page .legend{margin-top:14px;font-size:11px}
+.student-page .setting-section{margin:0 0 11px;border-radius:15px;padding:16px;box-shadow:none;border:1px solid var(--line)}
+.student-page .setting-section h2{font-size:16px;margin:0 0 14px}
+.student-page .setting-section details{margin-top:9px;color:var(--muted);font-size:12px}
+.student-page .button-row{gap:8px}
+.student-page .p-progress-form{display:flex;gap:8px;align-items:end}
+.student-page .p-progress-form label{flex:1;min-width:0;font-size:11px;color:var(--muted)}
+.student-page .p-progress-form input{width:100%;min-width:0}
+.student-page .p-progress-form .cta{flex:0 0 auto}
+.student-page .setting-row-title{align-items:center;gap:8px}
+.student-page .setting-row-title>span{font-size:12px;color:var(--muted)}
+.student-page .theme-switch{flex:0 0 auto}
+.student-page .setting-section .input-line{margin-top:10px}
+.student-page .setting-note{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.bottom-nav{gap:3px;padding:7px 11px calc(5px + env(safe-area-inset-bottom));}
+.nav-tab{min-height:48px;border-radius:13px;font-size:11px}
+.nav-tab.active{background:var(--study-soft);color:var(--study-accent)}
+.day-detail-open .student-page{padding-top:2px}
+html[data-theme="dark"] .student-task,html[data-theme="dark"] .student-task-detail,
+html[data-theme="dark"] .student-stat-grid>div,html[data-theme="dark"] .student-stat-section{background:var(--paper);border-color:var(--line)}
+html[data-theme="dark"] .student-control-buttons button,html[data-theme="dark"] .student-countdown{background:var(--paper);border-color:var(--line);color:var(--text)}
+html[data-theme="dark"] .student-task-body,html[data-theme="dark"] .student-task-check{color:var(--text)}
+html[data-theme="dark"] .student-task-check.checked{color:#fff}
+@media(max-width:370px){.shell{padding-inline:11px}.student-day-heading h1{font-size:22px}.student-task{padding:11px 9px}.student-task-name{font-size:13px}.student-control-buttons button{font-size:10px;padding:7px}}
+@media(prefers-reduced-motion:reduce){.student-progress-fill{transition:none}.student-task{animation:none}}
