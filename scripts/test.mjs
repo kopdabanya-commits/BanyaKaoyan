@@ -220,3 +220,23 @@ test('M2.8 one app subject switch is persistent and cannot modify the other subj
  assert.equal(reopened.storage.get('banya_active_subject_v1'),'english');
  assert.equal(reopened.api.state.done['2026-10-15-1'],true);
 });
+
+test('M3 mobile calendar opens an in-app day page, changes date, and restores calendar on Back',async()=>{
+ const h=harness();await h.settle();
+ h.context.location.pathname='/index.html';h.context.location.search='';
+ const history={state:null,pushState(next){this.state=next},replaceState(next){this.state=next},back(){this.state=null;for(const fn of h.winHandlers.popstate||[])fn()}};
+ h.context.history=history;
+ h.api.nav('calendar');
+ assert(h.el('app').innerHTML.includes('三个复习阶段'));
+ await h.click('cal-day',{date:'2026-10-17'});
+ assert(history.state?.banyaDay);
+ assert(h.el('app').innerHTML.includes('返回日历'));
+ assert(h.el('app').innerHTML.includes('10月17日'));
+ await h.click('day',{date:'2026-10-18'});
+ assert.equal(h.api.selected,'2026-10-18');
+ assert(h.el('app').innerHTML.includes('10月18日'));
+ await h.click('close-day');
+ assert.equal(history.state,null);
+ assert(h.el('app').innerHTML.includes('三个复习阶段'));
+ assert(!h.el('app').innerHTML.includes('day-detail-head'));
+});
