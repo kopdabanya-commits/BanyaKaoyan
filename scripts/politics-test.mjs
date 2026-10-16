@@ -24,6 +24,9 @@ test('2027 politics 64 valid calendar days and unique task ids',()=>{
  assert(Core.validPlan(politics));assert.equal(politics.days.length,64);assert.equal(politics.days[0].date,'2026-10-16');assert.equal(politics.days.at(-1).date,'2026-12-18');
  assert.equal(new Set(politics.days.flatMap(d=>d.items.map(x=>x.id))).size,192);
  assert(politics.days.some(d=>d.items.some(t=>t.title.includes('肖八'))));
+ assert.equal(politics.meta.revision,2);
+ assert.equal(politics.days.filter(d=>d.items.reduce((s,t)=>s+t.minutes,0)===60).length,63);
+ assert.equal(politics.days.at(-1).items.reduce((s,t)=>s+t.minutes,0),40);
  assert(politics.days.some(d=>d.items.some(t=>t.title.includes('肖四'))));
 });
 test('politics fallback plan data exactly matches JSON',()=>{
