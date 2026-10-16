@@ -171,7 +171,7 @@ test('M2.4 recording can save and complete together, persists across reloads, an
  const again=harness({storage:h.storage,fail:true});await again.settle();
  assert.equal(again.api.state.done[task.id],true);
  assert.equal(again.api.state.wrong[task.id],2);
- assert(again.el('app').innerHTML.includes('1/3项'));
+ assert(again.el('app').innerHTML.includes('已完成 1/3'));
 });
 
 test('M2.7 English analytics survive switching to the independent political route',async()=>{
@@ -188,7 +188,7 @@ test('M2.7 English analytics survive switching to the independent political rout
  assert(!political.includes('2014年新题型'));
  h.api.nav('calendar');assert(h.el('app').innerHTML.includes('政治学习计划'));
  await h.click('switch-subject',{subject:'english'});
- assert(h.el('app').innerHTML.includes('今日任务'));
+ assert(h.el('app').innerHTML.includes('cal-grid'),'switching subjects preserves the selected page');
  const active=h.api.state.done['2026-10-15-1'];
  assert.equal(active,undefined);
 });
