@@ -5,7 +5,7 @@ let blocked=false,lastSaved='',state=null,selected='2026-10-16',openId='',rerend
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function restore(){try{const raw=localStorage.getItem(Core.key);state=raw?Core.normalize(JSON.parse(raw)):Core.defaults();lastSaved=JSON.stringify(state);blocked=false;}catch{blocked=true;state=Core.defaults();}}
 if(ready)restore();
-function save(){if(blocked)return false;try{const raw=JSON.stringify(state);localStorage.setItem(Core.key,raw);lastSaved=raw;return true}catch{state=JSON.parse(lastSaved);return false}}
+function save(){if(blocked)return false;try{const raw=JSON.stringify(state);localStorage.setItem(Core.key,raw);lastSaved=raw;if(typeof root.dispatchEvent==='function'&&typeof Event==='function')root.dispatchEvent(new Event('banya-local-change'));return true}catch{state=JSON.parse(lastSaved);return false}}
 function dateAdd(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function getDay(s){return plan.days.find(d=>d.date===s)}
 function totals(d){return {done:d.items.filter(t=>state.done[t.id]).length,total:d.items.length,minutes:d.items.reduce((n,t)=>n+t.minutes,0)}}
