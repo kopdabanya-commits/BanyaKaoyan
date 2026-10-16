@@ -43,7 +43,13 @@ function tasks(p,s,day){
  for(const [id,t] of Object.entries(s.archive))if(!result.has(id))result.set(id,t);
  const vocab={id:day+'-vocab',date:day,title:`背单词 ${s.settings.vocab} 分钟`,minutes:s.settings.vocab,type:'单词',detail:'按当前使用的单词软件复习。',vocab:true};
  if(!result.has(vocab.id))result.set(vocab.id,vocab);
- return [...result.values()].filter(t=>!t.retired&&(s.moved[t.id]||t.date)===day).map(t=>({...t,...s.edits[t.id]})).sort((a,b)=>Number(!!b.vocab)-Number(!!a.vocab));
+ return [...result.values()].filter(t=>!t.retired&&(s.moved[t.id]||t.date)===day).map(t=>{
+  const edit=s.edits[t.id];
+  // An older save of the task form stores unchanged default fields as an 'edit'.
+  // Never let this known obsolete 2010 default override the user's r10 2011 work.
+  if(t.id==='restart-2026-10-16-writing'&&t.title==='2011年小作文：实际独立写作'&&edit&&edit.title==='重新开始：2010年小作文初稿'&&edit.minutes===30)return {...t};
+  return {...t,...edit};
+ }).sort((a,b)=>Number(!!b.vocab)-Number(!!a.vocab));
 }
 function migrate(old,fresh,s,today){
  const n=normalizeState(s);const next=new Map(fresh.days.flatMap(d=>d.items.map(t=>[t.id,t])));
