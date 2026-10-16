@@ -1,31 +1,12 @@
-# 板牙考研｜项目知识库总入口
+# 板牙考研文档索引
 
-最后整理：2026-10-15。**当前品牌是板牙考研，不是研途；一个PWA、两门独立科目；一个GitHub仓库和Cloudflare Worker。** 旧代码中的 `yantu_` 键用于兼容老数据，不是产品名称。
+仓库公开；不要在文档记录任何人的真实学习进度、分数、错题、笔记、设备识别信息或凭据。计划文件是公开的预设日程，不代表用户实际完成情况。
 
-## 新ChatGPT、Codex、Work必读
-1. [PROJECT_STATUS.md](PROJECT_STATUS.md)：版本、政治开发实际进度、GitHub/CI证据与未完成事项（先读最新事实）。
-2. [DECISIONS.md](DECISIONS.md)：用户确认的产品身份、单App双科目、备考原则、禁止计时器等长期决定。
-3. [SINGLE_APP_CONTRACT.md](SINGLE_APP_CONTRACT.md)：两门科目文件所有权、存储/备份隔离、离线/测试不可破坏事项。
-4. [ACTIVE_WORK.md](ACTIVE_WORK.md)：并行英语、政治、共享壳的开发占用；必须搭配GitHub实时PR/分支检查，不能当自动锁。
-5. [WORKFLOW.md](WORKFLOW.md)：直接通过GitHub开发、跨聊天协调、PR、CI、Cloudflare部署与手机验收。
-6. [GPT_HANDOFF.md](GPT_HANDOFF.md)：用户新建聊天以及给Codex/Work的最新交接规则。
-7. [OPERATIONS.md](OPERATIONS.md)：用户在同一个手机App中切换、备份、更新、恢复。
+- [PROJECT_STATUS.md](PROJECT_STATUS.md)：最新技术状态与未验收事项。
+- [SINGLE_APP_CONTRACT.md](SINGLE_APP_CONTRACT.md)：单一 PWA、双科数据隔离和兼容约束。
+- [WORKFLOW.md](WORKFLOW.md)：PR、测试、发布与隐私检查。
+- [DECISIONS.md](DECISIONS.md)：公开的架构决定。
+- [ECS_HANDOFF.md](ECS_HANDOFF.md)：服务器连接方式与部署事实；不得添加凭据值。
+- [OPERATIONS.md](OPERATIONS.md)：设备端备份与恢复原则。
 
-## 最新产品界面
-- [STUDENT_UI_M4.md](STUDENT_UI_M4.md)：两科共用精简页面层级、真实统计口径与手机验收标准。
-
-## 科目资料和历史
-- [ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md](ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md)：**英语二10月16日最新真实进度与多刷题、少复盘的新原则**，覆盖此前对2010/2011小作文的错误安排。
-- [ENGLISH_RESTART_2026-10-16.md](ENGLISH_RESTART_2026-10-16.md)：**英语二最新重启安排**，10月15日未学，10月16日复位计划与旧记录兼容规则。
-- [STUDY_BASELINE_2026-10-15.md](STUDY_BASELINE_2026-10-15.md)：英语二历史学习基线，真实进度以用户最新反馈为准。
-- [DAILY_QUESTION_FEEL_2026-10-15.md](DAILY_QUESTION_FEEL_2026-10-15.md)：英语二每天保持阅读/新题型/完形题感的研究与65天调整依据。
-- [MULTI_SUBJECT_ARCHITECTURE.md](MULTI_SUBJECT_ARCHITECTURE.md)：当前单App双科技术结构与历史变化。
-- [VALIDATION.md](VALIDATION.md)：历史自动验证与上线试验，不能覆盖当前真实状态。
-
-## 哪些才是权威数据
-- 当前计划：`plan.json`（英语）与 `politics-plan.json`（政治），对应 `plan-data.js` 和 `politics-plan-data.js` 离线镜像。
-- 真正做过的题和笔记：**用户手机实际记录/主动导出/亲口反馈**；GitHub里的未来计划绝不等于已完成。
-- App源代码、PR及分支：GitHub实时main。产品最新决定优先于旧聊天，遇到不同分支并行改共享代码必须先协调。
-- Cloudflare生产状态、Android Edge真机效果：需要真实部署与手机证据，不能由“CI通过”推断。
-
-**目标：少打扰用户复习，用一个稳定的板牙考研App管理两个相互独立的科目。**
+此前含个人学习近况的历史文档已从当前版本清除；不得从 Git 历史重新引用其内容。
