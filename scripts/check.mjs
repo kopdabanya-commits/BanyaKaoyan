@@ -13,8 +13,8 @@ assert.ok(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').inclu
 const deploy=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8'));assert.equal(deploy.name,'english-ii-plan');assert.equal(deploy.assets.directory,'.');assert.equal(typeof deploy.workers_dev,'boolean');assert.equal(deploy.preview_urls,false);assert.equal(deploy.workers_dev,true,'用户已开启免费的公开 workers.dev 地址；下次部署不能把它关闭');
 
 // M2.2优化不得改变65天任务总数及唯一ID。
-assert.equal(p.meta.revision,7);
-assert.equal(p.meta.planVersion,'2026.10.16-m2.7');
+assert.equal(p.meta.revision,8);
+assert.equal(p.meta.planVersion,'2026.10.16-english-r8');
 assert.equal(p.days.flatMap(d=>d.items).length,143);
 for(const day of p.days){const specialty=day.items.reduce((total,t)=>total+t.minutes,0);assert.ok(specialty>=60 && specialty<=90,'专项任务须在60-80分钟: '+day.date);}
 const today=p.days.find(d=>d.date==='2026-10-15');assert.equal(today.items.reduce((s,t)=>s+t.minutes,0),65);assert(today.items.some(t=>t.title.includes('2014年新题型')));assert(!p.days.find(d=>d.date==='2026-10-17').items.some(t=>t.title.includes('2014年新题型：限时')));
@@ -31,7 +31,7 @@ assert.ok(!p.days.flatMap(d=>d.items).filter(t=>t.id.startsWith('daily-feel-')).
 assert.ok(p.meta.missedStart.includes('2026-10-15'));
 const reset=p.days.find(d=>d.date==='2026-10-16');
 assert.equal(reset.items.reduce((n,t)=>n+t.minutes,0),85);
-assert(reset.items.some(t=>t.type==='写作'&&t.title.includes('2010年小作文')));
+assert(reset.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.type==='写作'&&t.title.includes('书信框架')&&t.minutes===30));
 assert(reset.items.some(t=>t.type==='新题型'&&t.title.includes('2014年')));
 assert(reset.items.some(t=>t.type==='阅读'&&t.title.includes('Text 4')));
 const next=p.days.find(d=>d.date==='2026-10-17');
@@ -39,3 +39,8 @@ assert.equal(next.items.reduce((n,t)=>n+t.minutes,0),65);
 assert(next.items.some(t=>t.id==='2026-10-16-1'&&t.type==='写作'&&t.minutes===15));
 assert(next.items.some(t=>t.type==='完形'&&t.title.includes('2013年')));
 assert.deepEqual(p.meta.retest,[[2024,'2026-11-21'],[2025,'2026-12-05'],[2026,'2026-12-12']]);
+
+// 10月16日第二次微调：只替换写作形式，不用整篇2010小作文；阅读已由用户反馈完成，但不能代替真机打卡。
+assert(reset.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.detail.includes('不要求独立完成整封信')));
+assert(reset.items.some(t=>t.id==='daily-feel-2026-10-16'&&t.minutes===25),'阅读任务ID、时间必须保留');
+assert(reset.items.some(t=>t.id==='restart-2026-10-16-newtype'&&t.minutes===30),'今天的新题型不能受写作替换影响');
