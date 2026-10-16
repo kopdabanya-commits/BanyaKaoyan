@@ -276,3 +276,100 @@ html[data-theme="dark"] .p-label{background:#234a4a;color:#96e5ce}
 html[data-theme="dark"] .p-date.all-done{background:#1e4d42;color:#b7f7e2}
 @media(max-width:370px){.p-progress-form{grid-template-columns:1fr 1fr}.p-progress-form button{grid-column:span 2}.p-head h1{font-size:19px}.p-seal{width:49px;height:49px}}
 @media(prefers-reduced-motion:reduce){.p-track i{transition:none}}
+
+/* M3 - Compact, task-first mobile application. Shared structure, separate subject accents. */
+html[data-subject="politics"]{--brand:#078d83;--brand2:#18a99a;--purple:#e5f7f1}
+html[data-theme="dark"][data-subject="politics"]{--brand:#64d5c4;--brand2:#48bfae}
+.topbar{margin-bottom:10px;min-height:32px}
+.logo{font-size:15px;gap:7px;font-weight:780}
+.logo-mark{width:27px;height:27px;box-shadow:none;border-radius:9px;font-size:15px}
+.top-date{padding:5px 8px;font-size:11px;box-shadow:none;background:transparent;border:0}
+.shell{padding-top:calc(9px + env(safe-area-inset-top))}
+.subject-rail{margin-bottom:10px}
+.subject-tabs{border-radius:13px;padding:3px}
+.subject-tab{min-height:42px;padding:7px 12px}
+.subject-context{font-size:10px}
+html[data-subject="politics"] .subject-tab.is-active{color:#007b72}
+html[data-subject="politics"] .subject-tab.is-active .subject-symbol{background:#078d83}
+html[data-subject="politics"] .nav-tab.active{background:#e6f7f2;color:#078d83}
+html[data-theme="dark"][data-subject="politics"] .nav-tab.active{background:#21493f;color:#8dedda}
+html[data-subject="politics"] .cal-day.current,html[data-subject="politics"] .day-chip.selected .number{background:#078d83;color:#fff}
+html[data-subject="politics"] .day-chip.selected{background:#e3f6f1;color:#087c74}
+html[data-theme="dark"][data-subject="politics"] .day-chip.selected{background:#274f49;color:#8de0d3}
+html[data-subject="politics"] .round-btn{color:var(--brand)}
+html[data-subject="politics"] .p-task .cta:not(.ghost):not(.secondary){background:#078d83}
+.day-plan-root{display:flex;flex-direction:column}
+.day-plan-root>.dashboard-eyebrow{order:-100}
+.day-plan-root>.page-title{order:-99}
+.day-plan-root>.subtitle{order:-98}
+.day-plan-root>.calendar-heading{order:-97}
+.day-plan-root>.weekstrip{order:-96}
+.day-plan-root>.day-stepper{order:-95}
+.day-plan-root>.skip-banner{order:-94}
+.day-plan-root>.progress-block{order:-93}
+.day-plan-root>.task-card,.day-plan-root>.empty{order:-92}
+.day-plan-root>.focus-panel{order:-91}
+.day-plan-root>.hero{order:-90}
+.day-plan-root>.week-insight{order:10}
+.day-plan-root>.watermark{order:11}
+.day-plan-root>.page-title{font-size:21px;line-height:1.2;margin:6px 0}
+.day-plan-root>.subtitle{font-size:12px;margin:0 0 10px}
+.dashboard-eyebrow{font-size:10px;letter-spacing:.5px}
+.section-row.calendar-heading{margin:8px 1px 10px}
+.section-row.calendar-heading h2{font-size:18px}
+.weekstrip{margin-bottom:7px;gap:3px}
+.day-chip{padding:5px 0 6px;min-height:53px}
+.day-chip .dow{margin-bottom:4px}
+.day-chip .number{border-radius:10px}
+.day-stepper{display:flex;justify-content:space-between;gap:7px;margin:0 0 10px}
+.day-stepper button,.day-back{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:11px;padding:9px 12px;min-height:43px;background:var(--paper);color:var(--brand);font-size:12px;font-weight:760}
+.day-stepper button:disabled,.day-back:disabled{opacity:.35}
+.day-stepper button:active,.day-back:active{transform:scale(.98)}
+.day-plan-root>.progress-block{margin:2px 0 9px;padding:12px 14px;border-radius:14px;box-shadow:none;border:1px solid var(--line)}
+.day-plan-root>.progress-block .track{margin-top:8px;height:6px}
+.day-plan-root>.progress-block .progress-footnote{margin:7px 0 0}
+.day-plan-root>.task-card{margin:5px 0;border-radius:17px;box-shadow:none}
+.day-plan-root>.focus-panel{padding:13px 15px;margin:12px 0 0;border-radius:15px;box-shadow:none}
+.day-plan-root>.focus-panel h2{font-size:15px}
+.day-plan-root>.focus-panel .focus-actions{margin-top:9px}
+.day-plan-root>.compact-hero{min-height:0;padding:12px 15px;margin:12px 0;border-radius:15px;box-shadow:none;border:0}
+.day-plan-root>.compact-hero .hero-top{align-items:center}
+.day-plan-root>.compact-hero .hero-ring,.day-plan-root>.compact-hero .aurora,.day-plan-root>.compact-hero .hero-glow-grid,.day-plan-root>.compact-hero .hero-kicker,.day-plan-root>.compact-hero .hero-motto{display:none!important}
+.day-plan-root>.compact-hero h2{font-size:11px;margin:0 0 3px}
+.day-plan-root>.compact-hero .count{font-size:28px;letter-spacing:0}
+.day-plan-root>.compact-hero .count small{font-size:11px}
+.day-plan-root>.compact-hero .hero-bottom{margin-top:8px;padding-top:8px;gap:4px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.day-plan-root>.compact-hero .hero-bottom small{font-size:10px}
+.day-plan-root>.compact-hero .hero-bottom b{font-size:15px}
+.day-plan-root>.compact-hero .hero-bottom b span{font-size:10px}
+.p-head.compact-p-head{margin:2px 0 10px;padding:10px 13px;box-shadow:none;border-radius:15px;background:linear-gradient(110deg,#e7f7f2,#ecf5f9);border:1px solid #dcece8}
+.p-head.compact-p-head h1{font-size:19px;margin:4px 0}
+.p-head.compact-p-head p{font-size:11px}
+.p-head.compact-p-head .eyebrow{font-size:10px;letter-spacing:.5px;color:#078d83}
+.politics-day-root>.p-board:first-of-type{margin:0 0 10px;padding:14px 15px;border-radius:16px;box-shadow:none}
+.politics-day-root .p-day-top h2{font-size:17px}
+.politics-day-root .p-day-top strong{font-size:17px}
+.politics-day-root .p-track{height:6px;margin:10px 0}
+.politics-day-root .p-nav{margin:6px 0 0}
+.politics-day-root .p-nav .cta{flex:1;padding:8px 4px;font-size:11px;min-height:39px}
+.politics-day-root .p-hint{font-size:11px}
+.politics-day-root .politics-weekstrip{margin:0 0 10px}
+.politics-day-root .p-section-heading{margin:8px 2px 10px}
+.politics-day-root .p-section-heading h2{font-size:17px}
+.politics-day-root .p-task{border-radius:16px;margin:7px 0;padding:14px 15px;box-shadow:none}
+.politics-day-root .p-task h3{font-size:15px}
+.politics-day-root .p-task p{font-size:12px}
+.p-calendar-summary{margin:13px 2px;font-size:12px;color:var(--muted);line-height:1.65}
+.month-head .round-btn:disabled{opacity:.25}
+.day-detail-open .topbar,.day-detail-open .bottom-nav{display:none}
+.day-detail-open .shell{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.day-detail-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0}
+.day-detail-head .day-back{font-size:14px;background:transparent;padding-inline:3px}
+.day-detail-label{font-size:12px;color:var(--muted)}
+html[data-theme="dark"] .p-head.compact-p-head{background:linear-gradient(115deg,#213f3c,#263747);border-color:#2f5651}
+html[data-theme="dark"] .p-head.compact-p-head h1{color:#d4f7ef}
+html[data-theme="dark"] .day-stepper button{background:#252a44;color:var(--brand)}
+html[data-theme="dark"] .day-detail-head{background:var(--bg)}
+html[data-theme="dark"] .day-plan-root>.progress-block{border-color:var(--line)}
+@media(max-width:370px){.day-plan-root>.compact-hero .count{font-size:26px}.day-stepper button{padding-inline:8px}.p-head.compact-p-head h1{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.day-stepper button,.day-back{transition:none!important}}
