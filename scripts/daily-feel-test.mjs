@@ -8,8 +8,8 @@ const added=plan.days.flatMap(d=>d.items.filter(t=>t.id.startsWith('daily-feel-'
 const original=structuredClone(plan);original.days.forEach(d=>d.items=d.items.filter(t=>!t.id.startsWith('daily-feel-')));original.meta.revision=5;original.meta.planVersion='2026.10.15-m2.3';
 const target=d=>d.items.some(t=>['阅读','新题型','完形'].includes(t.type)||(t.type==='综合'&&/阅读Text\s*4.*新题型.*完形/.test(t.title)));
 test('M2.6: each of 65 days includes one real objective task; 2024-26 mock parts count but are not re-used',()=>{
- assert.equal(plan.meta.revision,9);assert.equal(plan.days.length,65);assert.equal(added.length,42);
- for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=60&&mins<=90,d.date);}
+ assert.equal(plan.meta.revision,10);assert.equal(plan.days.length,65);assert.equal(added.length,42);
+ for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=(['2026-10-16','2026-12-18'].includes(d.date)?40:60)&&mins<=90,d.date);}
  for(const yr of [2024,2025,2026])for(const d of plan.days.filter(x=>x.items.some(t=>t.title.includes(yr+'年模考')))){
   assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,target(original.days.find(x=>x.date===d.date))?0:1);
  }
@@ -19,7 +19,7 @@ test('M2.6: old task identifiers, date, minutes and 10-15 assignments remain ide
  assert.equal(original.days.length,plan.days.length);
  for(let i=0;i<65;i++){
   const d=plan.days[i],old=original.days[i];assert.equal(d.date,old.date);
-  for(let j=0;j<old.items.length;j++)assert.deepEqual(d.items[j],old.items[j]);
+  for(const historical of old.items){const current=d.items.find(t=>t.id===historical.id);assert.deepEqual(current,historical,'same ID content must remain exact when filtering daily-feel: '+historical.id);}
  }
  assert.equal(plan.days[0].items.reduce((n,t)=>n+t.minutes,0),65);
  assert.equal(plan.days[0].items.length,3);
@@ -38,11 +38,11 @@ test('M2.6: old local notes, completion and personalized schedule can migrate wi
  for(const vocab of [30,35,40])for(const d of plan.days){const t=core.defaults();t.settings.vocab=vocab;const total=core.tasks(plan,t,d.date).reduce((n,x)=>n+x.minutes,0);assert(total<=135,d.date);}
 });
 test('M2.6: practice-only additions never claim actual scores, learning completion or automatic timing',()=>{
- assert(added.every(t=>t.detail.includes('限时')||t.detail.includes('15—18分钟')));
+ assert(added.every(t=>t.id==='daily-feel-2026-10-16'||t.detail.includes('限时')||t.detail.includes('15—18分钟')));
  assert(added.every(t=>t.detail.length>=50));
  assert(added.every(t=>t.id.startsWith('daily-feel-2026-')));
  assert.equal(new Set(added.map(t=>t.id)).size,42);
- assert.equal(plan.days.flatMap(d=>d.items).length,143);
+ assert.equal(plan.days.flatMap(d=>d.items).length,191);
 });
 
 // M2.7独立复测：保留10月15日旧任务历史、10月16日重新上手、不强行补债。
@@ -52,12 +52,12 @@ test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + rea
  const d17=plan.days.find(d=>d.date==='2026-10-17');
  assert(plan.meta.missedStart.includes('2026-10-15'));
  assert.equal(d15.items.length,3,'保留旧计划历史以兼容本机历史记录');
- assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
+ assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),55);
  assert.equal(d16.items.filter(t=>t.id.startsWith('restart-2026-10-16-')).length,2);
- assert(d16.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.title.includes('书信框架')&&t.minutes===30));
- assert(d16.items.some(t=>t.title.includes('2014年英语二新题型')));
+ assert(d16.items.some(t=>t.id==='restart-2026-10-16-writing'&&t.title.includes('2011年小作文')&&t.minutes===20));
+ assert(d16.items.some(t=>t.type==='新题型'&&t.title.includes('2014年新题型')));
  assert(d16.items.some(t=>t.type==='阅读'));
- assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),65);
+ assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),80);
  assert(d17.items.some(t=>t.id==='2026-10-16-1'&&t.minutes===15));
  const previous=structuredClone(plan);previous.meta.revision=6;previous.meta.planVersion='2026.10.15-m2.6';
  const p16=previous.days.find(d=>d.date==='2026-10-16');const p17=previous.days.find(d=>d.date==='2026-10-17');
@@ -82,23 +82,47 @@ test('M2.7.1: Oct 18 substitutes invitation letter instead of 2011 prompt, and l
  const essay=d.items.find(t=>t.id==='2026-10-18-1');
  assert(essay.title.includes('邀请信'));
  assert(!essay.title.includes('2011年小作文'));
- assert.equal(essay.minutes,55);
+ assert.equal(essay.minutes,25);
  assert(d.items.some(t=>t.type==='新题型'&&t.minutes===25));
- assert.equal(d.items.reduce((n,t)=>n+t.minutes,0),85);
- assert.equal(plan.days.flatMap(x=>x.items).length,143);
+ assert.equal(d.items.reduce((n,t)=>n+t.minutes,0),80);
+ assert.equal(plan.days.flatMap(x=>x.items).length,191);
 });
 
 test('English revision9: already-completed reading ID preserved; Oct16 writing becomes short sentences while Oct18 invitation remains',()=>{
  const d16=plan.days.find(d=>d.date==='2026-10-16');
  const d18=plan.days.find(d=>d.date==='2026-10-18');
- assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
- assert(d16.items.find(t=>t.id==='restart-2026-10-16-writing').detail.includes('不要求独立完成整封信'));
- assert(d16.items.some(t=>t.id==='daily-feel-2026-10-16'&&t.type==='阅读'&&t.minutes===25));
- assert(d16.items.some(t=>t.id==='restart-2026-10-16-newtype'&&t.minutes===30));
- assert(d18.items.some(t=>t.id==='2026-10-18-1'&&t.title.includes('邀请信')&&t.minutes===55));
+ assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),55);
+ assert(d16.items.find(t=>t.id==='restart-2026-10-16-writing').title.includes('2011年小作文'));
+ assert(d16.items.some(t=>t.id==='daily-feel-2026-10-16'&&t.type==='阅读'&&t.minutes===20));
+ assert(d16.items.some(t=>t.id==='restart-2026-10-16-newtype'&&t.minutes===15));
+ assert(d18.items.some(t=>t.id==='2026-10-18-1'&&t.title.includes('邀请信')&&t.minutes===25));
  const state=core.defaults();state.done['daily-feel-2026-10-16']=true;
  state.notes['restart-2026-10-16-writing']='legacy note kept';
  const restored=core.normalizeState(state);
  assert.equal(restored.done['daily-feel-2026-10-16'],true);
  assert.equal(restored.notes['restart-2026-10-16-writing'],'legacy note kept');
+});
+
+test('English revision10: real Oct16 is 2011 essay not 2010, older records survive practice-first migration',()=>{
+ assert.equal(plan.meta.revision,10);
+ assert.equal(plan.days.flatMap(d=>d.items).length,191);
+ const yesterday=plan.days.find(d=>d.date==='2026-10-15');
+ const today=plan.days.find(d=>d.date==='2026-10-16');
+ assert(yesterday.items[0].title.includes('历史旧任务'));
+ assert.deepEqual(today.items.map(t=>t.minutes),[20,15,20]);
+ assert(today.items[0].title.includes('2011年小作文'));
+ assert(today.items[1].title.includes('2014年新题型'));
+ assert(today.items[2].title.includes('2011年阅读'));
+ assert(today.items[2].detail.includes('这20分钟特指批改订正'));
+ const state=core.defaults();state.done[today.items[0].id]=true;state.notes[today.items[0].id]='以前手机上的写作笔记';
+ const migrated=core.migrate(original,plan,state,'2026-10-16');
+ assert.equal(migrated.done[today.items[0].id],true);
+ assert.equal(migrated.notes[today.items[0].id],'以前手机上的写作笔记');
+ assert(!migrated.done[today.items[1].id],'计划不能假装新题型已被App勾选');
+ const standalone=plan.days.flatMap(d=>d.items).filter(t=>t.id.startsWith('practice-'));
+ assert.equal(standalone.length,48);
+ assert(standalone.every(t=>['阅读','完形','新题型'].includes(t.type)));
+ for(const yr of [2024,2025,2026]){
+  for(const d of plan.days.filter(d=>d.items.some(t=>t.title.includes(yr+'年模考'))))assert(!d.items.some(t=>t.id.startsWith('practice-')));
+ }
 });

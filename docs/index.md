@@ -12,6 +12,7 @@
 7. [OPERATIONS.md](OPERATIONS.md)：用户在同一个手机App中切换、备份、更新、恢复。
 
 ## 科目资料和历史
+- [ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md](ENGLISH_PROGRESS_PRACTICE_FIRST_2026-10-16.md)：**英语二10月16日最新真实进度与多刷题、少复盘的新原则**，覆盖此前对2010/2011小作文的错误安排。
 - [ENGLISH_RESTART_2026-10-16.md](ENGLISH_RESTART_2026-10-16.md)：**英语二最新重启安排**，10月15日未学，10月16日复位计划与旧记录兼容规则。
 - [STUDY_BASELINE_2026-10-15.md](STUDY_BASELINE_2026-10-15.md)：英语二历史学习基线，真实进度以用户最新反馈为准。
 - [DAILY_QUESTION_FEEL_2026-10-15.md](DAILY_QUESTION_FEEL_2026-10-15.md)：英语二每天保持阅读/新题型/完形题感的研究与65天调整依据。

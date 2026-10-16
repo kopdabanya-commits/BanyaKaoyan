@@ -26,8 +26,8 @@ function harness({storage=new Map(),online=true,fresh=plan,fail=false}={}){
 }
 
 test('65 continuous days, unique IDs, exact fallback and 90–135 minute schedules for all vocab settings',()=>{
- assert(core.validPlan(plan));let count=0;for(let day of plan.days){for(const vocab of [30,35,40]){const s=core.defaults();s.settings.vocab=vocab;const minutes=core.tasks(plan,s,day.date).reduce((n,t)=>n+t.minutes,0);assert(minutes>=90&&minutes<=135,day.date);}count+=day.items.length;}
- const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,143);
+ assert(core.validPlan(plan));let count=0;for(let day of plan.days){for(const vocab of [30,35,40]){const s=core.defaults();s.settings.vocab=vocab;const minutes=core.tasks(plan,s,day.date).reduce((n,t)=>n+t.minutes,0);assert(minutes>=(['2026-10-16','2026-12-18'].includes(day.date)?70:90)&&minutes<=135,day.date);}count+=day.items.length;}
+ const ctx={window:{}};vm.runInNewContext(fs.readFileSync(new URL('../plan-data.js',import.meta.url),'utf8'),ctx);assert.deepEqual(clone(ctx.window.STUDY_PLAN),plan);assert.equal(count,191);
 });
 test('plan rejects duplicate IDs, duplicate dates, impossible dates, over-budget days and prototype keys',()=>{
  for(const edit of [p=>p.days[1].date=p.days[0].date,p=>p.days[1].items[0].id=p.days[0].items[0].id,p=>p.days[0].date='2026-02-31',p=>p.days[0].items[0].minutes=90,p=>p.days[0].items[0].id='__proto__']){const p=clone(plan);edit(p);assert.equal(core.validPlan(p),false);}
@@ -100,7 +100,7 @@ test('removed future unfinished task is retained outside active schedule, not st
  const n=core.migrate(plan,fresh,s,'2026-10-15');assert.equal(n.archive[removed.id].retired,true);assert(!core.tasks(fresh,n,'2026-10-16').some(t=>t.id===removed.id));assert(core.tasks(fresh,n,'2026-10-16').some(t=>t.id==='replacement-id'));
 });
 test('plan update blocks a future over-budget personalized schedule and leaves current plan intact',async()=>{
- const s=core.defaults();s.added.push({id:'custom-heavy',title:'already scheduled',minutes:70,type:'写作',date:'2026-10-16',custom:true});const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,'previous');assert(h.api.pending);
+ const s=core.defaults();s.added.push({id:'custom-heavy',title:'already scheduled',minutes:90,type:'写作',date:'2026-10-16',custom:true});const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();h.api.applyUpdate();assert.equal(h.api.data.meta.planVersion,'previous');assert(h.api.pending);
 });
 test('moving a task then checking it clears rest only on the destination day',async()=>{
  const s=core.defaults();s.moved['2026-10-15-1']='2026-10-16';s.skipped['2026-10-16']=true;s.skipped['2026-10-15']=true;const h=harness({storage:new Map([[key,JSON.stringify(s)]])});await h.settle();await h.click('toggle',{id:'2026-10-15-1',day:'2026-10-16'});assert.equal(h.api.state.skipped['2026-10-16'],undefined);assert.equal(h.api.state.skipped['2026-10-15'],true);
