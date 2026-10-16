@@ -13,8 +13,8 @@ assert.ok(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').inclu
 const deploy=JSON.parse(fs.readFileSync(new URL('../wrangler.jsonc',import.meta.url),'utf8'));assert.equal(deploy.name,'english-ii-plan');assert.equal(deploy.assets.directory,'.');assert.equal(typeof deploy.workers_dev,'boolean');assert.equal(deploy.preview_urls,false);assert.equal(deploy.workers_dev,true,'用户已开启免费的公开 workers.dev 地址；下次部署不能把它关闭');
 
 // M2.2优化不得改变65天任务总数及唯一ID。
-assert.equal(p.meta.revision,7);
-assert.equal(p.meta.planVersion,'2026.10.16-m2.7');
+assert.equal(p.meta.revision,8);
+assert.equal(p.meta.planVersion,'2026.10.16-m2.7.1');
 assert.equal(p.days.flatMap(d=>d.items).length,143);
 for(const day of p.days){const specialty=day.items.reduce((total,t)=>total+t.minutes,0);assert.ok(specialty>=60 && specialty<=90,'专项任务须在60-80分钟: '+day.date);}
 const today=p.days.find(d=>d.date==='2026-10-15');assert.equal(today.items.reduce((s,t)=>s+t.minutes,0),65);assert(today.items.some(t=>t.title.includes('2014年新题型')));assert(!p.days.find(d=>d.date==='2026-10-17').items.some(t=>t.title.includes('2014年新题型：限时')));
@@ -39,3 +39,13 @@ assert.equal(next.items.reduce((n,t)=>n+t.minutes,0),65);
 assert(next.items.some(t=>t.id==='2026-10-16-1'&&t.type==='写作'&&t.minutes===15));
 assert(next.items.some(t=>t.type==='完形'&&t.title.includes('2013年')));
 assert.deepEqual(p.meta.retest,[[2024,'2026-11-21'],[2025,'2026-12-05'],[2026,'2026-12-12']]);
+
+// M2.7.1: 用户不要10月18日2011年小作文，改为邀请信训练，不修改客观题和未来安排。
+const writingSwap=p.days.find(d=>d.date==='2026-10-18');
+const invitation=writingSwap.items.find(t=>t.id==='2026-10-18-1');
+assert.equal(invitation.minutes,55);
+assert.equal(invitation.type,'写作');
+assert(invitation.title.includes('邀请信')&&!invitation.title.includes('2011年小作文'));
+assert(!writingSwap.items.some(t=>t.title.includes('2011年小作文')));
+assert(writingSwap.items.some(t=>t.type==='新题型'&&t.title.includes('2011年')));
+assert.equal(writingSwap.items.reduce((n,t)=>n+t.minutes,0),85);
