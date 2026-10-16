@@ -502,3 +502,18 @@ html[data-theme="dark"] .student-task-check.checked{color:#fff}
 /* M4.1: same task bottom sheet for politics/English; subject colour only */
 html[data-subject="politics"] .modal .cta:not(.secondary):not(.ghost){background:var(--study-accent);color:white}
 html[data-subject="politics"] .modal .eyebrow{color:var(--study-accent)}
+
+/* Touch feedback stays short and respects reduced motion. */
+.view-content.entering{animation:viewAppear .26s cubic-bezier(.22,.8,.25,1) both}
+.student-task,.calendar-task-row,.subject-tab,.nav-tab,.student-control-buttons button,.round-btn,.cta,.student-task-check,.cal-day{transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease}
+.student-task:active,.calendar-task-row:active,.cta:active,.round-btn:active{transform:scale(.985)}
+.student-task-check:active,.cal-day:active,.subject-tab:active,.nav-tab:active{transform:scale(.92)}
+.student-task:focus-within,.calendar-task-row:focus-visible{border-color:var(--study-accent);box-shadow:0 5px 18px rgba(40,38,92,.08)}
+.student-task-check.checked{animation:checkDone .3s cubic-bezier(.18,.85,.25,1)}
+.calendar-details{margin-top:12px;padding:15px;background:var(--paper);border:1px solid var(--line);border-radius:15px}
+.calendar-details-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.calendar-details-head h2{font-size:16px;margin:0}.calendar-details-head span,.calendar-task-row small,.calendar-rest{font-size:11px;color:var(--muted)}
+.calendar-task-row{width:100%;min-height:43px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;text-align:left;color:var(--text);border:0;border-top:1px solid var(--line);background:transparent}
+.calendar-task-row span{font-size:12px;line-height:1.4}.calendar-task-row small{white-space:nowrap}.calendar-rest{margin:9px 0 0;line-height:1.5}
+.logo-mark{background:#261579 url('./icons/icon-192.png') center/cover no-repeat;box-shadow:0 5px 12px rgba(40,29,113,.22);border-radius:11px}
+@media(prefers-reduced-motion:reduce){.view-content.entering,.student-task-check.checked{animation:none!important}.student-task,.calendar-task-row,.subject-tab,.nav-tab,.student-control-buttons button,.round-btn,.cta,.student-task-check,.cal-day{transition:none!important}}
