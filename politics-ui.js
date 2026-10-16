@@ -9,6 +9,7 @@ function save(){if(blocked)return false;try{const raw=JSON.stringify(state);loca
 function dateAdd(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function getDay(s){return plan.days.find(d=>d.date===s)}
 function totals(d){return {done:d.items.filter(t=>state.done[t.id]).length,total:d.items.length,minutes:d.items.reduce((n,t)=>n+t.minutes,0)}}
+function todayInPlan(){const d=new Date().toISOString().slice(0,10);return getDay(d)?d:plan.meta.start}
 function setDate(date){if(!getDay(date))return false;selected=date;pMonth=date.slice(0,7);openId='';root.__politicsSelectionInitialized=true;return true}
 function shiftMonth(n){const a=pMonth.split('-').map(Number),d=new Date(Date.UTC(a[0],a[1]-1+n,1));const next=d.toISOString().slice(0,7);if(next<plan.meta.start.slice(0,7)||next>plan.meta.end.slice(0,7))return;pMonth=next;rerender()}
 function monthlyCalendar(today){
@@ -23,23 +24,57 @@ function monthlyCalendar(today){
  return '<div class="month-head"><button class="round-btn" data-action="p-cal-prev" aria-label="上个月" '+(pMonth===plan.meta.start.slice(0,7)?'disabled':'')+'>‹</button><h2>'+y+'年'+m+'月</h2><button class="round-btn" data-action="p-cal-next" aria-label="下个月" '+(pMonth===plan.meta.end.slice(0,7)?'disabled':'')+'>›</button></div><div class="calendar"><div class="cal-grid">'+days.join('')+'</div><div class="legend"><span><i></i>待练</span><span class="green"><i></i>已完成</span></div></div>';
 }
 
-function content(view,today){if(!ready)return '<section class="p-board"><h2>政治计划资源未就绪</h2><p>原有英语二数据未受影响，请联网后点击检查应用更新。</p></section>';
- if(selected==='2026-10-16'&&today>='2026-10-16'&&today<='2026-12-18'&&!root.__politicsSelectionInitialized){selected=today;pMonth=today.slice(0,7);root.__politicsSelectionInitialized=true}
- const header='<header class="p-head compact-p-head"><div><div class="eyebrow">2027 考研 · 政治</div><h1>政治复习</h1><p>按当天计划推进 · 60～65 分目标</p></div></header>';
- const warning=blocked?'<div class="skip-banner" role="alert">政治记录读取失败，已停止写入，防止覆盖原数据。</div>':'';
- const disclaimer='<p class="p-hint">打卡只代表你主动确认完成，计划日期不会自动转成学习成绩。苍盾题库无法直接同步，请手动更新。</p>';
- if(view==='calendar'){return header+warning+'<h1 class="page-title">学习日历</h1><p class="subtitle">点选日期查看完整安排，返回后仍在日历。</p>'+monthlyCalendar(today)+'<div class="p-calendar-summary">每天的计划按原日期保留，未完成任务不会自动推到第二天。</div>';}
- if(view==='stats'){const all=plan.days.map(d=>totals(d)),done=all.reduce((n,x)=>n+x.done,0),total=all.reduce((n,x)=>n+x.total,0),stages=[...new Set(plan.days.map(d=>d.stage))];return header+warning+'<section class="p-board"><h2>政治实际打卡统计</h2><div class="p-big">'+done+'<small> / '+total+'项完成</small></div>'+stages.map(name=>{const days=plan.days.filter(d=>d.stage===name),a=days.reduce((n,d)=>n+totals(d).done,0),b=days.reduce((n,d)=>n+totals(d).total,0);return '<div class="p-stage"><div><b>'+esc(name)+'</b><span>'+a+'/'+b+'</span></div><div class="p-track"><i style="width:'+Math.round(a/b*100)+'%"></i></div></div>'}).join('')+disclaimer+'</section>';}
- if(view==='settings'){return header+warning+'<section class="p-board"><h2>政治备份与恢复</h2><p class="p-hint">政治和英语二各有独立的本地记录键。恢复政治备份不会覆盖英语数据；恢复前会留一份回退副本。</p><div class="p-buttons"><button class="cta" data-action="p-export">导出政治备份</button><button class="cta secondary" data-action="p-import">导入政治备份</button></div><input type="file" id="p-import-file" accept=".json,application/json" hidden>'+disclaimer+'<button class="cta ghost" data-action="switch-subject" data-subject="english">返回英语二</button></section>';}
- const day=getDay(selected)||plan.days[0],t=totals(day),pct=Math.round(t.done/t.total*100),q=state.questions.marx||{done:0,total:396};
- const weekStrip='<div class="weekstrip politics-weekstrip">'+[-3,-2,-1,0,1,2,3].map(i=>{const d=dateAdd(selected,i),available=!!getDay(d);return '<button class="day-chip'+(d===selected?' selected':'')+(d===today?' today':'')+'" data-action="p-day" data-day="'+d+'" '+(!available?'disabled':'')+'><span class="dow">'+['日','一','二','三','四','五','六'][new Date(d+'T12:00:00Z').getUTCDay()]+'</span><span class="number">'+Number(d.slice(-2))+'</span></button>'}).join('')+'</div>';
- const cards=day.items.map(item=>'<article class="p-task'+(state.done[item.id]?' completed':'')+'"><div class="p-task-meta"><span class="p-label">'+esc(item.type)+'</span><span>'+item.minutes+'分钟</span></div><h3>'+esc(item.title)+'</h3><p>'+esc(item.detail)+'</p>'+(state.wrong[item.id]!==undefined?'<small class="p-wrong">已记录错题 '+state.wrong[item.id]+' 道</small>':'')+(state.notes[item.id]?'<p class="p-saved-note">'+esc(state.notes[item.id])+'</p>':'')+'<div class="p-buttons"><button class="cta small'+(state.done[item.id]?' secondary':'')+'" data-action="p-toggle" data-id="'+item.id+'">'+(state.done[item.id]?'撤销打卡':'完成打卡')+'</button><button class="cta ghost small" data-action="p-detail" data-id="'+item.id+'">错题 / 笔记</button></div>'+(openId===item.id?'<form class="p-note-form" id="p-task-form" data-id="'+item.id+'"><label>本次错题数<input id="p-wrong" type="number" min="0" max="100" value="'+(state.wrong[item.id]??'')+'" placeholder="可留空"></label><label>一句话复盘<textarea id="p-note" rows="3" maxlength="3000" placeholder="例如：多选题漏掉了限制条件">'+esc(state.notes[item.id]||'')+'</textarea></label><div class="p-buttons"><button class="cta small" type="submit">保存复盘</button><button class="cta secondary small" data-action="p-note-close">收起</button></div></form>':'')+'</article>').join('');
- return '<div class="politics-day-root" data-day-swipe="true">'+header+warning+'<section class="p-board"><div class="p-day-top"><div><span class="eyebrow">当前计划</span><h2>'+day.date.slice(5)+' · '+esc(day.stage)+'</h2><p>'+t.minutes+'分钟建议训练量 · '+esc(day.topic)+'</p></div><strong>'+t.done+'/'+t.total+'</strong></div><div class="p-track"><i style="width:'+pct+'%"></i></div><div class="p-buttons p-nav"><button class="cta ghost small" data-action="p-prev" '+(day.date===plan.meta.start?'disabled':'')+'>← 前一天</button><button class="cta ghost small" data-action="p-day" data-day="'+(today>='2026-10-16'&&today<='2026-12-18'?today:plan.meta.start)+'">今天</button><button class="cta ghost small" data-action="p-next" '+(day.date===plan.meta.end?'disabled':'')+'>后一天 →</button></div><p class="p-hint">'+esc(day.hint)+'</p></section>'+weekStrip+'<div class="p-section-heading"><h2>当天政治任务</h2><span>'+t.minutes+'分钟</span></div>'+cards+'<section class="p-board"><div class="section-row"><h2>苍盾 · 肖1000题</h2><span class="sub">手动登记</span></div><p class="p-hint">截图中马原进度为93/396题。以后请根据苍盾中的实际数据更新，不会自动读取小程序账号。</p><form id="p-progress-form" class="p-progress-form"><label>已做<input type="number" id="p-questions" min="0" max="10000" value="'+q.done+'" required></label><label>总题数<input type="number" id="p-total" min="1" max="10000" value="'+q.total+'" required></label><button class="cta small" type="submit">保存</button></form><p class="p-hint">已登记马原 '+q.done+'/'+q.total+'题（'+Math.round(q.done/q.total*100)+'%），不是整门政治总体完成率。</p></section><section class="p-board"><h2>计划使用说明</h2>'+disclaimer+'<button class="cta secondary" data-action="p-export">导出政治记录</button></section></div>';
+function content(view,today){
+ const UI=root.BanyaStudyUI;
+ if(!ready)return '<section class="student-page"><h1>政治计划暂不可用</h1><p>请联网检查应用更新。</p></section>';
+ if(selected==='2026-10-16'&&today>='2026-10-16'&&today<='2026-12-18'&&!root.__politicsSelectionInitialized){
+  selected=today;pMonth=today.slice(0,7);root.__politicsSelectionInitialized=true;
+ }
+ const warning=blocked?'<div class="skip-banner" role="alert">政治记录读取失败，已停止写入，避免覆盖原数据。</div>':'';
+ const sub='<span class="student-subject-label">政治复习</span>';
+ if(view==='calendar'){
+  return '<div class="student-page student-politics">'+sub+UI.header('日历','选择日期查看安排')+warning+monthlyCalendar(today)+'</div>';
+ }
+ if(view==='stats'){
+  const dates=plan.days.filter(d=>d.date<=today),recent=dates.map(d=>({date:d.date,...totals(d)}));
+  const groups=new Map();
+  for(const day of dates)for(const task of day.items){
+   if(!groups.has(task.type))groups.set(task.type,{label:task.type,done:0,total:0});
+   const row=groups.get(task.type);row.total++;if(state.done[task.id])row.done++;
+  }
+  const q=state.questions.marx||{done:0,total:396};
+  const questionCard='<section class="student-stat-section"><h2>肖1000题 · 马原</h2><p>手动登记：'+q.done+'/'+q.total+' 题</p>'
+  +'<form id="p-progress-form" class="p-progress-form"><label>已做<input type="number" id="p-questions" min="0" max="10000" value="'+q.done+'" required></label><label>总题数<input type="number" id="p-total" min="1" max="10000" value="'+q.total+'" required></label><button class="cta small" type="submit">保存</button></form>'
+  +'<p class="student-quiet">仅为马原题库进度，不代表政治总成绩。</p></section>';
+  return '<div class="student-page student-politics">'+sub+warning+UI.stats({days:recent,categories:[...groups.values()],today,subject:'politics'})+questionCard+'</div>';
+ }
+ if(view==='settings'){
+  const theme=document.documentElement?.dataset?.theme||'light';
+  return '<div class="student-page student-politics">'+sub+UI.header('设置')+warning
+   +'<section class="setting-section"><h2>学习偏好</h2><div class="setting-row-title"><span>外观</span><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="'+(theme==='light'?'selected':'')+'" aria-pressed="'+(theme==='light')+'">浅色</button><button type="button" data-action="theme" data-theme="dark" class="'+(theme==='dark'?'selected':'')+'" aria-pressed="'+(theme==='dark')+'">深色</button></div></div></section>'
+   +'<section class="setting-section"><h2>备份与恢复</h2><div class="button-row"><button class="cta secondary" data-action="p-export">导出政治备份</button><button class="cta ghost" data-action="p-import">导入备份</button></div><input type="file" id="p-import-file" accept=".json,application/json" hidden></section>'
+   +'<section class="setting-section"><h2>应用更新</h2><button class="cta secondary" data-action="refresh-app">检查应用更新</button></section></div>';
+ }
+ const day=getDay(selected)||plan.days[0],p=totals(day),pending=day.items.filter(t=>!state.done[t.id]);
+ const heading=UI.dayHeading({date:day.date,today,start:plan.meta.start,end:plan.meta.end,done:p.done,total:p.total,remaining:pending.reduce((n,t)=>n+t.minutes,0),subtitle:day.stage+' · '+day.topic,prev:'p-day',next:'p-day',jump:'p-today',attribute:'day'});
+ const cards=day.items.map(t=>{
+  const entry=UI.task({item:t,day:day.date,done:!!state.done[t.id],wrong:state.wrong[t.id],hasNote:!!state.notes[t.id],subject:'politics',next:t.id===pending[0]?.id});
+  if(openId!==t.id)return entry;
+  return entry+'<div class="student-task-detail"><p>'+esc(t.detail)+'</p><form class="p-note-form" id="p-task-form" data-id="'+esc(t.id)+'">'
+  +'<label>错题数<input id="p-wrong" type="number" inputmode="numeric" min="0" max="100" value="'+(state.wrong[t.id]??'')+'" placeholder="可不填"></label>'
+  +'<label>简短记录（可选）<textarea id="p-note" rows="2" maxlength="3000" placeholder="需要记住什么？">'+esc(state.notes[t.id]||'')+'</textarea></label>'
+  +'<div class="button-row"><button class="cta small" type="submit">保存记录</button><button type="button" class="cta ghost small" data-action="p-note-close">收起</button></div></form></div>';
+ }).join('');
+ return '<div class="student-page student-politics" data-day-swipe="true">'+sub+warning+heading
+ +'<div class="student-section-heading"><h2>今日任务</h2><span>共 '+day.items.length+' 项</span></div>'
+ +'<div class="student-task-list">'+cards+'</div></div>';
 }
+
 function render(view,today,escape,refresh){rerender=refresh;return content(view,today)}
 function download(){const data=JSON.stringify({app:'yantu-politics',version:1,exportedAt:new Date().toISOString(),state},null,2);const blob=new Blob([data],{type:'application/json'}),href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download='板牙考研_政治备份_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),3000)}
 function report(success){if(!success)alert('保存失败，旧数据没有被覆盖。建议检查浏览器存储空间。');rerender()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b||!String(b.dataset.action).startsWith('p-')||!ready)return;e.stopImmediatePropagation?.();e.preventDefault?.();const act=b.dataset.action,id=b.dataset.id;
+ if(act==='p-today'){root.BANYA_SELECT_DAY?.(todayInPlan());return}
  if(act==='p-day'){if(!getDay(b.dataset.day))return;if(root.BANYA_VIEW?.()==='calendar'&&!document.body?.classList?.contains?.('day-detail-open')){root.BANYA_OPEN_DAY?.(b.dataset.day);}else{root.BANYA_SELECT_DAY?.(b.dataset.day);}return}
  if(act==='p-cal-prev'||act==='p-cal-next'){shiftMonth(act==='p-cal-prev'?-1:1);return}
  if(act==='p-prev'||act==='p-next'){const n=dateAdd(selected,act==='p-prev'?-1:1);if(getDay(n))root.BANYA_SELECT_DAY?.(n);return}
