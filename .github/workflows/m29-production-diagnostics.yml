@@ -1,0 +1,42 @@
+name: Diagnose current existing Worker production HTTP responses
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/m29-production-diagnostics.yml]
+permissions:
+  contents: read
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect online PWA identity and strict headers without user credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, urllib.error, time
+          base='https://english-ii-plan.kopdabanya.workers.dev'
+          for attempt in range(3):
+            try:
+              with urllib.request.urlopen(base+'/index.html',timeout=18) as r:
+                html=r.read().decode('utf-8','replace')
+                print('index.html:',r.status,'size:',len(html),'cloud script:', './cloud-sync.js' in html)
+                h=r.headers
+                csp=h.get('content-security-policy','')
+                print('CSP header present:',bool(csp))
+                print('CSP exact API origin present:',"connect-src 'self' https://124.70.128.201" in csp)
+                print('Content type:',h.get('content-type'))
+              break
+            except Exception as e:
+              print('index attempt',attempt+1,'failed:',type(e).__name__)
+              time.sleep(3)
+          for suffix in ['/cloud-sync.js','/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md']:
+            try:
+              with urllib.request.urlopen(base+suffix,timeout=18) as r:
+                status=r.status
+            except urllib.error.HTTPError as e: status=e.code
+            except Exception as e:
+              print(suffix,'error:',type(e).__name__)
+              continue
+            print(suffix,'status:',status)
+          PY
