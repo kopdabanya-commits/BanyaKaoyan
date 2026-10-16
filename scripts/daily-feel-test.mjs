@@ -8,7 +8,7 @@ const added=plan.days.flatMap(d=>d.items.filter(t=>t.id.startsWith('daily-feel-'
 const original=structuredClone(plan);original.days.forEach(d=>d.items=d.items.filter(t=>!t.id.startsWith('daily-feel-')));original.meta.revision=5;original.meta.planVersion='2026.10.15-m2.3';
 const target=d=>d.items.some(t=>['阅读','新题型','完形'].includes(t.type)||(t.type==='综合'&&/阅读Text\s*4.*新题型.*完形/.test(t.title)));
 test('M2.6: each of 65 days includes one real objective task; 2024-26 mock parts count but are not re-used',()=>{
- assert.equal(plan.meta.revision,6);assert.equal(plan.days.length,65);assert.equal(added.length,42);
+ assert.equal(plan.meta.revision,7);assert.equal(plan.days.length,65);assert.equal(added.length,42);
  for(const d of plan.days){assert(target(d),d.date);const mins=d.items.reduce((sum,t)=>sum+t.minutes,0);assert(mins>=60&&mins<=90,d.date);}
  for(const yr of [2024,2025,2026])for(const d of plan.days.filter(x=>x.items.some(t=>t.title.includes(yr+'年模考')))){
   assert.equal(d.items.filter(t=>t.id.startsWith('daily-feel-')).length,target(original.days.find(x=>x.date===d.date))?0:1);
@@ -42,5 +42,37 @@ test('M2.6: practice-only additions never claim actual scores, learning completi
  assert(added.every(t=>t.detail.length>=50));
  assert(added.every(t=>t.id.startsWith('daily-feel-2026-')));
  assert.equal(new Set(added.map(t=>t.id)).size,42);
- assert.equal(plan.days.flatMap(d=>d.items).length,141);
+ assert.equal(plan.days.flatMap(d=>d.items).length,143);
+});
+
+// M2.7独立复测：保留10月15日旧任务历史、10月16日重新上手、不强行补债。
+test('M2.7: missed Oct 15 remains historical and Oct 16 writing + new type + reading start is safe',()=>{
+ const d15=plan.days.find(d=>d.date==='2026-10-15');
+ const d16=plan.days.find(d=>d.date==='2026-10-16');
+ const d17=plan.days.find(d=>d.date==='2026-10-17');
+ assert(plan.meta.missedStart.includes('2026-10-15'));
+ assert.equal(d15.items.length,3,'保留旧计划历史以兼容本机历史记录');
+ assert.equal(d16.items.reduce((n,t)=>n+t.minutes,0),85);
+ assert.equal(d16.items.filter(t=>t.id.startsWith('restart-2026-10-16-')).length,2);
+ assert(d16.items.some(t=>t.title.includes('2010年小作文')));
+ assert(d16.items.some(t=>t.title.includes('2014年英语二新题型')));
+ assert(d16.items.some(t=>t.type==='阅读'));
+ assert.equal(d17.items.reduce((n,t)=>n+t.minutes,0),65);
+ assert(d17.items.some(t=>t.id==='2026-10-16-1'&&t.minutes===15));
+ const previous=structuredClone(plan);previous.meta.revision=6;previous.meta.planVersion='2026.10.15-m2.6';
+ const p16=previous.days.find(d=>d.date==='2026-10-16');const p17=previous.days.find(d=>d.date==='2026-10-17');
+ p16.items=p16.items.filter(t=>!t.id.startsWith('restart-2026-10-16-'));
+ const intro=p17.items.find(t=>t.id==='2026-10-16-1');intro.minutes=60;intro.title='大作文入门：图表三段式';
+ intro.detail='以2010题为例，先掌握描述趋势/比较数据/总结的结构，写出首段。';
+ p16.items.unshift(p17.items.splice(p17.items.indexOf(intro),1)[0]);
+ const review=p17.items.find(t=>t.id==='2026-10-17-newtype-review');review.minutes=35;
+ const state=core.defaults();state.notes['2026-10-15-1']='历史个人笔记';state.wrong['2026-10-17-1']=2;
+ const updated=core.migrate(previous,plan,state,'2026-10-16');
+ assert.equal(updated.notes['2026-10-15-1'],'历史个人笔记');
+ assert.equal(updated.wrong['2026-10-17-1'],2);
+ assert(core.tasks(plan,updated,'2026-10-16').some(t=>t.id==='restart-2026-10-16-writing'));
+ assert(core.tasks(plan,updated,'2026-10-16').some(t=>t.id==='restart-2026-10-16-newtype'));
+ assert(!core.tasks(plan,updated,'2026-10-16').some(t=>t.id==='2026-10-16-1'));
+ assert(core.tasks(plan,updated,'2026-10-17').some(t=>t.id==='2026-10-16-1'));
+ assert(!updated.done['2026-10-15-1'],'不能假装未做的昨天已经完成');
 });
