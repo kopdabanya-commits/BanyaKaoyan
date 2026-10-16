@@ -132,7 +132,7 @@ test('Oct 15 visible plan contains 65 minutes writing and new type, and hides se
 test('M2.4 student interface gives focused guidance, accessible nav, and truthful progress language',async()=>{
  const h=harness({fail:true});await h.settle();
  const home=h.el('app').innerHTML;
- assert(home.includes('今天，把注意力留给重要的题。'));
+ assert(home.includes('今天的安排'));
  assert(home.includes('本机规则建议'));
  assert(home.includes('建议先做'));
  assert(!home.includes('class="task-title">背单词'));
