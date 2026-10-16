@@ -6,6 +6,7 @@ const NAMES = {english:'英语二',politics:'政治'};
 const CONFIG = 'banya_cloud_sync_config_v1';
 const API_ORIGIN = 'https://124.70.128.201';
 const META = 'banya_cloud_sync_meta_v1_';
+const LAST_OK = 'banya_cloud_sync_last_ok_v1';
 const SUBJECTS = ['english','politics'];
 let config = null, busy = false, message = '尚未连接云服务器；本机记录继续正常保存。';
 try { const raw = localStorage.getItem(CONFIG); if(raw)config=JSON.parse(raw); } catch {}
@@ -39,20 +40,34 @@ function saveMeta(subject,revision,hash) {
 }
 function notify(text) {
  message=text;
- const el=document.getElementById('banya-cloud-message');
- if(el)el.textContent=text;
+ for(const id of ['banya-cloud-message','banya-quick-sync-status']) {
+  const el=document.getElementById(id);if(el)el.textContent=text;
+ }
+}
+function quickPanel() {
+ const connected=!!(config&&config.endpoint&&config.token);
+ const subjects=SUBJECTS.filter(s=>metaFor(s));
+ let hint=connected?(subjects.length?'云端已连接 · 已启用'+subjects.map(s=>NAMES[s]).join('、'):'云端已连接 · 两科尚未建立首次同步'):'记录目前仅保存在这台手机';
+ let last='';
+ try{last=localStorage.getItem(LAST_OK)||'';}catch{}
+ if(last&&subjects.length)hint+=' · 最近成功 '+escaped(last);
+ return '<section class="quick-sync" aria-label="复习计划和学习记录刷新">'+
+  '<div class="quick-sync-actions"><button type="button" class="quick-sync-button" data-action="check-updates" aria-label="刷新最新复习计划">↻ 刷新计划</button>'+
+  '<button type="button" class="quick-sync-button" data-banya-action="sync-now" aria-label="立即同步手机学习记录到云端">☁ 同步记录</button></div>'+
+  '<p class="quick-sync-hint" id="banya-quick-sync-status" role="status">'+escaped(message==='尚未连接云服务器；本机记录继续正常保存。'?hint:message)+'</p></section>';
 }
 function panel() {
  const connected=!!(config&&config.endpoint&&config.token);
  return '<section class="setting-section" aria-label="云端备份与同步">'+
  '<h2>云端同步 · 两科独立</h2>'+
- '<p class="setting-note">本机优先，断网照常打卡。首次上传或恢复必须手动确认；冲突暂停自动写入，绝不以空白云数据覆盖旧记录。</p>'+
+ '<p class="setting-note">打卡立即保存本机。首次云同步需安全连接并逐科确认一次，之后每次打卡自动尝试同步，也可在今日页点击「☁ 同步记录」。遇到冲突不会覆盖旧记录。</p>'+
  (!connected?'<form id="banya-cloud-config"><label class="input-line">HTTPS同步地址<input id="banya-cloud-url" type="url" required value="https://124.70.128.201" readonly></label>'+
  '<label class="input-line">私有同步密钥<input id="banya-cloud-token" type="password" required minlength="32" autocomplete="off" placeholder="在本机生成并安全保存"></label>'+
  '<button type="button" class="cta secondary small" data-banya-action="generate-token">在本机生成随机密钥</button>'+
  '<p class="setting-note">密钥不会提交到GitHub源码。请将其保存在密码管理器，再通过GitHub Actions Secrets安全配置到服务器；完成前不会上传学习记录。</p>'+
  '<button type="submit" class="cta small">验证并启用</button></form>':
  '<p class="setting-note">已配置 '+escaped(config.endpoint)+'。密钥只保存在这台设备的浏览器本地存储中，不提交GitHub。</p>'+
+ '<button type="button" class="cta secondary small" data-banya-action="sync-now">↻ 立即同步已启用科目</button>'+
  SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已建立同步基线':'等待首次确认')+
  '<div class="p-buttons"><button class="cta secondary small" data-banya-action="upload" data-banya-subject="'+s+'">确认上传本机</button>'+
  '<button class="cta ghost small" data-banya-action="restore" data-banya-subject="'+s+'">从云端恢复</button></div></div>';}).join('')+
@@ -62,11 +77,21 @@ function panel() {
 async function api(subject,method,body) {
  if(!config)throw Error('未配置云端');
  if(endpoint(config.endpoint)!==API_ORIGIN)throw Error('云端地址与验证过的HTTPS服务不一致');
- const res=await fetch(config.endpoint+'/v1/snapshot/'+subject,{
-  method:method,mode:'cors',cache:'no-store',headers:{
-   Authorization:'Bearer '+config.token,...(method==='PUT'?{'Content-Type':'application/json'}:{})
-  },...(body?{body:JSON.stringify(body)}:{})
- });
+ const controller=typeof AbortController==='function'?new AbortController():null;
+ const timer=controller&&typeof setTimeout==='function'?setTimeout(()=>controller.abort(),10000):null;
+ let res;
+ try {
+  res=await fetch(config.endpoint+'/v1/snapshot/'+subject,{
+   method:method,mode:'cors',cache:'no-store',
+   ...(controller?{signal:controller.signal}:{}),
+   headers:{Authorization:'Bearer '+config.token,...(method==='PUT'?{'Content-Type':'application/json'}:{})},
+   ...(body?{body:JSON.stringify(body)}:{})
+  });
+ } catch(err) {
+  if(err&&err.name==='AbortError')throw Error('云端响应超时，本机记录已保留，可稍后重试');
+  throw Error('云端连接失败，本机记录已保留；请检查网络或稍后重试');
+ } finally {if(timer!==null)clearTimeout(timer);}
+
  if(!res.ok){if(res.status===409)throw Error('409版本冲突：已停止覆盖，请先查看云端与本机记录');
   if(res.status===401)throw Error('同步密钥无效');throw Error('云服务器响应 '+res.status);
  }
@@ -141,10 +166,26 @@ async function syncOne(subject) {
  notify(NAMES[subject]+'收到新版云端记录，即将刷新显示。');
  root.location.reload();
 }
-async function syncAll() {
- if(busy || !config || !navigator.onLine)return;
+async function syncAll(manual=false) {
+ if(busy){if(manual)notify('同步正在进行，无须重复操作');return false;}
+ if(!config){if(manual)notify('尚未连接云端。请先在设置中完成安全连接；手机打卡仍正常保存。');return false;}
+ if(navigator.onLine===false){if(manual)notify('当前网络离线，打卡已保存在本机，联网后再同步');return false;}
+ const enrolled=SUBJECTS.filter(s=>!!metaFor(s));
+ if(!enrolled.length){if(manual)notify('云服务器已连接，但还没有首次上传。请在设置→云端同步中逐科确认一次。');return false;}
  busy=true;
- try{for(const subject of SUBJECTS){try{await syncOne(subject);}catch(err){notify(err.message||'同步失败，本机记录未覆盖');}}}finally{busy=false;}
+ if(manual)notify('正在检查云端版本并同步学习记录…');
+ const errors=[];
+ try{
+  for(const subject of enrolled){
+   try{await syncOne(subject);}
+   catch(err){errors.push(NAMES[subject]+'：'+(err.message||'同步失败'));}
+  }
+  if(errors.length){notify(errors.join('；')+'。本机记录未被覆盖。');return false;}
+  const stamp=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  try{localStorage.setItem(LAST_OK,stamp);}catch{}
+  if(manual)notify('同步完成（'+stamp+'）：'+enrolled.map(s=>NAMES[s]).join('、')+'已与云端核对');
+  return true;
+ }finally{busy=false;}
 }
 document.addEventListener('submit',async function(e){
  if(e.target.id!=='banya-cloud-config')return;
@@ -178,6 +219,7 @@ document.addEventListener('click',async function(e){
   notify('已在此设备生成安全随机密钥。请复制并保存在个人密码管理器，再填写 GitHub Actions Secret BANYA_SYNC_TOKEN。不要把它发在聊天中。');
   return;
  }
+ if(action==='sync-now'){button.disabled=true;try{await syncAll(true);}finally{button.disabled=false;}return;}
  if(action==='disconnect'){
   if(root.confirm('停用自动同步并删除本机同步密钥？已存在的学习记录不会被清除。')){
    localStorage.removeItem(CONFIG);config=null;for(const s of SUBJECTS)localStorage.removeItem(META+s);
@@ -191,9 +233,16 @@ document.addEventListener('click',async function(e){
  catch(err){notify(err.message||'操作失败，本机记录未覆盖');}
  finally{busy=false;button.disabled=false;}
 });
+let localChangeTimer=null;
+root.addEventListener('banya-local-change',function(){
+ if(!config)return;
+ if(localChangeTimer!==null&&typeof clearTimeout==='function')clearTimeout(localChangeTimer);
+ if(typeof setTimeout==='function')localChangeTimer=setTimeout(function(){localChangeTimer=null;void syncAll();},900);
+ else void syncAll();
+});
 root.addEventListener('online',function(){void syncAll();});
 root.addEventListener('focus',function(){void syncAll();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)void syncAll();});
 setInterval(function(){void syncAll();},20000);
-root.BanyaCloudSync={panel:panel,syncAll:syncAll};
+root.BanyaCloudSync={panel:panel,quickPanel:quickPanel,syncAll:syncAll,isConnected:()=>!!config};
 })(window);

@@ -115,3 +115,28 @@ test('politics remote-only update does not change English storage or English bas
  assert.deepEqual(JSON.parse(a.store.get(politicsKey)),latest);
  assert.equal(a.store.get(politicsMeta)!==undefined,true);
 });
+
+test('M3.1 quick actions distinguish plan refresh and cloud records without implicit first upload',async()=>{
+ const offline=harness({[key]:JSON.stringify(state(true))});
+ assert(offline.win.BanyaCloudSync.quickPanel().includes('刷新计划'));
+ assert(offline.win.BanyaCloudSync.quickPanel().includes('同步记录'));
+ assert.equal(await offline.win.BanyaCloudSync.syncAll(true),false);
+ assert.equal(offline.calls.length,0);
+ assert(offline.win.BanyaCloudSync.quickPanel().includes('尚未连接云端'));
+ const notEnrolled=harness({[configKey]:JSON.stringify(connected),[key]:JSON.stringify(state(true))});
+ assert.equal(await notEnrolled.win.BanyaCloudSync.syncAll(true),false);
+ assert.equal(notEnrolled.calls.length,0);
+ assert(notEnrolled.win.BanyaCloudSync.quickPanel().includes('还没有首次上传'));
+});
+test('M3.1 manual refresh verifies the enrolled snapshot and shows an accurate success timestamp',async()=>{
+ const raw=JSON.stringify(state(true)),record=JSON.parse(raw);
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:raw,
+  [meta]:JSON.stringify({revision:1,hash:hash(raw)})},
+  {subject:'english',revision:1,state:pack('english',record)});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(true),true);
+ assert.equal(h.calls.length,1,'read only when no local change');
+ assert.equal(h.calls[0].init.method,'GET');
+ assert.equal(h.calls.filter(c=>c.init.method==='PUT').length,0);
+ assert(h.store.has('banya_cloud_sync_last_ok_v1'));
+ assert(h.win.BanyaCloudSync.quickPanel().includes('同步完成'));
+});

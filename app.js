@@ -42,7 +42,7 @@ function dateHeading(s){return `${niceDate(s)} · ${weekday(s)}`}
 function load(){try{const raw=localStorage.getItem(STORAGE_KEY);const n=raw?Core.normalizeState(JSON.parse(raw)):Core.defaults();savedState=JSON.stringify(n);storageBlocked=false;return n;}catch{storageBlocked=true;storageMessage='本地记录无法读取，已停止写入以保护原数据。请先导出备份。';return Core.defaults();}}
 function save(){
  if(storageBlocked){toast('本地记录尚未恢复，已阻止覆盖');return false;}
- try{const next=JSON.stringify(state);localStorage.setItem(STORAGE_KEY,next);savedState=next;storageMessage='';return true;}catch{if(savedState)state=JSON.parse(savedState);storageMessage='保存失败，操作未生效。请导出备份并检查存储空间。';toast(storageMessage);return false;}
+ try{const next=JSON.stringify(state);localStorage.setItem(STORAGE_KEY,next);savedState=next;storageMessage='';if(typeof window.dispatchEvent==='function'&&typeof Event==='function')window.dispatchEvent(new Event('banya-local-change'));return true;}catch{if(savedState)state=JSON.parse(savedState);storageMessage='保存失败，操作未生效。请导出备份并检查存储空间。';toast(storageMessage);return false;}
 }
 function allTasks(s){return Core.tasks(data,state,s);}
 // 单词由用户自己安排：仍为总预算预留时间，但不列入每日专项打卡。
@@ -60,7 +60,7 @@ function render(enter=false,justDone=''){
  const cloudPanel=!dayDetail&&view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
   document.body?.classList?.toggle?.('day-detail-open',dayDetail);
   if(document.documentElement?.dataset)document.documentElement.dataset.subject=subject;
- app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${content}${cloudPanel}</div>`;
+ app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${!dayDetail&&view==='today'&&window.BanyaCloudSync?window.BanyaCloudSync.quickPanel():''}${content}${cloudPanel}</div>`;
  if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
@@ -312,7 +312,13 @@ document.addEventListener('click',e=>{
  if(action==='move-buffer'){const s=nextBuffer(btn.dataset.day);if(!s){toast('没有可用的机动日，请手动选择日期');return}const t=findTask(btn.dataset.id,btn.dataset.day);if(!t||!canPlace(s,t.id,t.minutes))return;state.moved[btn.dataset.id]=s;if(!save()){render();return;}closeModal();render();toast('已改期到 '+niceDate(s));return}
  if(action==='remove'){if(!confirm('删除此自定义任务？笔记与错题会保留在备份中。'))return;delete state.archive[btn.dataset.id];state.added=state.added.filter(t=>t.id!==btn.dataset.id);delete state.moved[btn.dataset.id];delete state.done[btn.dataset.id];if(!save()){render();return;}closeModal();render();toast('已删除');return}
  if(action==='prev-month'||action==='next-month'){const [y,m]=calendarMonth.split('-').map(Number);const d=new Date(y,m-1+(action==='next-month'?1:-1),1,12);const next=localISO(d).substring(0,7);if(next>='2026-10'&&next<='2026-12')calendarMonth=next;render(true);return}
- if(action==='check-updates'){checkUpdates();return}
+ if(action==='check-updates'){
+   if(subject==='politics'){
+    if(!navigator.serviceWorker?.getRegistration){toast('当前浏览器暂不支持应用版本检查');return;}
+    navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已检查政治计划版本；有新版时关闭所有应用窗口再打开即可')).catch(()=>toast('政治计划检查失败；继续使用本机已缓存安排'));
+   }else checkUpdates();
+   return;
+  }
  if(action==='copy-summary'){copySummary();return}
  if(action==='export'){exportState();return}
  if(action==='export-previous'){exportState(true);return}
