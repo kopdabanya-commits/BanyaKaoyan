@@ -41,6 +41,7 @@ jobs:
           set -euo pipefail
           for f in app.js cloud-sync.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
           node scripts/check.mjs
+          node scripts/sync-plan-mirrors.mjs --check
           node scripts/privacy-check.mjs
           node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
       - uses: actions/setup-python@v5

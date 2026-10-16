@@ -1,5 +1,13 @@
 name: Validate planner
-on: [push, pull_request]
+# Run once for a PR, then once on merged main; avoid duplicate branch-push runs.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   static-check:
     runs-on: ubuntu-latest
@@ -17,6 +25,7 @@ jobs:
       - run: node --check politics-ui.js
       - run: node --check sw.js
       - run: node scripts/check.mjs
+      - run: node scripts/sync-plan-mirrors.mjs --check
       - run: node scripts/privacy-check.mjs
 
       - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
