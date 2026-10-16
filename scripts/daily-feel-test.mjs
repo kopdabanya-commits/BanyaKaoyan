@@ -126,3 +126,18 @@ test('English revision10: real Oct16 is 2011 essay not 2010, older records survi
   for(const d of plan.days.filter(d=>d.items.some(t=>t.title.includes(yr+'年模考'))))assert(!d.items.some(t=>t.id.startsWith('practice-')));
  }
 });
+
+// 回归：旧计划完成过的任务被归档后，不得盖过新版同ID任务的标题/时长。
+test('archived completed task must not shadow latest English task title or minutes',()=>{
+ const day='2026-10-16';const id='restart-2026-10-16-writing';
+ const state=core.defaults();state.done[id]=true;state.notes[id]='用户以前的笔记';
+ state.archive[id]={id,date:day,title:'重新开始：2010年小作文初稿',minutes:30,type:'写作',detail:'旧计划内容'};
+ const current=core.tasks(plan,state,day).find(t=>t.id===id);
+ assert.equal(current.title,'2011年小作文：实际独立写作');
+ assert.equal(current.minutes,20);
+ assert.equal(state.done[id],true);
+ assert.equal(state.notes[id],'用户以前的笔记');
+ const removedId='historical-removed-task';
+ state.archive[removedId]={id:removedId,date:day,title:'旧任务保留',minutes:10,type:'写作',detail:'历史任务'};
+ assert(core.tasks(plan,state,day).some(t=>t.id===removedId),'仅已从当前计划移除的旧任务才用archive呈现');
+});
