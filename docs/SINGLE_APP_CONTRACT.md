@@ -16,6 +16,7 @@
 | 离线镜像 | `plan-data.js` | `politics-plan-data.js` |
 | 校验与迁移 | `planner-core.js` | `politics-core.js` |
 | UI与记录入口 | `app.js` 内英语视图 | `politics-ui.js` + `app.js` 的路由 |
+| 共同视图组件 | `study-ui.js` 日期/任务/统计 | 同一个 `study-ui.js` 组件 |
 | 本地打卡、错题 | `yantu_english_2026_m1` | `yantu_politics_2026_v1` |
 | 计划版本 | `2026.10.16-english-r10`，revision10 | `politics.2026-10-15-v1`，revision1 |
 | 基线 | 2026-10-15—12-18，65天，191项 | 2026-10-16—12-18，64天，192项 |
@@ -34,6 +35,8 @@
 - **共享壳/UI工作**：改 `index.html`、`styles.css`、`manifest.webmanifest`、`app.js`、`study-intelligence.js`、`sw.js`、构建/部署文件时需两门科目一起回归，不得让其中任意一科消失。
 - 工作集中修改目录和自动测试入口见 `docs/WORKFLOW.md`。同一共享文件只允许通过最新main上的一个集成PR串行落地，不准在两个独立分支各自盲目合并覆盖。
 - 已有 App 图标文件 `icons/icon-192.png` / `icons/icon-512.png` 不因本次仅改产品名称而偷偷更换；如后续需要专属视觉logo，另立可验收的设计任务。
+
+新的M4共享渲染规范见 `docs/STUDENT_UI_M4.md`：两科不再各自堆独立卡片，首页同一种任务交互和进度口径；仅科目强调色和任务内容不同。共享组件仅用于渲染，不读取/修改任一学科学习记录。
 
 ## 4. 必须通过的防回归门禁
 1. `index.html`、manifest、App设置显示「板牙考研」，只有一个可安装PWA；英语和政治均是 active 并可在同一导航切换。
