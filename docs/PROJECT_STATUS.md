@@ -1,3 +1,56 @@
+## 2026-10-16 08:45（Asia/Singapore）最新技术复核：用户已设置长期令牌
+- 用户已在本对话提交原手机两份备份，并确认创建 `BANYA_SYNC_TOKEN` GitHub Actions Secret。两份本地JSON文件检查：英语 `yantu-english-ii`/v2、65天141个唯一任务ID、含历史学习状态；政治 `yantu-politics`/v1、含苍盾93/396进度。仅验证文件结构及存在，**没有提交用户数据到GitHub/ECS**，也不能把聊天备份当作已恢复或手机客户端授权首次上传。
+- [首次令牌部署run 38830588303](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830588303) 由于重启后即刻访问端口过快失败，自动回滚旧配置、没有动数据库。[修复重启就绪等待后的成功run 38830680085](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830680085) 证明：正式库快照0条，服务端更换 SHA-256 摘要成功，英语与政治授权HTTPS读取都返回 `revision=0`、无效密钥401、精确Workers域名的PUT/Authorization CORS OPTIONS成功。Actions无需、也没有输出原始Token值。
+- [Certbot自动Nginx reload钩子安装run 38830905645](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830905645) 成功、nginx配置有效、certbot timer enabled。但**证书新签发/真实续期仍未发生，无法宣称已验收**；现有证书此前到期2026-10-19 15:26:26 UTC，需继续复查。
+- Node自动新增断网本地记录保留→恢复连接CAS上传以及政治远端变化不覆盖英语本地记录测试，最新 `Validate planner` 需以PR对应GitHub最新head green为准。隔离ECS scratch库的跨科、409与重启持久化已通过，真实用户设备网络恢复、浏览器存储、首次上云还待真机测试。
+- Cloudflare原生Workers Builds红色检查：API读取日志403，无法确定Cloudflare后台构建失败根因。GitHub Actions直接 `wrangler versions upload` 到**原 Worker 非激活版本**、真实静态白名单上传已通过。已加入main发布自动化工作流，在合并且门禁通过后才把同一个Worker更新到M2.9。
+- 剩余：最新head全绿、合并与原Workers生产版本CSP/静态文件不可见验证、ECS正式snapshot暂维持0，用户在已安装Edge中逐科用自己的密钥认证并独立确认第一次上传（再次下载备份），再验证真实上传/下载、重启、离线与冲突。所有未实测项保持待验证。
+
+---
+
+## 最新补充｜2026-10-16 M2.9 技术线复核（仍为PR #11草稿）
+
+- 实时检查：main仍为 `afd3ed47` M2.8；PR #11仍open/draft，M2.9源分支持续更新。英语二/政治权威计划内容、旧记录键、Workers站点URL、manifest ID没有改变。
+- GitHub Actions通过现有固定主机公钥及仓库Secret真实SSH完成 [ECS只读+隔离API测试 38786028694](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786028694)：公网IP HTTPS、服务systemd和timer正常；正式snapshot行数为0；隔离临时数据库完成双科PUT/GET、409、错误科目422和进程重启持久化。此测试不等于手机真实数据上传。
+- [机内备份校验 38786340727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786340727)已实际生成机内SQLite备份，数据库完整性 `ok`；仍无异地副本。
+- [证书正常续期检查 38786641233](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786641233)未签发新证书、因尚不符合Certbot续期条件，真实到期仍2026-10-19 15:26:26 UTC；HTTPS健康校验已通过，**实际续期尚未验收**。
+- 仅放行公网 `https://124.70.128.201` 的CSP `connect-src`，前端云客户端也只接受此精确IP HTTPS。更新 `.assetsignore` 为默认拒绝/明确白名单，新的 [Cloudflare非激活版本上传 38787339344](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38787339344)成功（仅16个既有+1个新增资产），没有发布生产；[本地Wrangler dry-run 38785883329](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38785883329)成功。
+- Cloudflare GitHub集成 `Workers Builds: english-ii-plan` 红色检查的具体根因尚无日志。现有Cloudflare Token可用来上传非激活版本，但 `GET /builds/builds/{uuid}/logs` 返回 **403**（[API审计 run 38786759865](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38786759865)）；不能因本地构建成功便假装已修复 Cloudflare Builds。
+- `BANYA_SYNC_TOKEN` 长期同步Secret尚未配置（Actions已检查）；不能交付用户可登录的云同步。修改ecs-deploy工作流，**缺少长期Secret时不再自动生成新的短期令牌/覆盖服务器原配置**。需要用户仅在GitHub Secret表单/手机密码管理器完成一次安全设置，无需发送聊天密钥或SSH。
+- 新增原有Worker单一站点的main分支CI门禁发布工作流，但目前未执行；本机英语/政治分别导出备份、首次上传、正式库下载和重启、离线恢复、跨科真实数据隔离、409冲突、荣耀Edge已安装PWA的更新和实际证书新签发，全部维持**未完成真机/生产验收**。不建议在个人学习数据未另存及Secret未配置时合并PR或公开上线。
+- 旧NJ FU资源退役成果以 `docs/ECS_HANDOFF.md` 与此前三个成功Actions记录为准。此轮没有修改复习计划，也没有再次删除服务器旧数据。
+
+---
+
+## 最新：ECS 后端基础设施已部署｜2026-10-16（PR #11 分支）
+- 经用户授权，使用仓库 Actions Secret 和固定 SSH 主机公钥，从 GitHub Actions 登录 `124.70.128.201`；此云执行器仍无法直接 SSH，连接方法见 `docs/ECS_HANDOFF.md`。
+- [部署 run 38784363727](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784363727) 成功：板牙后端 systemd/Nginx/IP HTTPS 在线，本机健康、授权英语读取、未授权政治 401 与证书续期 dry-run 已通过。[外部 run 38784581580](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784581580) 验证公网 `/health` 200、两科未授权各 401。证书实际自动续期仍待到期前复核。
+- 用户授权的[旧 NJFU 退役 run 38784675831](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784675831) 成功；[退役后只读盘点 run 38784770680](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784770680) 确认旧服务单元不存在、旧目录不存在、只有 banya-sync Nginx 站点启用，新服务 active/enabled、健康 200。
+- **PR #11 仍为 Draft，未合并 main；同一个 Cloudflare Worker 尚未发布 M2.9。** `_headers` 的 CSP 仍只许同源，手机云同步尚未启用；临时服务令牌未交给用户，用户手机学习数据未上传。下一聊天应按 `docs/ECS_HANDOFF.md` 完成长期令牌、前端接入、Cloudflare 发布与手机实测。
+- 原 Worker 网址在 2026-10-16 实测 HTTP 200、页面为「板牙考研」，但 HTML 未加载 `cloud-sync.js`、响应 CSP 仍为 `connect-src 'self'`；因此旧 PWA 可访问不等于 M2.9 上线。PR 最新 `Validate planner` [run 38784916624](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38784916624) 成功，而 `Workers Builds: english-ii-plan` 检查失败，需在 Cloudflare 构建日志诊断。
+
+以下早期检查记录为历史时间点，不代表当前部署状态。
+
+## 云环境接手核验｜2026-10-16（PR #11 分支）
+- Git 原生读取确认 `origin/main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`，`refs/pull/11/head=39a3a6e60e5efcce1acb5239e49c7f18eb8b149`；M2.9 尚未在 main。GitHub GraphQL/REST API 在当前云环境返回 403，因此 PR 当前的草稿标志、审查状态及最新 CI 状态无法独立核实；不得把旧文档快照当成实时状态。
+- 在 PR #11 源码上，本地 Node 22 语法/计划检查与 64 项测试通过，Python 后端与备份 9 项测试通过，部署脚本 `bash -n` 通过。独立启动后端进程验证 `/health` 为 200、未授权快照读取为 401、两科分别保存并可读取、旧 revision 写入为 409。此为本地验证，不代表 ECS 已部署。
+- 当前云环境 `/etc/codex/network-policy.json` 显示 TCP 允许域名/IP 范围均为空，未配置 VPN；对 ECS `124.70.128.201` 的 22/80/443 直接连接均立即返回 `ConnectionRefusedError`，经 HTTP 代理访问 80/443 返回 403，TCP CONNECT 代理 8088 自身拒绝连接。这些结果只证明本环境当前无法抵达目标，不能判断 ECS 服务或 SSH 凭据是否正常。
+- 当前环境与旧项目没有找到适用的 SSH config 或身份文件，也没有可用的华为云/SSH 凭据绑定。未登录 ECS，未核实磁盘、现有服务、Nginx、域名、证书，也未部署。应先在云环境网络设置中放行针对 `124.70.128.201` 的必要 TCP 访问并提供受支持的 SSH 身份授权，然后重新做只读连接检查；无需把密码或私钥发到聊天。
+
+### 用户发布网络配置后的重测
+- 运行时 HTTP 策略现为 `unrestricted/enforced`，代理对 `124.70.128.201:22/80/443` 返回 CONNECT 200；但直连三个端口仍立即拒绝，SSH 隧道等候 10 秒未收到 `SSH-2.0` banner，80 隧道也未收到有效上游响应。经代理访问 HTTP 根路径返回 Envoy 301；HTTPS 隧道呈现 `openai.com` 证书，和目标 IP 不匹配，TLS 验证失败。代理 CONNECT 成功不等于 ECS 可达，更不等于身份验证成功；当前仍无法安全 SSH 或验证 ECS HTTPS。运行时 TCP 允许范围依然为空。
+
+## 技术线最新记录｜2026-10-16 M2.9 华为云云同步（草稿PR #11）
+- 已实时核对 `main=afd3ed47b6529b7d2cd103f41f0b70ac8a601673`；开放PR只有 [#11](https://github.com/kopdabanya-commits/English-II-Plan/pull/11)，分支 `feat/huawei-ecs-cloud-sync-m29`。**main尚未合并M2.9，Cloudflare生产未发布本轮代码。**
+- 已在 PR #11 实际提交：原有FastAPI/SQLite后端的科目绑定格式校验，拒绝空白/跨科写入；`cloud-sync.js` 客户端与同一个设置页集成、服务工作线程离线缓存更新；本地优先、每科单独首次确认、CAS/409冲突暂停、云恢复前备份和同页刷新；自动SQLite备份脚本+systemd每日备份timer；静态部署 `.assetsignore` 排除私有 `server/` 目录；新增 Node/Python 测试。
+- 2026-10-16 CI证据：PR中间提交 `f3342295` 对应 [Validate planner 38777800459](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38777800459) 成功（Node双科/云同步测试、Python后端与备份测试、shell语法）。截至开发分支提交 `f45276f0583f6503a1af55b2a8629de0cf4ec6cb`，最新 [Validate planner 38778476336](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38778476336) 已复核为 **completed/success**，包含新增静态文件防泄漏回归测试。此后纯状态文档更新仍需按新head检查，生产部署与手机验收仍未发生。
+- 只动共享技术代码与部署文档；未修改英语 `plan.json` / 政治 `politics-plan.json`，未修改任何旧localStorage键、PWA ID、原 Worker 名称或现有网址。当前同步功能默认关闭、未经用户首次授权不会上传或拉取记录。
+- 重大上线闸门：本站 `_headers` 的 CSP `connect-src 'self'` 尚未放行真实ECS HTTPS API 域名；不能随意扩展到任意HTTPS源。需先取得真实服务器连接/公网域名及受信任TLS证书，然后限定具体API来源。云端首次写入和跨设备实际冲突回归必须在手机实测。
+- 当前聊天工具已授权GitHub，但没有华为云控制台/CloudShell/SSH实际远程操作能力，未登录ECS、未配置数据库实例、Nginx或HTTPS，也未做 Cloudflare生产部署；服务端备份仅为**安装准备**，未启动。不得把代码/CI通过写成ECS部署成功。私有ECS盘内30份备份不等于异地容灾；后续仍需独立备份介质或用户导出文件。
+- 安全要求：同步Bearer随机长密钥只在设备本地设置（当前选用localStorage储存以实现自动重启同步，需视为敏感设备凭据），server仅存SHA256摘要；不得提交GitHub/在聊天发送密钥或笔记。发现 XSS/设备失窃需轮换令牌。
+- 下一步：完成最后一轮PR CI，获取授权云端浏览器/华为云服务器连接，审计ECS现存占用→安全获取私有代码→部署独立API与每日备份→受信任HTTPS→CSP 精确放行→发布**同一个**Cloudflare Worker→在原 HONOR Android Edge PWA 双科各自备份、首次上传、断网/重连/409/恢复验收；证据逐项写回本页。**未验证不能关闭或合并PR #11为上线完成。**
+
+---
 # 板牙考研｜当前事实与待验收状态
 
 ## 最新补充｜2026-10-16 政治模块核验（main 6e2e4fc；政治开发线）

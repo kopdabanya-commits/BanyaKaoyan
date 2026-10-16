@@ -22,7 +22,10 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert(sw.includes("m2.8-20261015"));
+ assert(sw.includes("m2.9-20261016"));
+ assert(html.includes('./cloud-sync.js'));
+ assert(sw.includes("'./cloud-sync.js'"));
+ assert(script.includes('BanyaCloudSync.panel()'));
  assert.equal(js('wrangler.jsonc').name,'english-ii-plan','keep original Worker and user data origin');
  assert.equal(manifest.start_url,'./index.html');assert.equal(manifest.id,'./');
 });
@@ -56,4 +59,15 @@ test('branding changes only UI; old backup format stays distinct and storage iso
  assert(enUi.includes('板牙考研_英语二备份_'));
  assert.notEqual(politicsCore.key,'yantu_english_2026_m1');
  assert(!html.includes('研途')&&!manifestText.includes('研途'));
+});
+
+test('deployment never publishes backend source or secrets as static assets',()=>{
+ const ignore=txt('.assetsignore'),headers=txt('_headers');
+ const patterns=ignore.split(String.fromCharCode(10)).map(x=>x.trim());
+ assert(patterns.includes('*'),'deny all undeclared public assets by default');
+ for(const file of ['!index.html','!sw.js','!cloud-sync.js','!plan.json','!politics-plan.json','!_headers','!icons/']) assert(patterns.includes(file),'missing public allowlist entry: '+file);
+ assert(patterns.includes('server/'),'never expose ECS backend through public Worker static assets');
+ assert(headers.includes("connect-src 'self' https://124.70.128.201;"),'CSP must allow exactly the verified ECS HTTPS origin');
+ assert(!headers.includes('https:;')&&!headers.includes('https://*'),'never allow wildcard API destinations');
+ assert(txt('cloud-sync.js').includes("const API_ORIGIN = 'https://124.70.128.201'"),'client must pin the same origin');
 });

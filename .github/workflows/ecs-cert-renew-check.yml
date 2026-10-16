@@ -1,0 +1,50 @@
+name: Validate real IP certificate renewal
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-cert-renew-check.yml]
+permissions:
+  contents: read
+jobs:
+  validate-renewal:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Safely attempt normal renewal without force and verify actual served TLS certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -p 22 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" 'bash -s' <<'REMOTE'
+          set -Eeuo pipefail
+          cert=/etc/letsencrypt/live/124.70.128.201/cert.pem
+          test -r "$cert"
+          before="$(openssl x509 -in "$cert" -noout -serial)"
+          echo "Certificate expiry before normal certbot check:"
+          openssl x509 -in "$cert" -noout -enddate
+          certbot renew --cert-name 124.70.128.201 --non-interactive --quiet
+          after="$(openssl x509 -in "$cert" -noout -serial)"
+          if [ "$after" != "$before" ]; then
+            nginx -t >/dev/null
+            systemctl reload nginx
+            echo 'Actual certificate renewal: NEW certificate issued and Nginx reloaded'
+          else
+            echo 'Actual certificate renewal: not yet issued (certbot considered renewal not due)'
+          fi
+          echo "Current certificate expiry:"
+          openssl x509 -in "$cert" -noout -enddate
+          curl --noproxy '*' --fail --silent --show-error --max-time 12 https://124.70.128.201/health >/dev/null
+          echo 'Verified live HTTPS TLS after certbot renewal check'
+          REMOTE

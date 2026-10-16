@@ -1,0 +1,84 @@
+name: ECS read-only connectivity
+# Verify the deployed public API from outside the ECS after TLS routing changed.
+
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-connectivity.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test only public TCP and TLS endpoints
+        run: |
+          python3 - <<'PY'
+          import http.client
+          import socket
+          import ssl
+          from pathlib import Path
+
+          target = '124.70.128.201'
+          lines = ['# 华为云 ECS 只读网络探测', '', '来源：GitHub Actions Ubuntu runner。未尝试登录或修改服务器。', '']
+          for port in (22, 80, 443):
+              try:
+                  with socket.create_connection((target, port), timeout=7) as conn:
+                      lines.append(f'- TCP {port}: 已连接')
+                      if port == 22:
+                          conn.settimeout(5)
+                          try:
+                              banner = conn.recv(120)
+                              lines.append('- SSH 协议响应：' + ('有 SSH-2.0 banner' if banner.startswith(b'SSH-2.0') else '无有效 SSH-2.0 banner'))
+                          except socket.timeout:
+                              lines.append('- SSH 协议响应：5 秒内超时')
+              except Exception as exc:
+                  lines.append(f'- TCP {port}: {type(exc).__name__}: {exc}')
+          try:
+              client = http.client.HTTPConnection(target, timeout=8)
+              client.request('HEAD', '/')
+              response = client.getresponse()
+              lines.append(f'- HTTP HEAD /: {response.status}')
+              client.close()
+          except Exception as exc:
+              lines.append(f'- HTTP HEAD /: {type(exc).__name__}: {exc}')
+          try:
+              client = http.client.HTTPSConnection(target, timeout=8, context=ssl.create_default_context())
+              client.request('HEAD', '/')
+              response = client.getresponse()
+              lines.append(f'- HTTPS 证书验证及 HEAD /: {response.status}')
+              client.close()
+          except Exception as exc:
+              lines.append(f'- HTTPS 证书验证及 HEAD /: {type(exc).__name__}: {exc}')
+          for path in ('/health', '/v1/snapshot/english', '/v1/snapshot/politics'):
+              try:
+                  client = http.client.HTTPSConnection(target, timeout=8, context=ssl.create_default_context())
+                  client.request('GET', path)
+                  response = client.getresponse()
+                  body = response.read(256)
+                  lines.append(f'- HTTPS GET {path}: {response.status}' +
+                               ('，板牙服务响应' if path == '/health' and b'banya-study-sync' in body else ''))
+                  client.close()
+              except Exception as exc:
+                  lines.append(f'- HTTPS GET {path}: {type(exc).__name__}: {exc}')
+          lines += ['', '此探测无凭据，只验证公网连通、证书和未授权访问。']
+          Path('docs/ECS_CONNECTIVITY.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+      - name: Record public SSH host key for later verified connections
+        run: |
+          ssh-keyscan -T 7 -t ed25519 124.70.128.201 > server/banya-sync/known_hosts
+          test -s server/banya-sync/known_hosts
+          ssh-keygen -l -f server/banya-sync/known_hosts > /tmp/banya-host-fingerprint
+          printf '\nSSH 公钥指纹（首次连接基线）：`' >> docs/ECS_CONNECTIVITY.md
+          cut -d ' ' -f 2 /tmp/banya-host-fingerprint | tr -d '\n' >> docs/ECS_CONNECTIVITY.md
+          printf '`。部署前须保持主机公钥匹配。\n' >> docs/ECS_CONNECTIVITY.md
+      - name: Preserve result on this branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/ECS_CONNECTIVITY.md server/banya-sync/known_hosts
+          git commit -m 'docs: record read-only ECS connectivity from Actions'
+          git push origin HEAD:feat/huawei-ecs-cloud-sync-m29

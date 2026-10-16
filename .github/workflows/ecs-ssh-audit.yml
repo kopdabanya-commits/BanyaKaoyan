@@ -1,0 +1,78 @@
+name: ECS authorized read-only audit
+# Final read-only inventory after authorized NJFU retirement.
+
+on:
+  push:
+    branches: [feat/huawei-ecs-cloud-sync-m29]
+    paths: [.github/workflows/ecs-ssh-audit.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check whether SSH authorization is configured
+        id: credential
+        run: |
+          if [ -n "$BANYA_SSH_PASSWORD" ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'BANYA_ECS_SSH_PASSWORD is not configured; no login attempted.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Read server capacity and service state
+        if: steps.credential.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          test -s server/banya-sync/known_hosts
+          umask 077
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          set +e
+          sshpass -e ssh -p 22 \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 \
+            -o ConnectTimeout=12 \
+            "$BANYA_SSH_USER@124.70.128.201" \
+            'bash -s' < server/banya-sync/audit-ecs.sh \
+            > /tmp/banya-ecs-audit-output 2> /tmp/banya-ecs-audit-error
+          result=$?
+          set -e
+          {
+            echo '# 华为云 ECS 授权只读检查'
+            echo
+            echo '来源：GitHub Actions。此检查不修改服务器，也不记录凭据。'
+            echo
+            if [ "$result" -eq 0 ]; then
+              echo 'SSH 登录：成功。'
+              echo '```text'
+              cat /tmp/banya-ecs-audit-output
+              echo '```'
+            else
+              echo "SSH 登录：失败（退出码 $result）。"
+              if grep -qi 'Permission denied\|Authentication failed' /tmp/banya-ecs-audit-error; then
+                echo '分类：SSH 已响应，身份验证失败。'
+              elif grep -qi 'Host key verification failed\|REMOTE HOST IDENTIFICATION HAS CHANGED' /tmp/banya-ecs-audit-error; then
+                echo '分类：主机公钥不匹配，已停止连接。'
+              elif grep -qi 'timed out' /tmp/banya-ecs-audit-error; then
+                echo '分类：连接超时。'
+              else
+                echo '分类：SSH 连接或远程命令失败，需进一步诊断。'
+              fi
+            fi
+          } > docs/ECS_SSH_AUDIT.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/ECS_SSH_AUDIT.md
+          git commit -m 'docs: record authorized read-only ECS audit'
+          git push origin HEAD:feat/huawei-ecs-cloud-sync-m29
