@@ -1,3 +1,13 @@
+## 2026-10-16 08:45（Asia/Singapore）最新技术复核：用户已设置长期令牌
+- 用户已在本对话提交原手机两份备份，并确认创建 `BANYA_SYNC_TOKEN` GitHub Actions Secret。两份本地JSON文件检查：英语 `yantu-english-ii`/v2、65天141个唯一任务ID、含历史学习状态；政治 `yantu-politics`/v1、含苍盾93/396进度。仅验证文件结构及存在，**没有提交用户数据到GitHub/ECS**，也不能把聊天备份当作已恢复或手机客户端授权首次上传。
+- [首次令牌部署run 38830588303](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830588303) 由于重启后即刻访问端口过快失败，自动回滚旧配置、没有动数据库。[修复重启就绪等待后的成功run 38830680085](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830680085) 证明：正式库快照0条，服务端更换 SHA-256 摘要成功，英语与政治授权HTTPS读取都返回 `revision=0`、无效密钥401、精确Workers域名的PUT/Authorization CORS OPTIONS成功。Actions无需、也没有输出原始Token值。
+- [Certbot自动Nginx reload钩子安装run 38830905645](https://github.com/kopdabanya-commits/English-II-Plan/actions/runs/38830905645) 成功、nginx配置有效、certbot timer enabled。但**证书新签发/真实续期仍未发生，无法宣称已验收**；现有证书此前到期2026-10-19 15:26:26 UTC，需继续复查。
+- Node自动新增断网本地记录保留→恢复连接CAS上传以及政治远端变化不覆盖英语本地记录测试，最新 `Validate planner` 需以PR对应GitHub最新head green为准。隔离ECS scratch库的跨科、409与重启持久化已通过，真实用户设备网络恢复、浏览器存储、首次上云还待真机测试。
+- Cloudflare原生Workers Builds红色检查：API读取日志403，无法确定Cloudflare后台构建失败根因。GitHub Actions直接 `wrangler versions upload` 到**原 Worker 非激活版本**、真实静态白名单上传已通过。已加入main发布自动化工作流，在合并且门禁通过后才把同一个Worker更新到M2.9。
+- 剩余：最新head全绿、合并与原Workers生产版本CSP/静态文件不可见验证、ECS正式snapshot暂维持0，用户在已安装Edge中逐科用自己的密钥认证并独立确认第一次上传（再次下载备份），再验证真实上传/下载、重启、离线与冲突。所有未实测项保持待验证。
+
+---
+
 ## 最新补充｜2026-10-16 M2.9 技术线复核（仍为PR #11草稿）
 
 - 实时检查：main仍为 `afd3ed47` M2.8；PR #11仍open/draft，M2.9源分支持续更新。英语二/政治权威计划内容、旧记录键、Workers站点URL、manifest ID没有改变。
