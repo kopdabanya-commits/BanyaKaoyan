@@ -81,6 +81,7 @@ function openDayDetail(date){
 }
 function closeDayDetail(){if(!dayDetail)return;dayDetail=false;render(true);window.scrollTo(0,dayReturnScroll);}
 window.BANYA_OPEN_DAY=openDayDetail;
+window.BANYA_SELECT_DAY=selectDay;
 window.BANYA_VIEW=()=>view;
 window.addEventListener('popstate',()=>{if(dayDetail)closeDayDetail();});
 function selectDay(date){
@@ -272,6 +273,24 @@ function nextBuffer(day){
  return null;
 }
 function exportState(previous=false){let record={app:'yantu-english-ii',version:2,exportedAt:new Date().toISOString(),state,plan:data,...(storageBlocked?{unreadableRaw:localStorage.getItem(STORAGE_KEY)}:{})};if(previous){try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY+'_before_restore'));if(!p)throw Error();record={app:'yantu-english-ii',version:2,state:p.state,plan:p.plan,...(p.raw?{unreadableRaw:p.raw}:{})};}catch{toast('没有恢复前副本');return;}}const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download=`板牙考研_英语二备份_${today}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(u),3000);toast('备份已生成，请妥善保存')}
+// Horizontal gestures change the study date without changing the bottom tab.
+let swipeStart=null;
+document.addEventListener('touchstart',e=>{
+  if(!(dayDetail||view==='today')||!e.target.closest('[data-day-swipe]')||e.target.closest('button,input,textarea,select,a'))return;
+  if(e.touches.length!==1)return;
+  const p=e.touches[0];swipeStart={x:p.clientX,y:p.clientY,t:Date.now()};
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!swipeStart)return;
+  const first=swipeStart;swipeStart=null;
+  if(e.changedTouches.length!==1||Date.now()-first.t>800)return;
+  const p=e.changedTouches[0],dx=p.clientX-first.x,dy=p.clientY-first.y;
+  if(Math.abs(dx)<85||Math.abs(dx)<Math.abs(dy)*1.5||Math.abs(dy)>70)return;
+  const from=subject==='politics'?window.PoliticsUI?.getDate?.():selectedDate;
+  if(!from)return;
+  const target=plus(from,dx<0?1:-1);
+  selectDay(target);
+},{passive:true});
 document.addEventListener('click',e=>{
  const tab=e.target.closest('.nav-tab');if(tab){nav(tab.dataset.view);return}
  const btn=e.target.closest('[data-action]');if(!btn){if(e.target.id==='modal')closeModal();return}
