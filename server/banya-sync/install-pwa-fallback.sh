@@ -32,9 +32,16 @@ rollback(){
   nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
 }
 if ! nginx -t >/dev/null 2>&1 || ! systemctl reload nginx; then rollback; echo 'Nginx update failed; old route restored' >&2; exit 1; fi
-if ! curl --noproxy '*' --fail --silent --show-error --max-time 12 https://124.70.128.201/health >/dev/null || \
-   ! curl --noproxy '*' --fail --silent --show-error --max-time 12 -o "$stage/index-check.html" https://124.70.128.201/index.html || \
-   ! grep -Fq 'origin-transfer.js' "$stage/index-check.html"; then
-  rollback; echo 'HTTPS validation failed; old route restored' >&2; exit 1
+ready=false
+# systemctl reload returns before old Nginx workers have finished switching.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if curl --noproxy '*' --fail --silent --max-time 5 https://124.70.128.201/health >/dev/null && \
+     curl --noproxy '*' --fail --silent --max-time 5 -o "$stage/index-check.html" https://124.70.128.201/index.html && \
+     grep -Fq 'origin-transfer.js' "$stage/index-check.html"; then ready=true; break; fi
+  sleep 1
+done
+if [[ "$ready" != true ]]; then
+  code="$(curl --noproxy '*' --silent -o /dev/null -w '%{http_code}' --max-time 5 https://124.70.128.201/index.html || true)"
+  rollback; echo "HTTPS PWA validation failed (index HTTP $code); old route restored" >&2; exit 1
 fi
 echo 'Existing IP HTTPS serves Banya PWA and backend health; private DB untouched.'
