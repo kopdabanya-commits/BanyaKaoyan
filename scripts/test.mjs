@@ -55,6 +55,14 @@ test('full writing tasks show separate writing and review time without changing 
  await h.click('detail',{id:todayOutline.id,day:'2026-10-17'});
  assert(h.el('modal').innerHTML.includes('总时间（分钟）'));
  assert(h.el('modal').innerHTML.includes('批改复盘（分钟）'));
+ assert(h.el('modal').innerHTML.includes('实际动笔写了多久'));
+ h.setNow('2026-10-17T04:00:00Z');h.api.refreshToday();
+ for(const [field,value] of Object.entries({'task-title':todayOutline.title,'task-minutes':15,'task-write-minutes':10,'task-review-minutes':5,'task-actual-writing-minutes':12,'task-move':'2026-10-17','task-wrong':'','task-note':''}))h.input(field,value);
+ await h.event('submit',{id:'task-form',dataset:{id:todayOutline.id,day:'2026-10-17'}});
+ assert.equal(h.api.state.actualWritingMinutes[todayOutline.id],12);
+ assert.match(h.api.summaryText(),/实际写作时间（大作文入门：2010年图表三段式提纲）：12分钟/);
+ h.api.exportState();const writingBackup=JSON.parse(await h.blobs[0].text());
+ assert.equal(core.normalizeState(writingBackup.state).actualWritingMinutes[todayOutline.id],12);
  const card=h.context.BanyaStudyUI.task({item:task,day});
  assert(card.includes('写20分钟 · 批改复盘5分钟'));
  await h.click('detail',{id,day});
@@ -84,6 +92,15 @@ test('full writing tasks show separate writing and review time without changing 
  assert.deepEqual(core.writingParts(h.api.allTasks(day).find(t=>t.id===id)),{writing:18,review:7});
  assert.equal(core.normalizeState(saved).edits[id].reviewMinutes,7);
  assert.throws(()=>core.normalizeState({edits:{[id]:{minutes:25,writingMinutes:20,reviewMinutes:10}}}));
+});
+test('writing duration validates and remains part of archived task history',()=>{
+ assert.throws(()=>core.normalizeState({actualWritingMinutes:{task:601}}));
+ const old=clone(plan),fresh=clone(plan),id='2026-10-16-1';
+ const state=core.defaults();state.actualWritingMinutes[id]=16;
+ fresh.days.find(d=>d.date==='2026-10-17').items=fresh.days.find(d=>d.date==='2026-10-17').items.filter(t=>t.id!==id);
+ const migrated=core.migrate(old,fresh,state,'2026-10-17');
+ assert.equal(migrated.actualWritingMinutes[id],16);
+ assert.equal(migrated.archive[id].id,id);
 });
 test('specific wrong questions and actual minutes survive English normalization and backup',async()=>{
  const id='2026-10-15-1',h=harness();await h.settle();

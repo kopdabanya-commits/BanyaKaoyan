@@ -180,7 +180,8 @@ function taskModal(id,day){const t=findTask(id,day);if(!t)return;
  <div class="record-heading"><h3>做完后记录</h3><small>不必写很多，留下关键错因即可</small></div>
  <label class="form-line"><span>${['新题型','阅读'].includes(t.type)?'错题数（0—5）':t.type==='完形'?'错题数（0—20）':'错题数（可选）'}</span><input id="task-wrong" inputmode="numeric" type="number" min="0" max="${['新题型','阅读'].includes(t.type)?5:20}" placeholder="${t.type==='新题型'?'5道题中错了几道？':'没错填0；未统计可留空'}" value="${esc(state.wrong[t.id]??'')}"></label>
  <label class="form-line"><span>错的是哪几题（可选）</span><input id="task-question-ids" maxlength="500" placeholder="例如 3、8、12；不填也可以" value="${esc(state.questionIds[t.id]||'')}"></label>
- <label class="form-line"><span>实际用了多久（可选）</span><input id="task-actual-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="分钟" value="${esc(state.actualMinutes[t.id]??'')}"></label>
+ ${writing?`<label class="form-line"><span>实际动笔写了多久（可选）</span><input id="task-actual-writing-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="分钟" value="${esc(state.actualWritingMinutes[t.id]??'')}"></label>`:''}
+ <label class="form-line"><span>${writing?'实际总用时（可选）':'实际用了多久（可选）'}</span><input id="task-actual-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="分钟" value="${esc(state.actualMinutes[t.id]??'')}"></label>
  <label class="form-line"><span>一句话复盘（可选）</span><textarea id="task-note" maxlength="20000" placeholder="例如：定位词找对了，但没看转折句。">${esc(state.notes[t.id]||'')}</textarea></label>
  <details class="advanced-adjust"><summary>${writing?'调整任务名称或日期':'调整任务名称、预计时间或日期'}</summary><div class="advanced-fields">
  <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label>
@@ -229,7 +230,7 @@ function summaryText(){
  const lines=['板牙考研 · 英语二学习记录（仅复制给你信任的对话）',`生成日期：${today}`,`计划版本：${data.meta.planVersion||'初始版'}`,`近14天情况：`];
  for(const d of latest){const arr=specialTasks(d.date);const short=arr.map(t=>`${t.title}${state.done[t.id]?'[完成]':state.notDone[t.id]?'[不做]':'[未完成]'}${state.wrong[t.id]!==undefined?'(错'+state.wrong[t.id]+')':''}`).join('；');
   lines.push(`${d.date}${state.skipped[d.date]?'[休息]':''}：${short}`);
-  for(const t of arr){if(state.questionIds[t.id])lines.push(`  错题题号（${t.title}）：${state.questionIds[t.id]}`);if(state.actualMinutes[t.id])lines.push(`  实际用时（${t.title}）：${state.actualMinutes[t.id]}分钟`);if(state.notes[t.id])lines.push(`  复盘（${t.title}）：${state.notes[t.id]}`)}
+  for(const t of arr){const parts=Core.writingParts(t);if(parts)lines.push(`  计划用时（${t.title}）：总计${t.minutes}分钟，写作${parts.writing}分钟，批改复盘${parts.review}分钟`);if(state.questionIds[t.id])lines.push(`  错题题号（${t.title}）：${state.questionIds[t.id]}`);if(state.actualWritingMinutes[t.id])lines.push(`  实际写作时间（${t.title}）：${state.actualWritingMinutes[t.id]}分钟`);if(state.actualMinutes[t.id])lines.push(`  实际用时（${t.title}）：${state.actualMinutes[t.id]}分钟`);if(state.notes[t.id])lines.push(`  复盘（${t.title}）：${state.notes[t.id]}`)}
  }
  lines.push('请优先保留已完成记录，按剩余时间重排未完成任务，不自动双倍补课。');return lines.join('\n');
 }
@@ -330,12 +331,13 @@ document.addEventListener('submit',e=>{
   if(!title||totalText===''||!Number.isInteger(minutes)||minutes<1||minutes>90||parts&&(writeText===''||reviewText===''||!Number.isInteger(write)||write<1||!Number.isInteger(review)||review<1||minutes!==write+review)||!inRange(move)){toast('请检查任务名称、分钟和日期；作文总时间要等于两段之和');return;}
   const wrongMax=['新题型','阅读'].includes(t.type)?5:20;
   if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>wrongMax)){toast('请填写0—'+wrongMax+'之间的整数错题数');return;}
-  const questionIds=document.getElementById('task-question-ids')?.value.trim()||'',actualText=document.getElementById('task-actual-minutes')?.value.trim()||'';
-  if(questionIds.length>500||actualText!==''&&(!Number.isInteger(Number(actualText))||Number(actualText)<1||Number(actualText)>600)){toast('请检查题号和实际用时（1—600分钟）');return;}
+  const questionIds=document.getElementById('task-question-ids')?.value.trim()||'',actualText=document.getElementById('task-actual-minutes')?.value.trim()||'',actualWritingText=parts?document.getElementById('task-actual-writing-minutes')?.value.trim()||'':'';
+  if(questionIds.length>500||actualText!==''&&(!Number.isInteger(Number(actualText))||Number(actualText)<1||Number(actualText)>600)||actualWritingText!==''&&(!Number.isInteger(Number(actualWritingText))||Number(actualWritingText)<1||Number(actualWritingText)>600)){toast('请检查题号和实际用时（1—600分钟）');return;}
   if(!t.vocab&&(minutes!==t.minutes||move!==day)&&!canPlace(move,id,minutes))return;
   if(w==='')delete state.wrong[id];else state.wrong[id]=Number(w);
   if(questionIds)state.questionIds[id]=questionIds;else delete state.questionIds[id];
   if(actualText)state.actualMinutes[id]=Number(actualText);else delete state.actualMinutes[id];
+  if(actualWritingText)state.actualWritingMinutes[id]=Number(actualWritingText);else delete state.actualWritingMinutes[id];
   state.notes[id]=document.getElementById('task-note').value.trim();
   if(!t.vocab){const baseline=data.days.flatMap(d=>d.items).find(x=>x.id===id)||state.added.find(x=>x.id===id)||state.archive[id]||t;const edits={};if(title!==baseline.title)edits.title=title;if(minutes!==baseline.minutes)edits.minutes=minutes;if(parts){const original=Core.writingParts({...baseline,minutes});if(!original||write!==original.writing||review!==original.review){edits.minutes=minutes;edits.writingMinutes=write;edits.reviewMinutes=review;}}if(Object.keys(edits).length)state.edits[id]=edits;else delete state.edits[id];if(move!==day)state.moved[id]=move;}
   const markComplete=e.submitter?.dataset?.complete==='true',markNotDone=e.submitter?.dataset?.notDone==='true',restoreNotDone=e.submitter?.dataset?.notDone==='false';
