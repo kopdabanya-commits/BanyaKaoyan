@@ -82,6 +82,15 @@ test('opted-in English sends only English snapshot with CAS, never touches polit
  assert.equal(JSON.parse(a.store.get(meta)).revision,2);
  assert.equal(a.store.has('yantu_politics_2026_v1'),false);
 });
+test('actual writing time remains in the independent English cloud snapshot',async()=>{
+ const record={...state(true),actualWritingMinutes:{'2026-10-16-1':14}};
+ const raw=JSON.stringify(record),h=harness({[configKey]:JSON.stringify(connected),[key]:raw},
+  {subject:'english',revision:0,state:null});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
+ assert.deepEqual(JSON.parse(JSON.stringify(h.cloud().state.record)),record);
+ assert.deepEqual(englishCore.normalizeState(JSON.parse(h.store.get(key))).actualWritingMinutes,record.actualWritingMinutes);
+ assert.equal(h.store.has('yantu_politics_2026_v1'),false);
+});
 test('not-done task status is validated and retained in the independent cloud snapshot',async()=>{
  const record={done:{},notDone:{'2026-10-15-1':true},notes:{}};
  const raw=JSON.stringify(record),h=harness({[configKey]:JSON.stringify(connected),[key]:raw},
