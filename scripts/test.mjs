@@ -41,10 +41,20 @@ test('legacy state migrates; malformed backup, duplicate customs and unsafe keys
 test('full writing tasks show separate writing and review time without changing total or task ID',async()=>{
  const day='2026-10-18',id='2026-10-18-1',task=plan.days.find(d=>d.date===day).items.find(t=>t.id===id);
  assert.deepEqual(core.writingParts(task),{writing:20,review:5});
+ const todayOutline=plan.days.find(d=>d.date==='2026-10-17').items.find(t=>t.id==='2026-10-16-1');
+ assert.deepEqual(core.writingParts(todayOutline),{writing:10,review:5});
+ assert.deepEqual(core.writingParts(plan.days.find(d=>d.date==='2026-10-16').items.find(t=>t.id==='restart-2026-10-16-writing')),{writing:15,review:5});
+ assert.deepEqual(core.writingParts(plan.days.find(d=>d.date==='2026-12-18').items.find(t=>t.id==='2026-12-18-1')),{writing:10,review:5});
  assert.deepEqual(core.writingParts(plan.days.find(d=>d.date==='2026-12-11').items.find(t=>t.type==='写作')),{writing:20,review:10});
  assert.deepEqual(core.writingParts({...task,minutes:20,writingMinutes:10,reviewMinutes:10}),{writing:10,review:10});
  assert.equal(core.writingParts(plan.days[0].items[0]),null,'historical task must not be rewritten');
+ assert.equal(core.writingParts(plan.days.find(d=>d.date==='2026-10-18').items.find(t=>t.title.includes('功能句'))),null,'short recall task stays undivided');
  const h=harness();await h.settle();
+ const todayCard=h.context.BanyaStudyUI.task({item:todayOutline,day:'2026-10-17'});
+ assert(todayCard.includes('写10分钟 · 批改复盘5分钟'));
+ await h.click('detail',{id:todayOutline.id,day:'2026-10-17'});
+ assert(h.el('modal').innerHTML.includes('总时间（分钟）'));
+ assert(h.el('modal').innerHTML.includes('批改复盘（分钟）'));
  const card=h.context.BanyaStudyUI.task({item:task,day});
  assert(card.includes('写20分钟 · 批改复盘5分钟'));
  await h.click('detail',{id,day});
@@ -98,6 +108,7 @@ test('first open, check/uncheck, reopen and refresh preserve local records',asyn
 test('wrong answers and notes save, clear, and remain separate across tasks',async()=>{
  const h=harness();await h.settle();for(const [id,w,note,day,minutes]of [['2026-10-15-1',2,'甲','2026-10-15',30],['2026-10-16-1',3,'乙','2026-10-17',15]]){
   for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':minutes,'task-move':day,'task-wrong':w,'task-note':note}))h.input(field,value);
+  if(id==='2026-10-16-1'){h.input('task-write-minutes',10);h.input('task-review-minutes',5);}
   await h.event('submit',{id:'task-form',dataset:{id,day}});
  }assert.equal(h.api.state.wrong['2026-10-15-1'],2);assert.equal(h.api.state.notes['2026-10-16-1'],'乙');
  h.input('task-wrong','');await h.event('submit',{id:'task-form',dataset:{id:'2026-10-16-1',day:'2026-10-17'}});assert.equal(h.api.state.wrong['2026-10-16-1'],undefined);assert.equal(h.api.state.wrong['2026-10-15-1'],2);
@@ -296,6 +307,7 @@ test('M4: saving a note cannot freeze old task title or estimated minutes across
  const h=harness();await h.settle();h.api.applyUpdate();
  const day='2026-10-16',task=plan.days.find(d=>d.date===day).items[0];
  for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':day,'task-wrong':'','task-note':'保留真实学习记录'}))h.input(id,value);
+ h.input('task-write-minutes',15);h.input('task-review-minutes',5);
  await h.event('submit',{id:'task-form',dataset:{id:task.id,day}});
  assert.equal(h.api.state.edits[task.id],undefined,'no accidental local task override from merely recording');
  assert.equal(h.api.state.notes[task.id],'保留真实学习记录');

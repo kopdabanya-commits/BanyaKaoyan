@@ -54,9 +54,9 @@ function tasks(p,s,day){
  }).sort((a,b)=>Number(!!b.vocab)-Number(!!a.vocab));
 }
 function writingParts(t){
- if(t.type!=='写作'||!Number.isInteger(t.minutes)||/历史旧任务|作文表达|功能句|提纲|模板结构|考前轻练/.test(t.title))return null;
+ if(t.type!=='写作'||!Number.isInteger(t.minutes)||/历史旧任务|作文表达|功能句|模板结构/.test(t.title))return null;
  if(Number.isInteger(t.writingMinutes)&&Number.isInteger(t.reviewMinutes)&&t.writingMinutes>0&&t.reviewMinutes>0&&t.writingMinutes+t.reviewMinutes===t.minutes)return {writing:t.writingMinutes,review:t.reviewMinutes};
- if(t.minutes<25)return null;
+ if(t.minutes<15)return null;
  const writing=t.minutes===25||t.minutes===30?20:t.minutes===35?25:t.minutes-5;
  return {writing,review:t.minutes-writing};
 }
