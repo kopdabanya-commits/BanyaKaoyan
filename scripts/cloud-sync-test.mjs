@@ -11,18 +11,18 @@ const meta='banya_cloud_sync_meta_v1_english';
 const state=(done=false)=>({done:{task:done},notes:{task:'private study note'}});
 const pack=(subject,record)=>({schema:'banya.sync.v1',subject,record});
 function harness(initial={},remote={subject:'english',revision:0,state:null}){
- const store=new Map(Object.entries(initial)),calls=[],listeners={},reloads=[];
+ const store=new Map(Object.entries(initial)),calls=[],listeners={},reloads=[],notifications=[];
  let cloud=remote;
  const localStorage={
   getItem:k=>store.has(k)?store.get(k):null,
   setItem:(k,v)=>store.set(k,String(v)),
   removeItem:k=>store.delete(k)
  };
- const win={PlannerCore:{normalizeState(s){if(!s||typeof s.done!=='object')throw Error('invalid');return s;}},
-  PoliticsCore:{normalize(s){if(!s||typeof s.done!=='object')throw Error('invalid');return s;}},
+ const win={PlannerCore:{validPlan:()=>true,normalizeState(s){if(!s||!s.done||typeof s.done!=='object')throw Error('invalid');return s;}},
+  PoliticsCore:{normalize(s){if(!s||!s.done||typeof s.done!=='object')throw Error('invalid');return s;}},
   addEventListener(){},confirm:()=>true,location:{reload:()=>reloads.push('reloaded')}};
  const context={window:win,localStorage,document:{
-  addEventListener:(event,fn)=>listeners[event]=fn,getElementById:()=>null
+  addEventListener:(event,fn)=>listeners[event]=fn,getElementById:()=>({set textContent(value){notifications.push(value)}})
  },navigator:{onLine:true},crypto:webcrypto,TextEncoder,URL,Blob,setInterval(){},
   fetch:async(url,init)=>{
    calls.push({url,init});
@@ -33,7 +33,7 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
    return {ok:true,json:async()=>cloud};
   }};
  vm.runInNewContext(code,context);
- return {win,store,calls,reloads,network:context.navigator,cloud:()=>cloud};
+ return {win,store,calls,reloads,listeners,notifications,network:context.navigator,cloud:()=>cloud};
 }
 const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
 test('no endpoint: no network, no automatic first upload or cloud replacement',async()=>{
@@ -139,4 +139,18 @@ test('M3.1 manual refresh verifies the enrolled snapshot and shows an accurate s
  assert.equal(h.calls.filter(c=>c.init.method==='PUT').length,0);
  assert(h.store.has('banya_cloud_sync_last_ok_v1'));
  assert(h.win.BanyaCloudSync.quickPanel().includes('同步完成'));
+});
+test('one-file local restore validates before writing, clears only restored sync baselines',async()=>{
+ const old=JSON.stringify(state(false)),latest=JSON.stringify(state(true));
+ const politics='yantu_politics_2026_v1',pmeta='banya_cloud_sync_meta_v1_politics';
+ const h=harness({[key]:old,[meta]:'{"revision":1,"hash":"old"}',[pmeta]:'{"revision":2,"hash":"other"}'});
+ const file=values=>({size:500,text:async()=>JSON.stringify({app:'banya-kaoyan-local',version:1,values})});
+ await h.listeners.change({target:{id:'banya-local-backup-file',files:[file({[key]:latest})],value:'backup.json'}});
+ assert.equal(h.store.get(key),latest,h.notifications.join('; '));
+ assert.equal(h.store.has(meta),false);
+ assert.equal(h.store.has(pmeta),true,'untouched subject keeps its baseline');
+ assert.equal(h.reloads.length,1);
+ await h.listeners.change({target:{id:'banya-local-backup-file',files:[file({[key]:'{"done":null}'})],value:'bad.json'}});
+ assert.equal(h.store.get(key),latest,'invalid backup must not overwrite data');
+ assert.equal(h.reloads.length,1);
 });
