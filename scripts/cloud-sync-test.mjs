@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createHash, webcrypto} from 'node:crypto';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),englishCore=require('../planner-core.js'),politicsCore=require('../politics-core.js');
 const code=fs.readFileSync(new URL('../cloud-sync.js',import.meta.url),'utf8');
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const configKey='banya_cloud_sync_config_v1';
@@ -18,8 +20,8 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
   setItem:(k,v)=>store.set(k,String(v)),
   removeItem:k=>store.delete(k)
  };
- const win={PlannerCore:{validPlan:()=>true,normalizeState(s){if(!s||!s.done||typeof s.done!=='object')throw Error('invalid');return s;}},
-  PoliticsCore:{normalize(s){if(!s||!s.done||typeof s.done!=='object')throw Error('invalid');return s;}},
+ const win={PlannerCore:{validPlan:englishCore.validPlan,normalizeState(s){englishCore.normalizeState(s);return s;}},
+  PoliticsCore:{normalize(s){politicsCore.normalize(s);return s;}},
   addEventListener(){},confirm:()=>true,location:{reload:()=>reloads.push('reloaded')}};
  const context={window:win,localStorage,document:{
   addEventListener:(event,fn)=>listeners[event]=fn,getElementById:()=>({set textContent(value){notifications.push(value)}})
@@ -80,6 +82,15 @@ test('opted-in English sends only English snapshot with CAS, never touches polit
  assert.equal(JSON.parse(a.store.get(meta)).revision,2);
  assert.equal(a.store.has('yantu_politics_2026_v1'),false);
 });
+test('not-done task status is validated and retained in the independent cloud snapshot',async()=>{
+ const record={done:{},notDone:{'2026-10-15-1':true},notes:{}};
+ const raw=JSON.stringify(record),h=harness({[configKey]:JSON.stringify(connected),[key]:raw},
+  {subject:'english',revision:0,state:null});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
+ assert.equal(h.cloud().state.subject,'english');
+ assert.deepEqual(JSON.parse(JSON.stringify(h.cloud().state.record)),record);
+ assert.deepEqual(englishCore.normalizeState(JSON.parse(h.store.get(key))).notDone,record.notDone);
+});
 test('simultaneous changes stop upload and preserve the current local record',async()=>{
  const old=JSON.stringify(state(false)),changed=JSON.stringify(state(true));
  const a=harness({[configKey]:JSON.stringify(connected),[key]:changed,
@@ -125,8 +136,8 @@ test('offline changes remain local until connectivity returns, then CAS uploads'
 });
 test('politics remote-only update does not change English storage or English baseline',async()=>{
  const politicsKey='yantu_politics_2026_v1',politicsMeta='banya_cloud_sync_meta_v1_politics';
- const old=JSON.stringify({done:{},notes:{},questions:{marx:{done:93,total:396}}});
- const latest={done:{'politics-task':true},notes:{},questions:{marx:{done:93,total:396}}};
+ const old=JSON.stringify({done:{},notes:{},questions:{marx:{done:93,total:396,updated:'2026-10-15'}}});
+ const latest={done:{'politics-task':true},notes:{},questions:{marx:{done:93,total:396,updated:'2026-10-15'}}};
  const english=JSON.stringify(state(true));
  const a=harness({[configKey]:JSON.stringify(connected),[key]:english,
    [politicsKey]:old,[politicsMeta]:JSON.stringify({revision:1,hash:hash(old)})},

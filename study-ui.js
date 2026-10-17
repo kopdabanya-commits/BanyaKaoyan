@@ -11,7 +11,7 @@ function strip({selected,today,start,end,action='day',attribute='date'}){
  return '<button type="button" class="day-chip'+(date===selected?' selected':'')+(date===today?' today':'')+'" data-action="'+action+'" data-'+attribute+'="'+date+'" '+(!valid?'disabled':'')+' aria-pressed="'+(date===selected)+'" aria-label="'+shortDay(date)+'，周'+dow+'"><span class="dow">'+dow+'</span><span class="number">'+Number(date.slice(-2))+'</span></button>';
  }).join('')+'</div>';
 }
-function dayHeading({date,today,start,end,done,total,remaining,countdown,subtitle='',prev='day',next='day',jump='jump-today',attribute='date'}){
+function dayHeading({date,today,start,end,done,notDone=0,total,remaining,remainingCount=total-done-notDone,countdown,subtitle='',prev='day',next='day',jump='jump-today',attribute='date'}){
  const label=date===today?'今天':date<today?'已选日期':'计划日期';
  const pct=total?Math.round(done*100/total):0;
  const step=(offset,action,text)=>{const target=dayAdd(date,offset);return '<button type="button" data-action="'+action+'" data-'+attribute+'="'+target+'" '+(target<start||target>end?'disabled':'')+'>'+text+'</button>'};
@@ -19,19 +19,19 @@ function dayHeading({date,today,start,end,done,total,remaining,countdown,subtitl
  +strip({selected:date,today,start,end,action:prev,attribute})
  +'<div class="student-day-controls"><div class="student-control-buttons">'+step(-1,prev,'‹ 前一天')+'<button type="button" data-action="'+jump+'" '+(date===today?'disabled':'')+'>今天</button>'+step(1,next,'后一天 ›')+'</div><span class="student-done-label">已完成 '+done+'/'+total+'</span></div>'
  +'<div class="student-progress"><span class="student-progress-fill" style="width:'+pct+'%"></span></div>'
- +(total&&done===total?'<p class="student-progress-caption">当天计划已打卡完成</p>':'<p class="student-progress-caption">剩余 '+(total-done)+' 项 · 预计 '+Number(remaining)+' 分钟</p>');
+ +(total&&remainingCount===0?'<p class="student-progress-caption">'+(notDone?'今天的安排已处理完':'当天计划已打卡完成')+'</p>':'<p class="student-progress-caption">剩余 '+Math.max(0,remainingCount)+' 项 · 预计 '+Number(remaining)+' 分钟</p>');
 }
-function task({item,day,done=false,wrong,hasNote=false,subject='english',next=false}){
+function task({item,day,done=false,notDone=false,wrong,hasNote=false,subject='english',next=false}){
  const id=esc(item.id),isPolitics=subject==='politics',toggle=isPolitics?'p-toggle':'toggle',open=isPolitics?'p-detail':'detail';
  const writing=isPolitics?null:root.PlannerCore?.writingParts?.(item);
  const duration=writing?'写'+writing.writing+'分钟 · 批改复盘'+writing.review+'分钟':'预计'+Number(item.minutes)+'分钟';
  const dayAttr=isPolitics?'':' data-day="'+esc(day)+'"';
  const wrongLabel=wrong!==undefined&&wrong!==''?'<span class="student-task-record">错 '+esc(wrong)+' 题</span>':'';
- return '<article class="student-task'+(done?' is-done':'')+(next?' is-next':'')+'">'
+ return '<article class="student-task'+(done?' is-done':'')+(notDone?' is-not-done':'')+(next?' is-next':'')+'">'
  +'<button type="button" class="student-task-check'+(done?' checked':'')+'" data-action="'+toggle+'" data-id="'+id+'"'+dayAttr+' aria-pressed="'+done+'" aria-label="'+(done?'取消完成':'标记完成')+'：'+esc(item.title)+'">'+(done?'✓':'')+'</button>'
  +'<button type="button" class="student-task-body" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="查看任务详情：'+esc(item.title)+'">'
  +'<span class="student-task-name">'+esc(item.title)+'</span>'
- +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> '+duration+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
+ +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> '+duration+(notDone?'<span class="student-task-status">不做</span>':'')+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
  +'<button type="button" class="student-task-more" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="展开任务记录">›</button></article>';
 }
 function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}){

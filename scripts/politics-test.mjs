@@ -18,7 +18,7 @@ function harness(){
  vm.createContext(ctx);vm.runInContext(sharedCode,ctx);vm.runInContext(uiCode,ctx);
  const render=(view='today',day='2026-10-16')=>win.PoliticsUI.render(view,day,x=>x,()=>{});
  const click=(action,opts={})=>{const b={dataset:{action,...opts}};for(const f of handlers.click||[])f({target:{closest:()=>b},preventDefault(){},stopImmediatePropagation(){}})};
- const submit=(id,opts={})=>{for(const f of handlers.submit||[])f({target:{id,dataset:opts},preventDefault(){},stopImmediatePropagation(){}})};
+ const submit=(id,opts={},submitter=null)=>{for(const f of handlers.submit||[])f({target:{id,dataset:opts},submitter,preventDefault(){},stopImmediatePropagation(){}})};
  return {render,click,submit,storage,elements,win,get lastNav(){return lastNav}};
 }
 test('2027 politics 64 valid calendar days and unique task ids',()=>{
@@ -58,8 +58,20 @@ test('politics keeps specific question IDs and elapsed minutes within its own sn
 });
 test('corrupt or malicious politics backup structure is rejected',()=>{
  assert.throws(()=>Core.normalize({done:null}));
+ assert.throws(()=>Core.normalize({done:{task:true},notDone:{task:true}}));
  assert.throws(()=>Core.normalize(JSON.parse('{"notes":{"__proto__":"x"}}')));
  assert.throws(()=>Core.normalize({wrong:{id:-1}}));
+});
+test('politics task can be marked not done, restored, or completed in its own snapshot',()=>{
+ const h=harness(),id=politics.days[0].items[0].id;h.render();h.click('p-detail',{id});
+ assert(h.elements.modal.innerHTML.includes('data-not-done="true"'));
+ h.elements['p-note']={value:'改天再做'};h.submit('p-task-form',{id},{dataset:{notDone:'true'}});
+ let saved=JSON.parse(h.storage.get(Core.key));assert.equal(saved.notDone[id],true);assert.equal(saved.done[id],undefined);assert(h.render().includes('student-task is-not-done'));assert(h.render().includes('不做'));
+ h.click('p-detail',{id});h.submit('p-task-form',{id},{dataset:{notDone:'false'}});
+ saved=JSON.parse(h.storage.get(Core.key));assert.equal(saved.notDone[id],undefined);assert.equal(saved.done[id],undefined);
+ h.click('p-detail',{id});h.submit('p-task-form',{id},{dataset:{complete:'true'}});
+ saved=JSON.parse(h.storage.get(Core.key));assert.equal(saved.done[id],true);assert.equal(saved.notDone[id],undefined);
+ assert(!h.storage.has('yantu_english_2026_m1'));
 });
 test('private politics plan edits preserve task IDs, records and subject separation',()=>{
  const h=harness(),id=politics.days[0].items[0].id;
