@@ -176,14 +176,15 @@ function taskModal(id,day){const t=findTask(id,day);if(!t)return;
  <div class="quickflex task-overview"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · ${writing?`动笔写${writing.writing}分钟、批改复盘${writing.review}分钟`:`预计${t.minutes}分钟`} · ${checked?'已完成':'未完成'}</span></div></div>
  <section class="study-guide" aria-label="训练方法"><span class="guide-label">这项练习怎么做</span><p>${esc(t.detail||'按自己的节奏独立完成，再核对答案并记录收获。')}</p></section>
  <form id="task-form" data-id="${esc(t.id)}" data-day="${esc(day)}">
+ ${writing?`<section class="writing-time-editor" aria-label="作文计划用时"><h3>计划用时</h3><p class="setting-note">填总时间和写作时间，批改复盘会自动算好；也可以直接改批改复盘时间。</p><div class="writing-time-fields"><label class="form-line"><span>总时间（分钟）</span><input id="task-minutes" inputmode="numeric" type="number" min="2" max="90" required value="${t.minutes}"></label><label class="form-line"><span>动笔写（分钟）</span><input id="task-write-minutes" inputmode="numeric" type="number" min="1" max="89" required value="${writing.writing}"></label><label class="form-line"><span>批改复盘（分钟）</span><input id="task-review-minutes" inputmode="numeric" type="number" min="1" max="89" required value="${writing.review}"></label></div><p class="setting-note" id="writing-time-hint" role="status">${t.minutes} 分钟 = 写 ${writing.writing} 分钟 + 批改复盘 ${writing.review} 分钟；仍然只打卡一次。</p></section>`:''}
  <div class="record-heading"><h3>做完后记录</h3><small>不必写很多，留下关键错因即可</small></div>
  <label class="form-line"><span>${['新题型','阅读'].includes(t.type)?'错题数（0—5）':t.type==='完形'?'错题数（0—20）':'错题数（可选）'}</span><input id="task-wrong" inputmode="numeric" type="number" min="0" max="${['新题型','阅读'].includes(t.type)?5:20}" placeholder="${t.type==='新题型'?'5道题中错了几道？':'没错填0；未统计可留空'}" value="${esc(state.wrong[t.id]??'')}"></label>
  <label class="form-line"><span>错的是哪几题（可选）</span><input id="task-question-ids" maxlength="500" placeholder="例如 3、8、12；不填也可以" value="${esc(state.questionIds[t.id]||'')}"></label>
  <label class="form-line"><span>实际用了多久（可选）</span><input id="task-actual-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="分钟" value="${esc(state.actualMinutes[t.id]??'')}"></label>
  <label class="form-line"><span>一句话复盘（可选）</span><textarea id="task-note" maxlength="20000" placeholder="例如：定位词找对了，但没看转折句。">${esc(state.notes[t.id]||'')}</textarea></label>
- <details class="advanced-adjust"><summary>调整任务名称、预计时间或日期</summary><div class="advanced-fields">
+ <details class="advanced-adjust"><summary>${writing?'调整任务名称或日期':'调整任务名称、预计时间或日期'}</summary><div class="advanced-fields">
  <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label>
- ${writing?`<label class="form-line"><span>动笔写（分钟）</span><input id="task-write-minutes" type="number" min="1" max="89" required value="${writing.writing}"></label><label class="form-line"><span>批改复盘（分钟）</span><input id="task-review-minutes" type="number" min="1" max="89" required value="${writing.review}"></label><p class="setting-note">两段时间合计就是这项任务的预计用时；仍然只打卡一次。</p>`:`<label class="form-line"><span>预计用时（分钟）</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label>`}
+ ${writing?'':`<label class="form-line"><span>预计用时（分钟）</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label>`}
  <label class="form-line"><span>调整到其他日期</span><input id="task-move" type="date" min="${data.meta.start}" max="${data.meta.end}" value="${day}" ${t.vocab?'disabled':''}></label>
  </div></details>
  <div class="button-row record-actions"><button type="submit" class="cta secondary">仅保存记录</button><button type="submit" class="cta" data-complete="true">${checked?'保存并保持完成':'保存并打卡完成'}</button></div></form>
@@ -303,13 +304,30 @@ document.addEventListener('click',e=>{
  if(action==='export-previous'){exportState(true);return}
  if(action==='import'){document.getElementById('file-import')?.click();return}
 });
+document.addEventListener('input',e=>{
+ if(!['task-minutes','task-write-minutes','task-review-minutes'].includes(e.target.id))return;
+ const totalEl=document.getElementById('task-minutes'),writeEl=document.getElementById('task-write-minutes'),reviewEl=document.getElementById('task-review-minutes');
+ if(!writeEl||!reviewEl)return;
+ const valid=value=>value!==''&&Number.isInteger(Number(value))&&Number(value)>0;
+ if(e.target.id==='task-review-minutes'){
+  const write=Number(writeEl.value),review=Number(reviewEl.value);
+  totalEl.value=valid(writeEl.value)&&valid(reviewEl.value)&&write+review<=90?String(write+review):'';
+ }else{
+  const total=Number(totalEl.value),write=Number(writeEl.value);
+  reviewEl.value=valid(totalEl.value)&&valid(writeEl.value)&&total>write&&total<=90?String(total-write):'';
+ }
+ const total=Number(totalEl.value),write=Number(writeEl.value),review=Number(reviewEl.value);
+ document.getElementById('writing-time-hint').textContent=valid(totalEl.value)&&valid(writeEl.value)&&valid(reviewEl.value)&&total===write+review&&total<=90
+  ?`${total} 分钟 = 写 ${write} 分钟 + 批改复盘 ${review} 分钟；仍然只打卡一次。`
+  :'时间还没对上：总时间需等于写作与批改复盘之和，最多 90 分钟。';
+});
 document.addEventListener('submit',e=>{
  if(e.target.id==='task-form'){
   e.preventDefault();const f=e.target,id=f.dataset.id,day=f.dataset.day;
   const t=findTask(id,day);if(!t)return;
-  const title=document.getElementById('task-title').value.trim(),parts=Core.writingParts(t),write=parts?Number(document.getElementById('task-write-minutes').value):0,review=parts?Number(document.getElementById('task-review-minutes').value):0,minutes=parts?write+review:Number(document.getElementById('task-minutes').value),move=document.getElementById('task-move').value;
+  const title=document.getElementById('task-title').value.trim(),parts=Core.writingParts(t),writeText=parts?document.getElementById('task-write-minutes').value:'',reviewText=parts?document.getElementById('task-review-minutes').value:'',totalText=document.getElementById('task-minutes').value,write=Number(writeText),review=Number(reviewText),minutes=Number(totalText),move=document.getElementById('task-move').value;
   const w=document.getElementById('task-wrong').value;
-  if(!title||!Number.isInteger(minutes)||minutes<1||minutes>90||parts&&(!Number.isInteger(write)||write<1||!Number.isInteger(review)||review<1)||!inRange(move)){toast('请检查任务名称、分钟和日期');return;}
+  if(!title||totalText===''||!Number.isInteger(minutes)||minutes<1||minutes>90||parts&&(writeText===''||reviewText===''||!Number.isInteger(write)||write<1||!Number.isInteger(review)||review<1||minutes!==write+review)||!inRange(move)){toast('请检查任务名称、分钟和日期；作文总时间要等于两段之和');return;}
   const wrongMax=['新题型','阅读'].includes(t.type)?5:20;
   if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>wrongMax)){toast('请填写0—'+wrongMax+'之间的整数错题数');return;}
   const questionIds=document.getElementById('task-question-ids')?.value.trim()||'',actualText=document.getElementById('task-actual-minutes')?.value.trim()||'';
