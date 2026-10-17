@@ -162,7 +162,7 @@ function renderSettings(){
  +'<section class="setting-section"><h2>学习偏好</h2><div class="setting-row-title"><span>外观</span><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="'+(theme==='light'?'selected':'')+'" aria-pressed="'+(theme==='light')+'">浅色</button><button type="button" data-action="theme" data-theme="dark" class="'+(theme==='dark'?'selected':'')+'" aria-pressed="'+(theme==='dark')+'">深色</button></div></div>'
  +'</section>'
  +'<section class="setting-section"><h2>备份与恢复</h2><div class="button-row"><button class="cta secondary" data-action="export">导出英语备份</button><button class="cta ghost" data-action="import">导入备份</button></div><details><summary>恢复前的备份</summary><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></details><input id="file-import" type="file" accept="application/json,.json" hidden></section>'
- +'<section class="setting-section"><h2>应用更新</h2><div class="button-row"><button class="cta secondary" data-action="refresh-app">检查应用更新</button></div><p class="setting-note" id="offline-status">'+esc(offlineStatus)+'</p></section></div>';
+ +'<section class="setting-section"><h2>应用更新</h2><div class="button-row"><button class="cta secondary" data-action="refresh-app">检查应用更新</button><a class="cta ghost" href="./refresh.html">更新没反应？点这里修复</a></div><p class="setting-note" id="offline-status">'+esc(offlineStatus)+'</p></section></div>';
 }
 
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
@@ -270,7 +270,16 @@ document.addEventListener('click',e=>{
  if(action==='theme'){const next=btn.dataset.theme;if(next!=='light'&&next!=='dark')return;theme=next;if(document.documentElement)document.documentElement.dataset.theme=theme;try{localStorage.setItem(THEME_KEY,theme);}catch{toast('外观已切换，但偏好未能保存');}render();return;}
  if(action==='review-update'){reviewUpdate();return}
  if(action==='apply-update'){applyUpdate();return}
- if(action==='refresh-app'){if(!navigator.serviceWorker){toast('当前浏览器不支持离线应用');return;}navigator.serviceWorker.getRegistration().then(r=>r?.update()).then(()=>toast('已检查应用更新；有新版时关闭再打开即可')).catch(()=>toast('暂时无法检查，稍后重试'));return}
+ if(action==='refresh-app'){
+  toast('正在检查应用更新……');
+  if(!navigator.serviceWorker?.getRegistration){toast('浏览器无法检查更新，请点“更新没反应？点这里修复”');return;}
+  Promise.race([
+   navigator.serviceWorker.getRegistration().then(r=>r?r.update():null),
+   new Promise((_,reject)=>setTimeout(()=>reject(Error('timeout')),8000))
+  ]).then(r=>toast(r?'已检查更新；有新版时关闭所有应用窗口再打开':'离线缓存未就绪，请点修复入口'))
+   .catch(()=>toast('检查超时，请点“更新没反应？点这里修复”'));
+  return;
+ }
  if(action==='toggle'){const t=findTask(btn.dataset.id,btn.dataset.day);if(!t)return;const next=!state.done[t.id];state.archive[t.id]={...t,date:btn.dataset.day};state.done[t.id]=next;if(next)delete state.skipped[btn.dataset.day];if(!save()){render();return;}render(false,next?t.id:'');const p=dateProgress(btn.dataset.day);toast(next?(p.total&&p.done===p.total?'当日专项已完成，打卡已保存在本机':'已完成，打卡已保存在本机'):'已取消完成标记');return}
  if(action==='close-day'){if(history.state?.banyaDay)history.back();else closeDayDetail();return}
   if(action==='day'||action==='cal-day'||action==='open-day'){if(action!=='day')openDayDetail(btn.dataset.date);else selectDay(btn.dataset.date);return}

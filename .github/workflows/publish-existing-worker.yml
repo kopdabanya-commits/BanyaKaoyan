@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - index.html
+      - refresh.html
+      - refresh.js
       - styles.css
       - app.js
       - cloud-sync.js
@@ -44,11 +46,11 @@ jobs:
       - name: All Node syntax, plans, offline, and both-subject tests
         run: |
           set -euo pipefail
-          for f in app.js cloud-sync.js origin-transfer.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
+          for f in app.js refresh.js cloud-sync.js origin-transfer.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
           node scripts/check.mjs
           node scripts/sync-plan-mirrors.mjs --check
           node scripts/privacy-check.mjs
-          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs
+          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/refresh-test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -111,6 +113,10 @@ jobs:
                   time.sleep(3)
           status,script,_=get('/cloud-sync.js')
           assert status==200 and b'banya_cloud_sync_config_v1' in script,'cloud sync asset unavailable'
+          status,refresh,_=get('/refresh.html')
+          assert status==200 and b'./refresh.js' in refresh,'recovery page unavailable'
+          status,refresh_script,_=get('/refresh.js')
+          assert status==200 and b'yantu-english-ii-' in refresh_script,'recovery script unavailable'
           for suffix in ('/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md'):
               status,_,_=get(suffix)
               assert status==404,(suffix,status)
@@ -134,7 +140,7 @@ jobs:
           bash -n server/banya-sync/install-pwa-fallback.sh
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
-          tar -czf /tmp/banya-site.tgz index.html styles.css app.js cloud-sync.js origin-transfer.js \
+          tar -czf /tmp/banya-site.tgz index.html refresh.html refresh.js styles.css app.js cloud-sync.js origin-transfer.js \
             planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js \
             politics-core.js politics-plan-data.js politics-plan.json politics-ui.js \
             sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png
@@ -163,7 +169,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, pathlib, urllib.request, urllib.error
           base='https://124.70.128.201'
-          for path in ('index.html','sw.js','app.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
+          for path in ('index.html','refresh.html','refresh.js','sw.js','app.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
               with urllib.request.urlopen(base+'/'+path, timeout=20) as response:
                   assert response.status==200,(path,response.status)
                   remote=response.read()

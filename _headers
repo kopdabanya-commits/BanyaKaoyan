@@ -10,5 +10,9 @@
   Cache-Control: no-store
 /index.html
   Cache-Control: no-cache
+/refresh.html
+  Cache-Control: no-store
+/refresh.js
+  Cache-Control: no-store
 /
   Cache-Control: no-cache
