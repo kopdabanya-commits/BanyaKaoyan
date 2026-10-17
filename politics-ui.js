@@ -7,7 +7,7 @@ function restore(){try{const raw=localStorage.getItem(Core.key);state=raw?Core.n
 if(ready)restore();
 function save(){if(blocked)return false;try{const raw=JSON.stringify(state);localStorage.setItem(Core.key,raw);lastSaved=raw;if(typeof root.dispatchEvent==='function'&&typeof Event==='function')root.dispatchEvent(new Event('banya-local-change'));return true}catch{state=JSON.parse(lastSaved);return false}}
 function dateAdd(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
-function getDay(s){return plan.days.find(d=>d.date===s)}
+function getDay(s){return Core.tasks(plan,state,s)}
 function totals(d){return {done:d.items.filter(t=>state.done[t.id]).length,total:d.items.length,minutes:d.items.reduce((n,t)=>n+t.minutes,0)}}
 function todayInPlan(){const n=new Date(),d=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');return getDay(d)?d:plan.meta.start}
 function setDate(date){if(!getDay(date))return false;selected=date;pMonth=date.slice(0,7);openId='';root.__politicsSelectionInitialized=true;return true}
@@ -37,7 +37,7 @@ function content(view,today){
   return '<div class="student-page student-politics">'+sub+UI.header('日历','选择日期查看安排')+warning+monthlyCalendar(today)+'</div>';
  }
  if(view==='stats'){
-  const dates=plan.days.filter(d=>d.date<=today),recent=dates.map(d=>({date:d.date,...totals(d)}));
+  const dates=plan.days.filter(d=>d.date<=today).map(d=>getDay(d.date)),recent=dates.map(d=>({date:d.date,...totals(d)}));
   const groups=new Map();
   for(const day of dates)for(const task of day.items){
    if(!groups.has(task.type))groups.set(task.type,{label:task.type,done:0,total:0});
@@ -57,17 +57,17 @@ function content(view,today){
    +'<section class="setting-section"><h2>备份与恢复</h2><div class="button-row"><button class="cta secondary" data-action="p-export">导出政治备份</button><button class="cta ghost" data-action="p-import">导入备份</button></div><input type="file" id="p-import-file" accept=".json,application/json" hidden></section>'
    +'<section class="setting-section"><h2>应用更新</h2><button class="cta secondary" data-action="refresh-app">检查应用更新</button></section></div>';
  }
- const day=getDay(selected)||plan.days[0],p=totals(day),pending=day.items.filter(t=>!state.done[t.id]);
+ const day=getDay(selected)||getDay(plan.days[0].date),p=totals(day),pending=day.items.filter(t=>!state.done[t.id]);
  const heading=UI.dayHeading({date:day.date,today,start:plan.meta.start,end:plan.meta.end,done:p.done,total:p.total,remaining:pending.reduce((n,t)=>n+t.minutes,0),subtitle:day.stage+' · '+day.topic,prev:'p-day',next:'p-day',jump:'p-today',attribute:'day'});
  const cards=day.items.map(t=>UI.task({item:t,day:day.date,done:!!state.done[t.id],wrong:state.wrong[t.id],hasNote:!!state.notes[t.id],subject:'politics',next:t.id===pending[0]?.id})).join('');
  return '<div class="student-page student-politics" data-day-swipe="true">'+sub+warning+heading
- +'<div class="student-section-heading"><h2>今日任务</h2><span>共 '+day.items.length+' 项</span></div>'
+ +'<div class="student-section-heading"><h2>今日任务</h2><span>共 '+day.items.length+' 项</span><button type="button" class="cta secondary small" data-action="p-add-task">+ 加一项</button></div>'
  +'<div class="student-task-list">'+cards+'</div></div>';
 }
 
 function render(view,today,escape,refresh){rerender=refresh;return content(view,today)}
 function showPoliticsTask(id){
- const t=plan.days.flatMap(d=>d.items).find(item=>item.id===id);
+ const t=getDay(selected)?.items.find(item=>item.id===id);
  if(!t)return;
  const box=document.getElementById('modal');
  if(!box||!box.classList){openId=id;rerender();return}
@@ -78,10 +78,21 @@ function showPoliticsTask(id){
  +'<label class="form-line"><span>错的是哪几题（可选）</span><input id="p-question-ids" maxlength="500" placeholder="例如 马原第3、8题" value="'+esc(state.questionIds[id]||'')+'"></label>'
  +'<label class="form-line"><span>实际用了多久（可选）</span><input id="p-actual-minutes" type="number" inputmode="numeric" min="1" max="600" placeholder="分钟" value="'+esc(state.actualMinutes[id]??'')+'"></label>'
  +'<label class="form-line"><span>简短记录（可选）</span><textarea id="p-note" rows="2" maxlength="3000">'+esc(state.notes[id]||'')+'</textarea></label>'
- +'<div class="button-row record-actions"><button class="cta" type="submit">保存记录</button><button class="cta ghost" type="button" data-action="p-note-close">取消</button></div></form></div>';
+ +'<div class="button-row record-actions"><button class="cta" type="submit">保存记录</button><button class="cta ghost" type="button" data-action="p-note-close">取消</button></div></form>'
+ +'<div class="button-row"><button type="button" class="cta ghost small" data-action="p-edit-task" data-id="'+esc(id)+'">修改计划项</button><button type="button" class="cta ghost small" data-action="p-remove-task" data-id="'+esc(id)+'">从计划移除</button></div></div>';
  box.classList.remove('hidden');
  document.body?.classList?.add?.('modal-open');
  box.querySelector?.('input,button,textarea')?.focus?.();
+}
+function showPlanForm(id=''){
+ const task=id?getDay(selected)?.items.find(t=>t.id===id):null;
+ if(id&&!task)return;
+ const box=document.getElementById('modal');if(!box)return;
+ box.innerHTML='<div class="modal-card"><div class="modal-head"><h2>'+(task?'修改政治计划':'添加政治任务')+'</h2><button type="button" class="close" data-action="p-note-close" aria-label="关闭">×</button></div>'+
+ '<form id="p-plan-form" data-id="'+esc(id)+'"><label class="form-line"><span>任务名称</span><input id="p-plan-title" maxlength="200" required value="'+esc(task?.title||'')+'"></label>'+
+ '<label class="form-line"><span>预计分钟</span><input id="p-plan-minutes" type="number" min="1" max="90" required value="'+esc(task?.minutes||30)+'"></label>'+
+ '<p class="setting-note">仅修改你的私人计划，原有打卡和笔记会保留。</p><div class="button-row"><button type="submit" class="cta">保存计划</button><button type="button" class="cta ghost" data-action="p-note-close">取消</button></div></form></div>';
+ box.classList.remove('hidden');document.body?.classList?.add?.('modal-open');box.querySelector?.('input,button,textarea')?.focus?.();
 }
 function closePoliticsTask(){
  const box=document.getElementById('modal');
@@ -90,7 +101,7 @@ function closePoliticsTask(){
  openId='';rerender();
 }
 function download(){const data=JSON.stringify({app:'yantu-politics',version:1,exportedAt:new Date().toISOString(),state},null,2);const blob=new Blob([data],{type:'application/json'}),href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download='板牙考研_政治备份_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),3000)}
-function summaryText(){const now=new Date(),iso=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'),today=iso>plan.meta.end?plan.meta.end:iso,start=dateAdd(today,-13),lines=['板牙考研 · 政治学习记录（仅复制给你信任的对话）','生成日期：'+iso,'近14天情况：'];for(const d of plan.days.filter(x=>x.date>=start&&x.date<=today)){lines.push(d.date+'：'+d.items.map(t=>t.title+(state.done[t.id]?'[完成]':'[未完成]')+(state.wrong[t.id]!==undefined?'(错'+state.wrong[t.id]+')':'')).join('；'));for(const t of d.items){if(state.questionIds[t.id])lines.push('  错题题号（'+t.title+'）：'+state.questionIds[t.id]);if(state.actualMinutes[t.id])lines.push('  实际用时（'+t.title+'）：'+state.actualMinutes[t.id]+'分钟');if(state.notes[t.id])lines.push('  复盘（'+t.title+'）：'+state.notes[t.id])}}return lines.join('\n')}
+function summaryText(){const now=new Date(),iso=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'),today=iso>plan.meta.end?plan.meta.end:iso,start=dateAdd(today,-13),lines=['板牙考研 · 政治学习记录（仅复制给你信任的对话）','生成日期：'+iso,'近14天情况：'];for(const base of plan.days.filter(x=>x.date>=start&&x.date<=today)){const d=getDay(base.date);lines.push(d.date+'：'+d.items.map(t=>t.title+(state.done[t.id]?'[完成]':'[未完成]')+(state.wrong[t.id]!==undefined?'(错'+state.wrong[t.id]+')':'')).join('；'));for(const t of d.items){if(state.questionIds[t.id])lines.push('  错题题号（'+t.title+'）：'+state.questionIds[t.id]);if(state.actualMinutes[t.id])lines.push('  实际用时（'+t.title+'）：'+state.actualMinutes[t.id]+'分钟');if(state.notes[t.id])lines.push('  复盘（'+t.title+'）：'+state.notes[t.id])}}return lines.join('\n')}
 async function copySummary(){const value=summaryText();try{await navigator.clipboard.writeText(value);alert('政治近况已复制，可以粘贴到对话里。')}catch{const box=document.getElementById('modal');box.innerHTML='<div class="modal-card"><div class="modal-head"><h2>政治近况</h2><button type="button" class="close" data-action="p-note-close" aria-label="关闭">×</button></div><textarea class="share-text" readonly>'+esc(value)+'</textarea></div>';box.classList.remove('hidden')}}
 function report(success){if(!success)alert('保存失败，旧数据没有被覆盖。建议检查浏览器存储空间。');rerender()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b||!String(b.dataset.action).startsWith('p-')||!ready)return;e.stopImmediatePropagation?.();e.preventDefault?.();const act=b.dataset.action,id=b.dataset.id;
@@ -98,14 +109,24 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');
  if(act==='p-day'){if(!getDay(b.dataset.day))return;if(root.BANYA_VIEW?.()==='calendar'&&!document.body?.classList?.contains?.('day-detail-open')){root.BANYA_OPEN_DAY?.(b.dataset.day);}else{root.BANYA_SELECT_DAY?.(b.dataset.day);}return}
  if(act==='p-cal-prev'||act==='p-cal-next'){shiftMonth(act==='p-cal-prev'?-1:1);return}
  if(act==='p-prev'||act==='p-next'){const n=dateAdd(selected,act==='p-prev'?-1:1);if(getDay(n))root.BANYA_SELECT_DAY?.(n);return}
- if(act==='p-toggle'){const task=plan.days.flatMap(d=>d.items).find(x=>x.id===id);if(task&&!blocked){state.done[id]=!state.done[id];report(save())}return}
+ if(act==='p-toggle'){const task=getDay(selected)?.items.find(x=>x.id===id);if(task&&!blocked){state.done[id]=!state.done[id];report(save())}return}
  if(act==='p-detail'){showPoliticsTask(id);return}
+ if(act==='p-add-task'){showPlanForm();return}
+ if(act==='p-edit-task'){showPlanForm(id);return}
+ if(act==='p-remove-task'){if(blocked||!getDay(selected)?.items.some(t=>t.id===id))return;if(!confirm('从计划移除这项任务？原有打卡和笔记仍会保留在备份中。'))return;state.removed[id]=true;if(save())closePoliticsTask();else report(false);return}
  if(act==='p-note-close'){closePoliticsTask();return}
  if(act==='p-export'){download();return}
  if(act==='p-copy-summary'){void copySummary();return}
  if(act==='p-import'){document.getElementById('p-import-file')?.click();return}
 },true);
-document.addEventListener('submit',e=>{if(!ready||!['p-progress-form','p-task-form'].includes(e.target.id))return;e.preventDefault();e.stopImmediatePropagation?.();if(blocked)return;
+document.addEventListener('submit',e=>{if(!ready||!['p-progress-form','p-task-form','p-plan-form'].includes(e.target.id))return;e.preventDefault();e.stopImmediatePropagation?.();if(blocked)return;
+ if(e.target.id==='p-plan-form'){
+  const title=document.getElementById('p-plan-title').value.trim(),minutes=Number(document.getElementById('p-plan-minutes').value),id=e.target.dataset.id;
+  if(!title||title.length>200||!Number.isInteger(minutes)||minutes<1||minutes>90){alert('请填写任务名称和 1—90 分钟的预计时间。');return}
+  if(id){if(!getDay(selected)?.items.some(t=>t.id===id))return;state.edits[id]={title,minutes}}
+  else state.added.push({id:'p-custom-'+Date.now()+'-'+Math.random().toString(16).slice(2,10),date:selected,title,minutes,type:'复盘',detail:'按自己的节奏完成。'});
+  if(save())closePoliticsTask();else report(false);return;
+ }
  if(e.target.id==='p-progress-form'){const a=Number(document.getElementById('p-questions').value),b=Number(document.getElementById('p-total').value);if(!Number.isInteger(a)||!Number.isInteger(b)||b<1||b>10000||a<0||a>b){alert('请输入正确的题库总数和已做题数。');return}state.questions.marx={done:a,total:b,updated:new Date().toISOString().slice(0,10)};report(save());return}
  const id=e.target.dataset.id,w=document.getElementById('p-wrong').value.trim(),note=document.getElementById('p-note').value.trim(),ids=document.getElementById('p-question-ids')?.value.trim()||'',time=document.getElementById('p-actual-minutes')?.value.trim()||'';if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>100)){alert('错题数只能填写0—100。');return}if(ids.length>500||time!==''&&(!Number.isInteger(Number(time))||Number(time)<1||Number(time)>600)){alert('请检查题号和实际用时（1—600分钟）。');return}if(w==='')delete state.wrong[id];else state.wrong[id]=Number(w);if(ids)state.questionIds[id]=ids;else delete state.questionIds[id];if(time)state.actualMinutes[id]=Number(time);else delete state.actualMinutes[id];state.notes[id]=note;const ok=save();if(ok)closePoliticsTask();report(ok);
 },true);
