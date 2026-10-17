@@ -23,13 +23,15 @@ function dayHeading({date,today,start,end,done,total,remaining,countdown,subtitl
 }
 function task({item,day,done=false,wrong,hasNote=false,subject='english',next=false}){
  const id=esc(item.id),isPolitics=subject==='politics',toggle=isPolitics?'p-toggle':'toggle',open=isPolitics?'p-detail':'detail';
+ const writing=isPolitics?null:root.PlannerCore?.writingParts?.(item);
+ const duration=writing?'写'+writing.writing+'分钟 · 批改复盘'+writing.review+'分钟':'预计'+Number(item.minutes)+'分钟';
  const dayAttr=isPolitics?'':' data-day="'+esc(day)+'"';
  const wrongLabel=wrong!==undefined&&wrong!==''?'<span class="student-task-record">错 '+esc(wrong)+' 题</span>':'';
  return '<article class="student-task'+(done?' is-done':'')+(next?' is-next':'')+'">'
  +'<button type="button" class="student-task-check'+(done?' checked':'')+'" data-action="'+toggle+'" data-id="'+id+'"'+dayAttr+' aria-pressed="'+done+'" aria-label="'+(done?'取消完成':'标记完成')+'：'+esc(item.title)+'">'+(done?'✓':'')+'</button>'
  +'<button type="button" class="student-task-body" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="查看任务详情：'+esc(item.title)+'">'
  +'<span class="student-task-name">'+esc(item.title)+'</span>'
- +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> 预计'+Number(item.minutes)+'分钟'+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
+ +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> '+duration+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
  +'<button type="button" class="student-task-more" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="展开任务记录">›</button></article>';
 }
 function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}){

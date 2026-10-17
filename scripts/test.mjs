@@ -38,6 +38,30 @@ test('legacy state migrates; malformed backup, duplicate customs and unsafe keys
  for(const p of [{done:null},{notes:{a:3}},{wrong:{a:-1}},{moved:{a:'2026-11-31'}},{added:[{id:'bad'}]},JSON.parse('{"done":{"__proto__":true}}')])assert.throws(()=>core.normalizeState(p));
  const t={id:'custom-1',custom:true,date:'2026-10-15',title:'test',minutes:5,type:'写作'};assert.throws(()=>core.normalizeState({added:[t,t]}));
 });
+test('full writing tasks show separate writing and review time without changing total or task ID',async()=>{
+ const day='2026-10-18',id='2026-10-18-1',task=plan.days.find(d=>d.date===day).items.find(t=>t.id===id);
+ assert.deepEqual(core.writingParts(task),{writing:20,review:5});
+ assert.deepEqual(core.writingParts(plan.days.find(d=>d.date==='2026-12-11').items.find(t=>t.type==='写作')),{writing:20,review:10});
+ assert.deepEqual(core.writingParts({...task,minutes:20,writingMinutes:10,reviewMinutes:10}),{writing:10,review:10});
+ assert.equal(core.writingParts(plan.days[0].items[0]),null,'historical task must not be rewritten');
+ const h=harness();await h.settle();
+ const card=h.context.BanyaStudyUI.task({item:task,day});
+ assert(card.includes('写20分钟 · 批改复盘5分钟'));
+ await h.click('detail',{id,day});
+ assert(h.el('modal').innerHTML.includes('动笔写（分钟）'));
+ assert(h.el('modal').innerHTML.includes('批改复盘（分钟）'));
+ for(const [field,value] of Object.entries({'task-title':task.title,'task-write-minutes':18,'task-review-minutes':7,'task-move':day,'task-wrong':'','task-note':'按原计划练习'}))h.input(field,value);
+ await h.event('submit',{id:'task-form',dataset:{id,day}});
+ const saved=h.api.state;
+ assert.equal(saved.edits[id].minutes,25);
+ assert.equal(saved.edits[id].writingMinutes,18);
+ assert.equal(saved.edits[id].reviewMinutes,7);
+ assert.equal(saved.notes[id],'按原计划练习');
+ assert.equal(h.api.allTasks(day).find(t=>t.id===id).minutes,25);
+ assert.deepEqual(core.writingParts(h.api.allTasks(day).find(t=>t.id===id)),{writing:18,review:7});
+ assert.equal(core.normalizeState(saved).edits[id].reviewMinutes,7);
+ assert.throws(()=>core.normalizeState({edits:{[id]:{minutes:25,writingMinutes:20,reviewMinutes:10}}}));
+});
 test('specific wrong questions and actual minutes survive English normalization and backup',async()=>{
  const id='2026-10-15-1',h=harness();await h.settle();
  for(const [field,value]of Object.entries({'task-title':'edited','task-minutes':30,'task-move':'2026-10-15','task-wrong':2,'task-question-ids':'3、8','task-actual-minutes':42,'task-note':'留意转折'}))h.input(field,value);

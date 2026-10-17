@@ -171,8 +171,9 @@ function modal(content){modalFocus=document.activeElement;document.body.classLis
 function closeModal(){document.getElementById('modal').classList.add('hidden');document.body.classList.remove('modal-open');modalFocus?.focus();}
 function taskModal(id,day){const t=findTask(id,day);if(!t)return;
  const checked=!!state.done[t.id];
+ const writing=Core.writingParts(t);
  modal(`<div class="modal-head"><div><div class="eyebrow">专项训练 · ${esc(t.type)}</div><h2>训练记录</h2></div><button class="close" data-action="close" aria-label="关闭训练记录">×</button></div>
- <div class="quickflex task-overview"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · 预计${t.minutes}分钟 · ${checked?'已完成':'未完成'}</span></div></div>
+ <div class="quickflex task-overview"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · ${writing?`动笔写${writing.writing}分钟、批改复盘${writing.review}分钟`:`预计${t.minutes}分钟`} · ${checked?'已完成':'未完成'}</span></div></div>
  <section class="study-guide" aria-label="训练方法"><span class="guide-label">这项练习怎么做</span><p>${esc(t.detail||'按自己的节奏独立完成，再核对答案并记录收获。')}</p></section>
  <form id="task-form" data-id="${esc(t.id)}" data-day="${esc(day)}">
  <div class="record-heading"><h3>做完后记录</h3><small>不必写很多，留下关键错因即可</small></div>
@@ -182,7 +183,7 @@ function taskModal(id,day){const t=findTask(id,day);if(!t)return;
  <label class="form-line"><span>一句话复盘（可选）</span><textarea id="task-note" maxlength="20000" placeholder="例如：定位词找对了，但没看转折句。">${esc(state.notes[t.id]||'')}</textarea></label>
  <details class="advanced-adjust"><summary>调整任务名称、预计时间或日期</summary><div class="advanced-fields">
  <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label>
- <label class="form-line"><span>预计用时（分钟）</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label>
+ ${writing?`<label class="form-line"><span>动笔写（分钟）</span><input id="task-write-minutes" type="number" min="1" max="89" required value="${writing.writing}"></label><label class="form-line"><span>批改复盘（分钟）</span><input id="task-review-minutes" type="number" min="1" max="89" required value="${writing.review}"></label><p class="setting-note">两段时间合计就是这项任务的预计用时；仍然只打卡一次。</p>`:`<label class="form-line"><span>预计用时（分钟）</span><input id="task-minutes" type="number" min="1" max="90" required value="${t.minutes}" ${t.vocab?'disabled':''}></label>`}
  <label class="form-line"><span>调整到其他日期</span><input id="task-move" type="date" min="${data.meta.start}" max="${data.meta.end}" value="${day}" ${t.vocab?'disabled':''}></label>
  </div></details>
  <div class="button-row record-actions"><button type="submit" class="cta secondary">仅保存记录</button><button type="submit" class="cta" data-complete="true">${checked?'保存并保持完成':'保存并打卡完成'}</button></div></form>
@@ -297,9 +298,9 @@ document.addEventListener('submit',e=>{
  if(e.target.id==='task-form'){
   e.preventDefault();const f=e.target,id=f.dataset.id,day=f.dataset.day;
   const t=findTask(id,day);if(!t)return;
-  const title=document.getElementById('task-title').value.trim(),minutes=Number(document.getElementById('task-minutes').value),move=document.getElementById('task-move').value;
+  const title=document.getElementById('task-title').value.trim(),parts=Core.writingParts(t),write=parts?Number(document.getElementById('task-write-minutes').value):0,review=parts?Number(document.getElementById('task-review-minutes').value):0,minutes=parts?write+review:Number(document.getElementById('task-minutes').value),move=document.getElementById('task-move').value;
   const w=document.getElementById('task-wrong').value;
-  if(!title||!Number.isInteger(minutes)||minutes<1||minutes>90||!inRange(move)){toast('请检查任务名称、分钟和日期');return;}
+  if(!title||!Number.isInteger(minutes)||minutes<1||minutes>90||parts&&(!Number.isInteger(write)||write<1||!Number.isInteger(review)||review<1)||!inRange(move)){toast('请检查任务名称、分钟和日期');return;}
   const wrongMax=['新题型','阅读'].includes(t.type)?5:20;
   if(w!==''&&(!Number.isInteger(Number(w))||Number(w)<0||Number(w)>wrongMax)){toast('请填写0—'+wrongMax+'之间的整数错题数');return;}
   const questionIds=document.getElementById('task-question-ids')?.value.trim()||'',actualText=document.getElementById('task-actual-minutes')?.value.trim()||'';
@@ -309,7 +310,7 @@ document.addEventListener('submit',e=>{
   if(questionIds)state.questionIds[id]=questionIds;else delete state.questionIds[id];
   if(actualText)state.actualMinutes[id]=Number(actualText);else delete state.actualMinutes[id];
   state.notes[id]=document.getElementById('task-note').value.trim();
-  if(!t.vocab){const baseline=data.days.flatMap(d=>d.items).find(x=>x.id===id)||state.added.find(x=>x.id===id)||state.archive[id]||t;const edits={};if(title!==baseline.title)edits.title=title;if(minutes!==baseline.minutes)edits.minutes=minutes;if(Object.keys(edits).length)state.edits[id]=edits;else delete state.edits[id];if(move!==day)state.moved[id]=move;}
+  if(!t.vocab){const baseline=data.days.flatMap(d=>d.items).find(x=>x.id===id)||state.added.find(x=>x.id===id)||state.archive[id]||t;const edits={};if(title!==baseline.title)edits.title=title;if(minutes!==baseline.minutes)edits.minutes=minutes;if(parts){const original=Core.writingParts({...baseline,minutes});if(!original||write!==original.writing||review!==original.review){edits.minutes=minutes;edits.writingMinutes=write;edits.reviewMinutes=review;}}if(Object.keys(edits).length)state.edits[id]=edits;else delete state.edits[id];if(move!==day)state.moved[id]=move;}
   const markComplete=e.submitter?.dataset?.complete==='true';
   if(markComplete){state.archive[id]={...t,date:move};state.done[id]=true;delete state.skipped[move];}
   if(!save()){render();return;}
