@@ -154,3 +154,18 @@ test('one-file local restore validates before writing, clears only restored sync
  assert.equal(h.store.get(key),latest,'invalid backup must not overwrite data');
  assert.equal(h.reloads.length,1);
 });
+test('local restore retains a validated cloud baseline without storing the sync token in the file',async()=>{
+ const raw=JSON.stringify(state(true)),baseline=JSON.stringify({revision:4,hash:hash(raw)});
+ const h=harness({[key]:JSON.stringify(state(false)),[meta]:JSON.stringify({revision:1,hash:hash(JSON.stringify(state(false)))})});
+ const file={size:500,text:async()=>JSON.stringify({app:'banya-kaoyan-local',version:1,
+  values:{[key]:raw,[meta]:baseline}})};
+ await h.listeners.change({target:{id:'banya-local-backup-file',files:[file],value:'backup.json'}});
+ assert.equal(h.store.get(key),raw);
+ assert.equal(h.store.get(meta),baseline);
+ assert.equal(h.reloads.length,1);
+ assert.equal(h.store.has(configKey),false);
+ const invalid={size:500,text:async()=>JSON.stringify({app:'banya-kaoyan-local',version:1,
+  values:{[key]:raw,[meta]:JSON.stringify({revision:4,hash:'bad'})}})};
+ await h.listeners.change({target:{id:'banya-local-backup-file',files:[invalid],value:'bad.json'}});
+ assert.equal(h.store.get(meta),baseline,'invalid baseline must not replace the valid one');
+});

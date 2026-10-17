@@ -75,7 +75,7 @@ function panel() {
  '<button class="cta ghost small" data-banya-action="disconnect">停用并清除同步密钥</button></details>')+
  '<div class="button-row"><button type="button" class="cta secondary small" data-banya-action="export-local">下载本机备份</button><button type="button" class="cta ghost small" data-banya-action="import-local">从本机备份恢复</button></div>'+
  '<input type="file" id="banya-local-backup-file" accept=".json,application/json" hidden>'+
- '<p class="setting-note">备份文件只下载到手机，不会上传 GitHub；请妥善保存。服务器恢复后点“立即同步”即可重试。</p>'+
+ '<p class="setting-note">备份含学习记录和同步版本，不含密钥；文件只下载到手机，不会上传 GitHub。服务器恢复后点“立即同步”即可重试。</p>'+
  '<p class="setting-note" role="status" id="banya-cloud-message">'+escaped(message)+'</p></section>';
 }
 async function api(subject,method,body) {
@@ -121,6 +121,12 @@ function downloadBackup(subject,raw) {
 }
 const LOCAL_PLAN='yantu_english_plan_v2';
 const LOCAL_BACKUP_KEYS=[KEYS.english,KEYS.politics,LOCAL_PLAN];
+const LOCAL_META_KEYS=SUBJECTS.map(subject=>META+subject);
+function validBackupMeta(raw) {
+ const meta=JSON.parse(raw);
+ if(!meta||!Number.isSafeInteger(meta.revision)||meta.revision<1||
+    typeof meta.hash!=='string'||!/^[0-9a-f]{64}$/.test(meta.hash))throw Error('备份中的同步版本信息无效');
+}
 function localBackupValues() {
  const values={};
  for(const key of LOCAL_BACKUP_KEYS){const raw=localStorage.getItem(key);if(raw!==null)values[key]=raw;}
@@ -128,6 +134,10 @@ function localBackupValues() {
  if(values[KEYS.english]!==undefined)validLocal('english',values[KEYS.english]);
  if(values[KEYS.politics]!==undefined)validLocal('politics',values[KEYS.politics]);
  if(values[LOCAL_PLAN]!==undefined&&!root.PlannerCore.validPlan(JSON.parse(values[LOCAL_PLAN])))throw Error('英语计划缓存无效，备份已停止');
+ for(const subject of SUBJECTS)if(values[KEYS[subject]]!==undefined){
+  const raw=localStorage.getItem(META+subject);
+  if(raw!==null)try{validBackupMeta(raw);values[META+subject]=raw;}catch{}
+ }
  return values;
 }
 function exportLocal() {
@@ -144,20 +154,22 @@ async function importLocal(file) {
  if(backup.app!=='banya-kaoyan-local'||backup.version!==1||!backup.values||
     typeof backup.values!=='object'||Array.isArray(backup.values))throw Error('不是有效的板牙考研本机备份');
  const values=backup.values;
- if(!Object.keys(values).length||Object.keys(values).some(key=>!LOCAL_BACKUP_KEYS.includes(key)))throw Error('备份内容不符合预期');
+ if(!Object.keys(values).length||Object.keys(values).some(key=>![...LOCAL_BACKUP_KEYS,...LOCAL_META_KEYS].includes(key)))throw Error('备份内容不符合预期');
  for(const value of Object.values(values))if(typeof value!=='string')throw Error('备份内容不符合预期');
  if(values[KEYS.english]!==undefined)validLocal('english',values[KEYS.english]);
  if(values[KEYS.politics]!==undefined)validLocal('politics',values[KEYS.politics]);
  if(values[LOCAL_PLAN]!==undefined&&!root.PlannerCore.validPlan(JSON.parse(values[LOCAL_PLAN])))throw Error('备份中的英语计划无效');
+ for(const subject of SUBJECTS)if(values[META+subject]!==undefined){
+  if(values[KEYS[subject]]===undefined)throw Error('备份缺少同步版本对应的科目记录');
+  validBackupMeta(values[META+subject]);
+ }
  if(!root.confirm('恢复前请先下载并保存当前本机备份。此操作会替换文件中包含的科目记录，继续吗？'))return;
- const previous={},metaBefore={};for(const key of LOCAL_BACKUP_KEYS)previous[key]=localStorage.getItem(key);
- for(const subject of SUBJECTS)metaBefore[subject]=localStorage.getItem(META+subject);
+ const previous={};for(const key of [...LOCAL_BACKUP_KEYS,...LOCAL_META_KEYS])previous[key]=localStorage.getItem(key);
  try{
   for(const [key,value] of Object.entries(values))localStorage.setItem(key,value);
-  for(const subject of SUBJECTS)if(values[KEYS[subject]]!==undefined)localStorage.removeItem(META+subject);
+  for(const subject of SUBJECTS)if(values[KEYS[subject]]!==undefined&&values[META+subject]===undefined)localStorage.removeItem(META+subject);
  }catch(error){
-  for(const key of LOCAL_BACKUP_KEYS){if(previous[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,previous[key]);}
-  for(const subject of SUBJECTS){if(metaBefore[subject]===null)localStorage.removeItem(META+subject);else localStorage.setItem(META+subject,metaBefore[subject]);}
+  for(const key of [...LOCAL_BACKUP_KEYS,...LOCAL_META_KEYS]){if(previous[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,previous[key]);}
   throw error;
  }
  root.location.reload();
