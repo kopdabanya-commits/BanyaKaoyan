@@ -83,13 +83,14 @@ test('opted-in English sends only English snapshot with CAS, never touches polit
  assert.equal(a.store.has('yantu_politics_2026_v1'),false);
 });
 test('actual writing time remains in the independent English cloud snapshot',async()=>{
- const record={...state(true),actualWritingMinutes:{'2026-10-16-1':14}};
+ const record={...state(true),actualWritingMinutes:{'2026-10-16-1':14},actualMinutes:{'2026-10-16-1':14},actualReviewMinutes:{'2026-10-16-1':0}};
  const raw=JSON.stringify(record),h=harness({[configKey]:JSON.stringify(connected),[key]:raw},
   {subject:'english',revision:0,state:null});
  assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
  assert.deepEqual(JSON.parse(JSON.stringify(h.cloud().state.record)),record);
  assert.deepEqual(englishCore.normalizeState(JSON.parse(h.store.get(key))).actualWritingMinutes,record.actualWritingMinutes);
  assert.equal(h.store.has('yantu_politics_2026_v1'),false);
+ assert.equal(englishCore.normalizeState(h.cloud().state.record).actualReviewMinutes['2026-10-16-1'],0);
 });
 test('not-done task status is validated and retained in the independent cloud snapshot',async()=>{
  const record={done:{},notDone:{'2026-10-15-1':true},notes:{}};
@@ -130,7 +131,7 @@ test('reject mislabeled cloud record without overwriting local data',async()=>{
 });
 
 test('offline changes remain local until connectivity returns, then CAS uploads',async()=>{
- const original=JSON.stringify(state(false)),modified=JSON.stringify(state(true));
+ const original=JSON.stringify(state(false)),modified=JSON.stringify({...state(true),actualMinutes:{task:30},actualWritingMinutes:{task:20},actualReviewMinutes:{task:10}});
  const a=harness({[configKey]:JSON.stringify(connected),[key]:modified,
   [meta]:JSON.stringify({revision:1,hash:hash(original)})},
   {subject:'english',revision:1,state:pack('english',JSON.parse(original))});
@@ -141,6 +142,7 @@ test('offline changes remain local until connectivity returns, then CAS uploads'
  a.network.onLine=true;
  await a.win.BanyaCloudSync.syncAll();
  assert.equal(a.cloud().revision,2);
+ assert.equal(a.cloud().state.record.actualReviewMinutes.task,10);
  assert.equal(a.store.get(key),modified);
 });
 test('politics remote-only update does not change English storage or English baseline',async()=>{
