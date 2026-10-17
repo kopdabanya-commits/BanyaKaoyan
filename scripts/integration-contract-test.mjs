@@ -22,7 +22,7 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert.match(sw,/yantu-english-ii-m4-11-short-writing-/);
+ assert.match(sw,/yantu-english-ii-m4-12-task-status-/);
  assert(html.includes('./cloud-sync.js'));
  assert(html.includes('./origin-transfer.js'));
  assert(sw.includes("'./cloud-sync.js'"));

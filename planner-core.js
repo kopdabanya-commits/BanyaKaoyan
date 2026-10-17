@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const types=['写作','新题型','翻译','完形','阅读','复盘','机动','综合','模考','单词'];
-const defaults=()=>({done:{},skipped:{},moved:{},added:[],notes:{},wrong:{},questionIds:{},actualMinutes:{},edits:{},archive:{},settings:{vocab:35,budget:130}});
+const defaults=()=>({done:{},notDone:{},skipped:{},moved:{},added:[],notes:{},wrong:{},questionIds:{},actualMinutes:{},edits:{},archive:{},settings:{vocab:35,budget:130}});
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const safeKey=k=>typeof k==='string'&&k.length>0&&k.length<=160&&!['__proto__','constructor','prototype'].includes(k);
 const date=s=>typeof s==='string'&&/^2026-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s+'T12:00:00Z'))&&new Date(s+'T12:00:00Z').toISOString().slice(0,10)===s;
@@ -18,11 +18,11 @@ function validPlan(p){
 }
 function normalizeState(s){
  if(!object(s))throw Error('记录格式无效');const n=defaults();
- for(const k of ['done','skipped','moved','notes','wrong','questionIds','actualMinutes','edits','archive']){
+ for(const k of ['done','notDone','skipped','moved','notes','wrong','questionIds','actualMinutes','edits','archive']){
   if(s[k]===undefined)continue;if(!object(s[k]))throw Error(k+'格式无效');
   for(const [id,v] of Object.entries(s[k])){
    if(!safeKey(id))throw Error('记录ID无效');
-   if(k==='done'&&typeof v!=='boolean')throw Error('完成记录无效');
+   if(['done','notDone'].includes(k)&&typeof v!=='boolean')throw Error('任务状态无效');
    if(k==='skipped'&&(!inRange(id)||typeof v!=='boolean'))throw Error('休息记录无效');
    if(k==='moved'&&!inRange(v))throw Error('改期日期无效');
    if(k==='notes'&&(typeof v!=='string'||v.length>20000))throw Error('笔记无效');
@@ -34,6 +34,7 @@ function normalizeState(s){
    n[k][id]=structuredClone(v);
   }
  }
+ for(const [id,notDone] of Object.entries(n.notDone))if(notDone&&n.done[id])throw Error('任务不能同时标记完成和不做');
  if(s.settings!==undefined){if(!object(s.settings))throw Error('设置无效');Object.assign(n.settings,s.settings);}
  if(![30,35,40].includes(n.settings.vocab)||![90,100,110,120,130,135].includes(n.settings.budget))throw Error('时间设置超出范围');
  if(s.added!==undefined){if(!Array.isArray(s.added)||s.added.length>5000)throw Error('自定义任务无效');const ids=new Set();for(const t of s.added){if(!task(t,true)||ids.has(t.id))throw Error('自定义任务无效或重复');ids.add(t.id);}n.added=structuredClone(s.added);}
@@ -64,7 +65,7 @@ function migrate(old,fresh,s,today){
  const n=normalizeState(s);const next=new Map(fresh.days.flatMap(d=>d.items.map(t=>[t.id,t])));
  for(const d of old.days)for(const t of tasks(old,s,d.date)){
   if(t.vocab||t.custom)continue;
-  if(s.done[t.id]||s.notes[t.id]||s.wrong[t.id]!==undefined||s.questionIds?.[t.id]||s.actualMinutes?.[t.id]||d.date<today||!next.has(t.id))n.archive[t.id]={...t,date:d.date,...(!next.has(t.id)&&d.date>=today&&!s.done[t.id]?{retired:true}:{})};
+  if(s.done[t.id]||s.notDone?.[t.id]||s.notes[t.id]||s.wrong[t.id]!==undefined||s.questionIds?.[t.id]||s.actualMinutes?.[t.id]||d.date<today||!next.has(t.id))n.archive[t.id]={...t,date:d.date,...(!next.has(t.id)&&d.date>=today&&!s.done[t.id]?{retired:true}:{})};
  }
  return n;
 }

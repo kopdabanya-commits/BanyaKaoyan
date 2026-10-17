@@ -35,7 +35,7 @@ test('plan rejects duplicate IDs, duplicate dates, impossible dates, over-budget
 });
 test('legacy state migrates; malformed backup, duplicate customs and unsafe keys are rejected',()=>{
  assert.equal(core.normalizeState({done:{a:true},added:[]}).settings.vocab,35);
- for(const p of [{done:null},{notes:{a:3}},{wrong:{a:-1}},{moved:{a:'2026-11-31'}},{added:[{id:'bad'}]},JSON.parse('{"done":{"__proto__":true}}')])assert.throws(()=>core.normalizeState(p));
+ for(const p of [{done:null},{notes:{a:3}},{wrong:{a:-1}},{moved:{a:'2026-11-31'}},{added:[{id:'bad'}]},{done:{a:true},notDone:{a:true}},JSON.parse('{"done":{"__proto__":true}}')])assert.throws(()=>core.normalizeState(p));
  const t={id:'custom-1',custom:true,date:'2026-10-15',title:'test',minutes:5,type:'写作'};assert.throws(()=>core.normalizeState({added:[t,t]}));
 });
 test('full writing tasks show separate writing and review time without changing total or task ID',async()=>{
@@ -202,6 +202,7 @@ test('M2.4 student interface gives focused guidance, accessible nav, and truthfu
  assert(sheet.includes('这项练习怎么做'));
  assert(sheet.includes('一句话复盘'));
  assert(sheet.includes('advanced-adjust'));
+ assert(sheet.includes('data-not-done="true"'));
  assert(sheet.includes('保存并打卡完成'));
  h.api.nav('calendar');assert(h.el('app').innerHTML.includes('选择日期查看安排'));
  h.api.nav('stats');assert(h.el('app').innerHTML.includes('近7日已打卡'));assert(h.el('app').innerHTML.includes('只统计已打卡'));
@@ -229,6 +230,25 @@ test('M2.4 recording can save and complete together, persists across reloads, an
  assert.equal(again.api.state.done[task.id],true);
  assert.equal(again.api.state.wrong[task.id],2);
  assert(again.el('app').innerHTML.includes('已完成 1/3'));
+});
+
+test('English tasks can be marked not done, restored, or completed without status overlap',async()=>{
+ const h=harness({fail:true});await h.settle();const task=h.api.allTasks('2026-10-15').find(t=>t.type==='新题型');
+ await h.click('detail',{id:task.id,day:'2026-10-15'});
+ for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':'2026-10-15','task-wrong':'','task-note':'今天先跳过'}))h.input(id,value);
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day:'2026-10-15'}},{submitter:{dataset:{notDone:'true'}}});
+ assert.equal(h.api.state.notDone[task.id],true);assert.equal(h.api.state.done[task.id],undefined);assert.equal(h.api.dateProgress('2026-10-15').done,0);
+ assert(h.el('app').innerHTML.includes('student-task is-not-done'));assert(h.el('app').innerHTML.includes('不做'));assert(h.api.summaryText().includes('[不做]'));
+ const skippedAgain=harness({storage:h.storage,fail:true});await skippedAgain.settle();assert.equal(skippedAgain.api.state.notDone[task.id],true,'not-done survives reload');
+ await h.click('detail',{id:task.id,day:'2026-10-15'});
+ for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':'2026-10-15','task-wrong':''}))h.input(id,value);
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day:'2026-10-15'}},{submitter:{dataset:{notDone:'false'}}});
+ assert.equal(h.api.state.notDone[task.id],undefined);assert.equal(h.api.state.done[task.id],undefined);
+ await h.click('detail',{id:task.id,day:'2026-10-15'});
+ for(const [id,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':'2026-10-15','task-wrong':''}))h.input(id,value);
+ await h.event('submit',{id:'task-form',dataset:{id:task.id,day:'2026-10-15'}},{submitter:{dataset:{complete:'true'}}});
+ assert.equal(h.api.state.done[task.id],true);assert.equal(h.api.state.notDone[task.id],undefined);
+ const restored=harness({storage:h.storage,fail:true});await restored.settle();assert.equal(restored.api.state.done[task.id],true);
 });
 
 test('M2.7 English analytics survive switching to the independent political route',async()=>{

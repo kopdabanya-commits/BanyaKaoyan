@@ -441,6 +441,7 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-task{display:flex;gap:10px;align-items:center;min-height:77px;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:15px;box-shadow:none}
 .student-task.is-next{border-color:color-mix(in srgb,var(--study-accent) 42%,var(--line))}
 .student-task.is-done{opacity:.8}
+.student-task.is-not-done{border-style:dashed}
 .student-task-check{width:30px;height:30px;flex:0 0 30px;border:2px solid var(--line);background:var(--paper);border-radius:9px;color:white;display:grid;place-items:center;font-size:17px;padding:0}
 .student-task-check.checked{border-color:var(--study-accent);background:var(--study-accent)}
 .student-task-body{flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:0;color:var(--text)}
@@ -448,6 +449,7 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-task.is-done .student-task-name{color:var(--muted);text-decoration:none}
 .student-task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:5px;color:var(--muted);font-size:11px}
 .student-task-record{color:var(--study-accent);font-weight:650}
+.student-task-status{color:#a9752e;font-weight:750}
 .student-task-more{border:0;background:transparent;color:var(--muted);font-size:23px;padding:6px;min-width:30px}
 .student-task-detail{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:-3px;font-size:13px}
 .student-task-detail>p{color:var(--muted);line-height:1.6;font-size:12px}
@@ -525,3 +527,10 @@ html[data-subject="politics"] .modal .eyebrow{color:var(--study-accent)}
 .calendar-task-row span{font-size:12px;line-height:1.4}.calendar-task-row small{white-space:nowrap}.calendar-rest{margin:9px 0 0;line-height:1.5}
 .logo-mark{background:#261579 url('./icons/icon-192.png') center/cover no-repeat;box-shadow:0 5px 12px rgba(40,29,113,.22);border-radius:11px}
 @media(prefers-reduced-motion:reduce){.view-content.entering,.student-task-check.checked{animation:none!important}.student-task,.calendar-task-row,.subject-tab,.nav-tab,.student-control-buttons button,.round-btn,.cta,.student-task-check,.cal-day{transition:none!important}}
+
+.record-save-only{width:100%}
+.record-status-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.record-status-actions .cta{min-width:0;padding-inline:8px}
+.student-task.is-not-done{border-color:#ead9bd;background:#fffdf9}
+html[data-theme="dark"] .student-task.is-not-done{background:var(--paper);border-color:#766344}
+@media(max-width:375px){.record-status-actions{grid-template-columns:1fr}}
