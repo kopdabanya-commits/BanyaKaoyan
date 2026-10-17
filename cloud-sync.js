@@ -68,8 +68,8 @@ function panel() {
  '<button type="submit" class="cta small">验证并启用</button></form>':
  '<p class="setting-note">已连接云端。同步密钥只保存在本机。</p>'+
  '<button type="button" class="cta secondary small" data-banya-action="sync-now">↻ 立即同步</button>'+
- '<details><summary>首次上传或从云端恢复</summary><p class="setting-note">已有记录自动同步；新科目第一次使用时，在这里确认一次。恢复前会保护本机记录。</p>'+
- SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已开始自动同步':'尚未首次上传')+
+ '<details><summary>遇到冲突或换手机时</summary><p class="setting-note">新科目开始使用后，如果云端为空，会自动建立备份；云端已有记录时会停下，不会覆盖。需要恢复时请先保存本机备份。</p>'+
+ SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已开始自动同步':'尚未有云端备份')+
  '<div class="p-buttons"><button class="cta secondary small" data-banya-action="upload" data-banya-subject="'+s+'">确认上传本机</button>'+
  '<button class="cta ghost small" data-banya-action="restore" data-banya-subject="'+s+'">从云端恢复</button></div></div>';}).join('')+
  '<button class="cta ghost small" data-banya-action="disconnect">停用并清除同步密钥</button></details>')+
@@ -202,10 +202,18 @@ async function restore(subject) {
 }
 async function syncOne(subject) {
  const m=metaFor(subject);
- if(!m)return; // Absolutely no implicit first upload/restore.
  const raw=localStorage.getItem(KEYS[subject]);
  const state=validLocal(subject,raw),localHash=await fingerprint(raw);
  const cloud=await api(subject,'GET');
+ if(!m){
+  if(cloud.revision!==0)throw Error(NAMES[subject]+'云端已有记录，已停止自动上传；请先核对本机和云端');
+  if(localStorage.getItem(KEYS[subject])!==raw)throw Error(NAMES[subject]+'本机记录刚刚改变，请稍后重试');
+  localStorage.setItem(KEYS[subject]+'_before_initial_sync',raw);
+  const created=await api(subject,'PUT',{expectedRevision:0,state:envelope(subject,state)});
+  saveMeta(subject,created.revision,localHash);
+  notify(NAMES[subject]+'已安全备份到云端。');
+  return;
+ }
  if(cloud.revision<m.revision)throw Error(NAMES[subject]+'云端版本回退，已停止同步');
  if(cloud.revision===m.revision) {
   if(localHash===m.hash)return;
@@ -229,8 +237,8 @@ async function syncAll(manual=false) {
  if(busy){if(manual)notify('同步正在进行，无须重复操作');return false;}
  if(!config){if(manual)notify('尚未连接云端。请先在设置中完成安全连接；手机打卡仍正常保存。');return false;}
  if(navigator.onLine===false){if(manual)notify('当前网络离线，打卡已保存在本机，联网后再同步');return false;}
- const enrolled=SUBJECTS.filter(s=>!!metaFor(s));
- if(!enrolled.length){if(manual)notify('云服务器已连接，但还没有首次上传。请在设置→云端同步中逐科确认一次。');return false;}
+ const enrolled=SUBJECTS.filter(s=>localStorage.getItem(KEYS[s])!==null);
+ if(!enrolled.length){if(manual)notify('手机上还没有学习记录，开始使用后会自动备份。');return false;}
  busy=true;
  if(manual)notify('正在检查云端版本并同步学习记录…');
  const errors=[];

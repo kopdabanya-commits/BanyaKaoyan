@@ -36,13 +36,35 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
  return {win,store,calls,reloads,listeners,notifications,network:context.navigator,cloud:()=>cloud};
 }
 const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
-test('no endpoint: no network, no automatic first upload or cloud replacement',async()=>{
+test('no endpoint sends nothing; connected empty cloud safely starts the first backup',async()=>{
  const a=harness({[key]:JSON.stringify(state(true))});
  await a.win.BanyaCloudSync.syncAll();assert.equal(a.calls.length,0);
  assert(a.win.BanyaCloudSync.panel().includes('验证并启用'));
  const b=harness({[configKey]:JSON.stringify(connected),[key]:JSON.stringify(state(true))});
  await b.win.BanyaCloudSync.syncAll();
- assert.equal(b.calls.length,0,'no consent baseline must never contact/mutate cloud');
+ assert.equal(b.cloud().revision,1);
+ assert.equal(b.store.get(key+'_before_initial_sync'),JSON.stringify(state(true)));
+ assert.equal(JSON.parse(b.store.get(meta)).revision,1);
+ assert.equal(b.calls.filter(c=>c.init.method==='PUT').length,1);
+});
+test('automatic first sync stops when the cloud already has a record',async()=>{
+ const raw=JSON.stringify(state(true));
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:raw},
+  {subject:'english',revision:2,state:pack('english',state(false))});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(true),false);
+ assert.equal(h.store.get(key),raw);
+ assert.equal(h.calls.filter(c=>c.init.method==='PUT').length,0);
+ assert(h.notifications.some(message=>message.includes('云端已有记录')));
+});
+test('first politics record enrolls only politics and never changes English storage',async()=>{
+ const politics='yantu_politics_2026_v1',raw=JSON.stringify({done:{'pol-1':true},notes:{}});
+ const h=harness({[configKey]:JSON.stringify(connected),[politics]:raw},
+  {subject:'politics',revision:0,state:null});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
+ assert.equal(h.cloud().state.subject,'politics');
+ assert.equal(h.store.get(politics),raw);
+ assert.equal(h.store.has(key),false);
+ assert.equal(h.store.get(politics+'_before_initial_sync'),raw);
 });
 test('opted-in English sends only English snapshot with CAS, never touches politics',async()=>{
  const old=JSON.stringify(state(false)),newer=JSON.stringify(state(true));
@@ -116,7 +138,7 @@ test('politics remote-only update does not change English storage or English bas
  assert.equal(a.store.get(politicsMeta)!==undefined,true);
 });
 
-test('M3.1 quick actions distinguish plan refresh and cloud records without implicit first upload',async()=>{
+test('M3.1 quick actions distinguish plan refresh and cloud records',async()=>{
  const offline=harness({[key]:JSON.stringify(state(true))});
  assert(offline.win.BanyaCloudSync.quickPanel().includes('刷新计划'));
  assert(offline.win.BanyaCloudSync.quickPanel().includes('同步记录'));
@@ -124,9 +146,9 @@ test('M3.1 quick actions distinguish plan refresh and cloud records without impl
  assert.equal(offline.calls.length,0);
  assert(offline.win.BanyaCloudSync.quickPanel().includes('尚未连接云端'));
  const notEnrolled=harness({[configKey]:JSON.stringify(connected),[key]:JSON.stringify(state(true))});
- assert.equal(await notEnrolled.win.BanyaCloudSync.syncAll(true),false);
- assert.equal(notEnrolled.calls.length,0);
- assert(notEnrolled.win.BanyaCloudSync.quickPanel().includes('还没有首次上传'));
+ assert.equal(await notEnrolled.win.BanyaCloudSync.syncAll(true),true);
+ assert.equal(notEnrolled.cloud().revision,1);
+ assert(notEnrolled.win.BanyaCloudSync.quickPanel().includes('同步完成'));
 });
 test('M3.1 manual refresh verifies the enrolled snapshot and shows an accurate success timestamp',async()=>{
  const raw=JSON.stringify(state(true)),record=JSON.parse(raw);
