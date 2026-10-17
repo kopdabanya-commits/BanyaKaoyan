@@ -47,7 +47,7 @@ function notify(text) {
 function quickPanel() {
  const connected=!!(config&&config.endpoint&&config.token);
  const subjects=SUBJECTS.filter(s=>metaFor(s));
- let hint=connected?(subjects.length?'云端已连接 · 已启用'+subjects.map(s=>NAMES[s]).join('、'):'云端已连接 · 两科尚未建立首次同步'):'记录目前仅保存在这台手机';
+ let hint=connected?(subjects.length?'已连接云端 · '+subjects.map(s=>NAMES[s]).join('、')+'自动同步':'已连接云端 · 尚无已备份记录'):'记录目前仅保存在这台手机';
  let last='';
  try{last=localStorage.getItem(LAST_OK)||'';}catch{}
  if(last&&subjects.length)hint+=' · 最近成功 '+escaped(last);
@@ -59,19 +59,23 @@ function quickPanel() {
 function panel() {
  const connected=!!(config&&config.endpoint&&config.token);
  return '<section class="setting-section" aria-label="云端备份与同步">'+
- '<h2>云端同步 · 两科独立</h2>'+
- '<p class="setting-note">打卡立即保存本机。首次云同步需安全连接并逐科确认一次，之后每次打卡自动尝试同步，也可在今日页点击「☁ 同步记录」。遇到冲突不会覆盖旧记录。</p>'+
+ '<h2>同步与备份</h2>'+
+ '<p class="setting-note">平时会自动同步。网络或服务器暂时不可用时，记录仍保存在这台手机，恢复连接后会重试；遇到版本冲突会停下，保护已有记录。</p>'+
  (!connected?'<form id="banya-cloud-config"><label class="input-line">HTTPS同步地址<input id="banya-cloud-url" type="url" required value="https://124.70.128.201" readonly></label>'+
  '<label class="input-line">私有同步密钥<input id="banya-cloud-token" type="password" required minlength="32" autocomplete="off" placeholder="在本机生成并安全保存"></label>'+
  '<button type="button" class="cta secondary small" data-banya-action="generate-token">在本机生成随机密钥</button>'+
  '<p class="setting-note">密钥不会提交到GitHub源码。请将其保存在密码管理器，再通过GitHub Actions Secrets安全配置到服务器；完成前不会上传学习记录。</p>'+
  '<button type="submit" class="cta small">验证并启用</button></form>':
- '<p class="setting-note">已配置 '+escaped(config.endpoint)+'。密钥只保存在这台设备的浏览器本地存储中，不提交GitHub。</p>'+
- '<button type="button" class="cta secondary small" data-banya-action="sync-now">↻ 立即同步已启用科目</button>'+
- SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已建立同步基线':'等待首次确认')+
+ '<p class="setting-note">已连接云端。同步密钥只保存在本机。</p>'+
+ '<button type="button" class="cta secondary small" data-banya-action="sync-now">↻ 立即同步</button>'+
+ '<details><summary>首次上传或从云端恢复</summary><p class="setting-note">已有记录自动同步；新科目第一次使用时，在这里确认一次。恢复前会保护本机记录。</p>'+
+ SUBJECTS.map(function(s){return '<div class="setting-section"><b>'+NAMES[s]+'</b> · '+(metaFor(s)?'已开始自动同步':'尚未首次上传')+
  '<div class="p-buttons"><button class="cta secondary small" data-banya-action="upload" data-banya-subject="'+s+'">确认上传本机</button>'+
  '<button class="cta ghost small" data-banya-action="restore" data-banya-subject="'+s+'">从云端恢复</button></div></div>';}).join('')+
- '<button class="cta ghost small" data-banya-action="disconnect">停用并清除同步密钥</button>')+
+ '<button class="cta ghost small" data-banya-action="disconnect">停用并清除同步密钥</button></details>')+
+ '<div class="button-row"><button type="button" class="cta secondary small" data-banya-action="export-local">下载本机备份</button><button type="button" class="cta ghost small" data-banya-action="import-local">从本机备份恢复</button></div>'+
+ '<input type="file" id="banya-local-backup-file" accept=".json,application/json" hidden>'+
+ '<p class="setting-note">备份文件只下载到手机，不会上传 GitHub；请妥善保存。服务器恢复后点“立即同步”即可重试。</p>'+
  '<p class="setting-note" role="status" id="banya-cloud-message">'+escaped(message)+'</p></section>';
 }
 async function api(subject,method,body) {
@@ -114,6 +118,49 @@ function downloadBackup(subject,raw) {
  const url=URL.createObjectURL(blob),link=document.createElement('a');
  link.href=url;link.download='板牙考研_'+NAMES[subject]+'_云同步前备份_'+new Date().toISOString().slice(0,10)+'.json';
  link.click();setTimeout(function(){URL.revokeObjectURL(url);},3000);
+}
+const LOCAL_PLAN='yantu_english_plan_v2';
+const LOCAL_BACKUP_KEYS=[KEYS.english,KEYS.politics,LOCAL_PLAN];
+function localBackupValues() {
+ const values={};
+ for(const key of LOCAL_BACKUP_KEYS){const raw=localStorage.getItem(key);if(raw!==null)values[key]=raw;}
+ if(!Object.keys(values).length)throw Error('手机上还没有可备份的学习记录');
+ if(values[KEYS.english]!==undefined)validLocal('english',values[KEYS.english]);
+ if(values[KEYS.politics]!==undefined)validLocal('politics',values[KEYS.politics]);
+ if(values[LOCAL_PLAN]!==undefined&&!root.PlannerCore.validPlan(JSON.parse(values[LOCAL_PLAN])))throw Error('英语计划缓存无效，备份已停止');
+ return values;
+}
+function exportLocal() {
+ const backup={app:'banya-kaoyan-local',version:1,exportedAt:new Date().toISOString(),values:localBackupValues()};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json'}));
+ const link=document.createElement('a');link.href=url;
+ link.download='板牙考研_本机备份_'+new Date().toISOString().slice(0,10)+'.json';
+ link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);
+ notify('已请求下载本机备份，请确认文件保存在手机上。');
+}
+async function importLocal(file) {
+ if(!file||file.size>4000000)throw Error('备份文件过大');
+ const backup=JSON.parse(await file.text());
+ if(backup.app!=='banya-kaoyan-local'||backup.version!==1||!backup.values||
+    typeof backup.values!=='object'||Array.isArray(backup.values))throw Error('不是有效的板牙考研本机备份');
+ const values=backup.values;
+ if(!Object.keys(values).length||Object.keys(values).some(key=>!LOCAL_BACKUP_KEYS.includes(key)))throw Error('备份内容不符合预期');
+ for(const value of Object.values(values))if(typeof value!=='string')throw Error('备份内容不符合预期');
+ if(values[KEYS.english]!==undefined)validLocal('english',values[KEYS.english]);
+ if(values[KEYS.politics]!==undefined)validLocal('politics',values[KEYS.politics]);
+ if(values[LOCAL_PLAN]!==undefined&&!root.PlannerCore.validPlan(JSON.parse(values[LOCAL_PLAN])))throw Error('备份中的英语计划无效');
+ if(!root.confirm('恢复前请先下载并保存当前本机备份。此操作会替换文件中包含的科目记录，继续吗？'))return;
+ const previous={},metaBefore={};for(const key of LOCAL_BACKUP_KEYS)previous[key]=localStorage.getItem(key);
+ for(const subject of SUBJECTS)metaBefore[subject]=localStorage.getItem(META+subject);
+ try{
+  for(const [key,value] of Object.entries(values))localStorage.setItem(key,value);
+  for(const subject of SUBJECTS)if(values[KEYS[subject]]!==undefined)localStorage.removeItem(META+subject);
+ }catch(error){
+  for(const key of LOCAL_BACKUP_KEYS){if(previous[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,previous[key]);}
+  for(const subject of SUBJECTS){if(metaBefore[subject]===null)localStorage.removeItem(META+subject);else localStorage.setItem(META+subject,metaBefore[subject]);}
+  throw error;
+ }
+ root.location.reload();
 }
 async function upload(subject) {
  const raw=localStorage.getItem(KEYS[subject]),record=validLocal(subject,raw);
@@ -220,6 +267,8 @@ document.addEventListener('click',async function(e){
   return;
  }
  if(action==='sync-now'){button.disabled=true;try{await syncAll(true);}finally{button.disabled=false;}return;}
+ if(action==='export-local'){try{exportLocal();}catch(err){notify(err.message||'本机备份未完成');}return;}
+ if(action==='import-local'){document.getElementById('banya-local-backup-file')?.click();return;}
  if(action==='disconnect'){
   if(root.confirm('停用自动同步并删除本机同步密钥？已存在的学习记录不会被清除。')){
    localStorage.removeItem(CONFIG);config=null;for(const s of SUBJECTS)localStorage.removeItem(META+s);
@@ -232,6 +281,11 @@ document.addEventListener('click',async function(e){
  try{if(action==='upload')await upload(subject);else if(action==='restore')await restore(subject);}
  catch(err){notify(err.message||'操作失败，本机记录未覆盖');}
  finally{busy=false;button.disabled=false;}
+});
+document.addEventListener('change',async function(e){
+ if(e.target.id!=='banya-local-backup-file')return;
+ try{await importLocal(e.target.files?.[0]);}catch(err){notify('恢复未完成：'+(err.message||'文件无法读取'));}
+ finally{e.target.value='';}
 });
 let localChangeTimer=null;
 root.addEventListener('banya-local-change',function(){
