@@ -55,7 +55,8 @@ test('full writing tasks show separate writing and review time without changing 
  await h.click('detail',{id:todayOutline.id,day:'2026-10-17'});
  assert(h.el('modal').innerHTML.includes('总时间（分钟）'));
  assert(h.el('modal').innerHTML.includes('批改复盘（分钟）'));
- assert(h.el('modal').innerHTML.includes('实际动笔写了多久'));
+ assert(h.el('modal').innerHTML.includes('实际写作用时'));
+ assert(h.el('modal').innerHTML.indexOf('advanced-adjust')<h.el('modal').innerHTML.indexOf('aria-label="作文计划用时"'));
  h.setNow('2026-10-17T04:00:00Z');h.api.refreshToday();
  for(const [field,value] of Object.entries({'task-title':todayOutline.title,'task-minutes':15,'task-write-minutes':10,'task-review-minutes':5,'task-actual-writing-minutes':12,'task-move':'2026-10-17','task-wrong':'','task-note':''}))h.input(field,value);
  await h.event('submit',{id:'task-form',dataset:{id:todayOutline.id,day:'2026-10-17'}});
@@ -358,4 +359,39 @@ test('M4: saving a note cannot freeze old task title or estimated minutes across
  const custom=core.tasks(revised,personalized,day).find(t=>t.id===task.id);
  assert.equal(custom.title,changed.title,'an intentional minutes-only edit does not freeze the title');
  assert.equal(custom.minutes,18);
+});
+
+test('today objective task records actual total, answering and review independently of planned time',async()=>{
+ const initial=core.defaults();initial.done.older=true;initial.actualMinutes.older=42;
+ const raw=JSON.stringify(initial),h=harness({storage:new Map([[key,raw]])});await h.settle();
+ h.setNow('2026-10-17T04:00:00Z');h.api.refreshToday();
+ const day='2026-10-17',task=h.api.allTasks(day).find(t=>t.type==='新题型'),id=task.id;
+ await h.click('detail',{id,day});const html=h.el('modal').innerHTML;
+ assert(html.includes('实际答题／学习用时'));assert(html.includes('实际批改复盘用时'));
+ assert(html.indexOf('task-actual-review-minutes')<html.indexOf('advanced-adjust'));
+ for(const [field,value] of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':day,'task-wrong':'','task-note':'','task-actual-minutes':30,'task-actual-writing-minutes':20}))h.input(field,value);
+ await h.event('input',h.el('task-actual-writing-minutes'));assert.equal(h.el('task-actual-review-minutes').value,'10');
+ h.input('task-actual-review-minutes',7);await h.event('input',h.el('task-actual-review-minutes'));assert.equal(h.el('task-actual-minutes').value,'27');
+ await h.event('submit',{id:'task-form',dataset:{id,day}});
+ assert.equal(h.api.state.actualMinutes[id],27);assert.equal(h.api.state.actualWritingMinutes[id],20);assert.equal(h.api.state.actualReviewMinutes[id],7);
+ assert.equal(h.api.allTasks(day).find(t=>t.id===id).minutes,task.minutes);assert.equal(h.api.state.edits[id],undefined);
+ assert.equal(h.api.state.done.older,true);assert.equal(h.api.state.actualMinutes.older,42);
+ assert.equal(h.storage.get(key+'_before_actual_time_v1'),raw);
+ assert.match(h.api.summaryText(),/实际批改复盘.*7分钟/);
+ const reopened=harness({storage:h.storage});assert.equal(reopened.api.state.actualReviewMinutes[id],7);
+ h.api.exportState();assert.equal(core.normalizeState(JSON.parse(await h.blobs[0].text()).state).actualReviewMinutes[id],7);
+ h.input('task-actual-writing-minutes','');h.input('task-actual-review-minutes',7);h.input('task-actual-minutes',27);await h.event('input',h.el('task-actual-minutes'));assert.equal(h.el('task-actual-writing-minutes').value,'20');
+ const before=JSON.stringify(h.api.state);h.input('task-actual-minutes',10);h.input('task-actual-writing-minutes',20);h.input('task-actual-review-minutes','');
+ await h.event('submit',{id:'task-form',dataset:{id,day}});assert.equal(JSON.stringify(h.api.state),before);
+ h.input('task-actual-minutes',20);h.input('task-actual-review-minutes',0);await h.event('submit',{id:'task-form',dataset:{id,day}});
+ assert.equal(h.api.state.actualReviewMinutes[id],0);assert.equal(core.normalizeState(h.api.state).actualReviewMinutes[id],0);
+});
+test('actual time arithmetic supports optional legacy totals and rejects impossible splits',()=>{
+ assert.deepEqual(core.actualTimes('30','20',''),{total:30,work:20,review:10});
+ assert.deepEqual(core.actualTimes('','20','5'),{total:25,work:20,review:5});
+ assert.deepEqual(core.actualTimes('20','','0'),{total:20,work:20,review:0});
+ assert.deepEqual(core.actualTimes('42','',''),{total:42,work:undefined,review:undefined});
+ assert.deepEqual(core.actualTimes('','',''),{total:undefined,work:undefined,review:undefined});
+ for(const values of [['10','20',''],['30','20','5'],['','600','1'],['30','1.5',''],['','','-1']])assert.throws(()=>core.actualTimes(...values));
+ assert.throws(()=>core.normalizeState({actualReviewMinutes:{a:-1}}));
 });

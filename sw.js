@@ -1,5 +1,5 @@
 /* 板牙考研：英语+政治单一PWA。旧缓存前缀保留以清理旧版，Access响应不得缓存。 */
-const CACHE='yantu-english-ii-m4-13-writing-time-20261017';
+const CACHE='yantu-english-ii-m4-14-actual-time-20261017';
 const ASSETS=['./','./index.html','./styles.css','./planner-core.js','./app.js','./plan-data.js','./study-intelligence.js','./study-ui.js','./politics-core.js','./politics-plan-data.js','./politics-ui.js','./cloud-sync.js','./origin-transfer.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 function acceptable(response,url){
  if(!response.ok||response.redirected||response.type==='opaque'||response.type==='opaqueredirect')return false;
