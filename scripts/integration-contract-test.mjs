@@ -22,9 +22,11 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert.match(sw,/yantu-english-ii-m4-2-study-records-/);
+ assert.match(sw,/yantu-english-ii-m4-3-ecs-entry-/);
  assert(html.includes('./cloud-sync.js'));
+ assert(html.includes('./origin-transfer.js'));
  assert(sw.includes("'./cloud-sync.js'"));
+ assert(sw.includes("'./origin-transfer.js'"));
  assert(script.includes('BanyaCloudSync.panel()'));
  assert.equal(js('wrangler.jsonc').name,'english-ii-plan','keep original Worker and user data origin');
  assert.equal(manifest.start_url,'./index.html');assert.equal(manifest.id,'./');
@@ -70,6 +72,16 @@ test('deployment never publishes backend source or secrets as static assets',()=
  assert(headers.includes("connect-src 'self' https://124.70.128.201;"),'CSP must allow exactly the verified ECS HTTPS origin');
  assert(!headers.includes('https:;')&&!headers.includes('https://*'),'never allow wildcard API destinations');
  assert(txt('cloud-sync.js').includes("const API_ORIGIN = 'https://124.70.128.201'"),'client must pin the same origin');
+});
+test('ECS fallback serves only PWA allowlist while keeping the authenticated API',()=>{
+ const nginx=txt('server/banya-sync/nginx-ip.conf'),installer=txt('server/banya-sync/install-pwa-fallback.sh');
+ assert(nginx.includes('location = /health')&&nginx.includes('location ^~ /v1/'));
+ assert(nginx.includes('location = /manifest.webmanifest'));
+ assert(nginx.includes('origin-transfer\\.js')&&nginx.includes('icons/icon-'));
+ assert(nginx.includes('location / { return 404; }'));
+ assert(nginx.includes('X-Robots-Tag "noindex, nofollow"'));
+ assert(!nginx.includes('docs/PROJECT_STATUS.md')&&!nginx.includes('server/banya-sync/app.py'));
+ assert(installer.includes('rollback()')&&installer.includes('nginx -t'));
 });
 
 test('M4 shared task-first component is used by both subjects; stats are actual-record-only',()=>{
