@@ -7,6 +7,7 @@ on:
       - styles.css
       - app.js
       - cloud-sync.js
+      - origin-transfer.js
       - sw.js
       - manifest.webmanifest
       - _headers
@@ -24,6 +25,8 @@ on:
       - study-intelligence.js
       - scripts/**
       - .github/workflows/publish-existing-worker.yml
+      - server/banya-sync/nginx-ip.conf
+      - server/banya-sync/install-pwa-fallback.sh
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,11 +44,11 @@ jobs:
       - name: All Node syntax, plans, offline, and both-subject tests
         run: |
           set -euo pipefail
-          for f in app.js cloud-sync.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
+          for f in app.js cloud-sync.js origin-transfer.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
           node scripts/check.mjs
           node scripts/sync-plan-mirrors.mjs --check
           node scripts/privacy-check.mjs
-          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
+          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -113,4 +116,63 @@ jobs:
               assert status==404,(suffix,status)
           print('Verified real production Edge-UA requests: PWA HTML=200, sync script=200, exact CSP, private source/docs=404.')
           print('Android Edge actual-device learning data has not been accessed or changed by this test.')
+          PY
+  fallback:
+    needs: [verify, publish]
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload only allowlisted PWA assets and verified Nginx config
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          bash -n server/banya-sync/install-pwa-fallback.sh
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          tar -czf /tmp/banya-site.tgz index.html styles.css app.js cloud-sync.js origin-transfer.js \
+            planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js \
+            politics-core.js politics-plan-data.js politics-plan.json politics-ui.js \
+            sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" 'mkdir -p /root/banya-pwa-stage && chmod 700 /root/banya-pwa-stage'
+          sshpass -e scp -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 \
+            /tmp/banya-site.tgz server/banya-sync/nginx-ip.conf \
+            server/banya-sync/install-pwa-fallback.sh \
+            "$BANYA_SSH_USER@124.70.128.201:/root/banya-pwa-stage/"
+          sshpass -e ssh -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" \
+            "mv /root/banya-pwa-stage/banya-site.tgz /root/banya-pwa-stage/site.tgz && bash /root/banya-pwa-stage/install-pwa-fallback.sh $GITHUB_SHA"
+      - name: Verify public IP TLS, PWA assets and protected API
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib, urllib.request, urllib.error
+          base='https://124.70.128.201'
+          for path in ('index.html','sw.js','app.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
+              with urllib.request.urlopen(base+'/'+path, timeout=20) as response:
+                  assert response.status==200,(path,response.status)
+                  remote=response.read()
+              assert hashlib.sha256(remote).digest()==hashlib.sha256(pathlib.Path(path).read_bytes()).digest(),path
+          with urllib.request.urlopen(base+'/health',timeout=20) as response:
+              assert response.status==200 and b'banya-study-sync' in response.read(256)
+          for path,expected in (('/v1/snapshot/english',401),('/v1/snapshot/politics',401),('/server/banya-sync/app.py',404),('/docs/PROJECT_STATUS.md',404)):
+              try: urllib.request.urlopen(base+path,timeout=20)
+              except urllib.error.HTTPError as error: assert error.code==expected,(path,error.code)
+              else: raise AssertionError(path+' unexpectedly public')
+          print('Verified existing ECS IP HTTPS: exact PWA files, API health, unauthenticated 401, private paths 404.')
           PY

@@ -24,13 +24,15 @@ jobs:
       - run: node --check politics-plan-data.js
       - run: node --check politics-ui.js
       - run: node --check sw.js
+      - run: node --check origin-transfer.js
       - run: node scripts/check.mjs
       - run: node scripts/sync-plan-mirrors.mjs --check
       - run: node scripts/privacy-check.mjs
 
-      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs
+      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs
       - run: node --check cloud-sync.js
       - run: bash -n server/banya-sync/install-ecs.sh
+      - run: bash -n server/banya-sync/install-pwa-fallback.sh
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

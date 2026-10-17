@@ -9,5 +9,6 @@
 - [DECISIONS.md](DECISIONS.md)：公开的架构决定。
 - [ECS_HANDOFF.md](ECS_HANDOFF.md)：服务器连接方式与部署事实；不得添加凭据值。
 - [OPERATIONS.md](OPERATIONS.md)：设备端备份与恢复原则。
+- [DOMAIN_ROLLOUT.md](DOMAIN_ROLLOUT.md)：原 Worker 与华为云备用入口的数据迁移边界。
 
 此前含个人学习近况的历史文档已从当前版本清除；不得从 Git 历史重新引用其内容。
