@@ -29,7 +29,7 @@ function normalizeState(s){
    if(k==='wrong'&&v!==''&&(!Number.isInteger(v)||v<0||v>20))throw Error('错题记录无效');
    if(k==='questionIds'&&(typeof v!=='string'||v.length>500))throw Error('题号记录无效');
    if(k==='actualMinutes'&&(!Number.isInteger(v)||v<1||v>600))throw Error('实际用时无效');
-   if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)))throw Error('任务修改无效');
+   if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)||('writingMinutes'in v)!==('reviewMinutes'in v)||'writingMinutes'in v&&(!Number.isInteger(v.writingMinutes)||v.writingMinutes<1||!Number.isInteger(v.reviewMinutes)||v.reviewMinutes<1||v.writingMinutes+v.reviewMinutes!==v.minutes)))throw Error('任务修改无效');
    if(k==='archive'&&(!task(v)||v.id!==id||!inRange(v.date)))throw Error('历史任务无效');
    n[k][id]=structuredClone(v);
   }
@@ -53,6 +53,13 @@ function tasks(p,s,day){
   return {...t,...edit};
  }).sort((a,b)=>Number(!!b.vocab)-Number(!!a.vocab));
 }
+function writingParts(t){
+ if(t.type!=='写作'||!Number.isInteger(t.minutes)||/历史旧任务|作文表达|功能句|提纲|模板结构|考前轻练/.test(t.title))return null;
+ if(Number.isInteger(t.writingMinutes)&&Number.isInteger(t.reviewMinutes)&&t.writingMinutes>0&&t.reviewMinutes>0&&t.writingMinutes+t.reviewMinutes===t.minutes)return {writing:t.writingMinutes,review:t.reviewMinutes};
+ if(t.minutes<25)return null;
+ const writing=t.minutes===25||t.minutes===30?20:t.minutes===35?25:t.minutes-5;
+ return {writing,review:t.minutes-writing};
+}
 function migrate(old,fresh,s,today){
  const n=normalizeState(s);const next=new Map(fresh.days.flatMap(d=>d.items.map(t=>[t.id,t])));
  for(const d of old.days)for(const t of tasks(old,s,d.date)){
@@ -62,6 +69,6 @@ function migrate(old,fresh,s,today){
  return n;
 }
 function diff(a,b){const m=p=>new Map(p.days.flatMap(d=>d.items.map(t=>[t.id,{...t,date:d.date}])));const x=m(a),y=m(b);let added=0,changed=0,removed=0;for(const [id,t]of y){if(!x.has(id))added++;else if(JSON.stringify(x.get(id))!==JSON.stringify(t))changed++;}for(const id of x.keys())if(!y.has(id))removed++;return {added,changed,removed};}
-const api={defaults,validPlan,normalizeState,tasks,migrate,diff,inRange};
+const api={defaults,validPlan,normalizeState,tasks,writingParts,migrate,diff,inRange};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.PlannerCore=api;
 })(typeof window==='object'?window:globalThis);
