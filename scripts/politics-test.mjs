@@ -61,6 +61,33 @@ test('corrupt or malicious politics backup structure is rejected',()=>{
  assert.throws(()=>Core.normalize(JSON.parse('{"notes":{"__proto__":"x"}}')));
  assert.throws(()=>Core.normalize({wrong:{id:-1}}));
 });
+test('private politics plan edits preserve task IDs, records and subject separation',()=>{
+ const h=harness(),id=politics.days[0].items[0].id;
+ h.render();h.click('p-toggle',{id});
+ h.elements['p-plan-title']={value:'个人调整后的复盘'};h.elements['p-plan-minutes']={value:'25'};
+ h.submit('p-plan-form',{id});
+ let saved=JSON.parse(h.storage.get(Core.key));
+ assert.equal(saved.edits[id].title,'个人调整后的复盘');
+ assert.equal(saved.done[id],true);
+ assert(h.render().includes('个人调整后的复盘'));
+ h.elements['p-plan-title']={value:'新增错题回顾'};h.elements['p-plan-minutes']={value:'15'};
+ h.submit('p-plan-form',{id:''});
+ saved=JSON.parse(h.storage.get(Core.key));
+ assert.equal(saved.added.length,1);
+ assert(h.render().includes('新增错题回顾'));
+ h.click('p-remove-task',{id});
+ saved=JSON.parse(h.storage.get(Core.key));
+ assert.equal(saved.removed[id],true);
+ assert.equal(saved.done[id],true,'removing a plan item retains its old completion');
+ assert(!h.render().includes('个人调整后的复盘'));
+ assert(!h.storage.has('yantu_english_2026_m1'));
+ assert.equal(Core.normalize(saved).added.length,1,'edits survive snapshot validation');
+});
+test('politics rejects malformed private plan overrides before restore or sync',()=>{
+ assert.throws(()=>Core.normalize({edits:{task:{title:''}}}));
+ assert.throws(()=>Core.normalize({removed:{task:false}}));
+ assert.throws(()=>Core.normalize({added:[{id:'bad',date:'2026-10-16',title:'bad',type:'复盘',minutes:5,detail:''}]}));
+});
 
 // Politics v2: assert the actual user-approved time budget and stable local records.
 test('v2 integrated plan has 60-minute budget, <=30-minute classes and stable 192 original IDs',()=>{
