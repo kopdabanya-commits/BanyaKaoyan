@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - index.html
+      - update.html
       - refresh.html
       - refresh.js
       - styles.css
@@ -116,7 +117,9 @@ jobs:
           status,refresh,_=get('/refresh.html')
           assert status==200 and b'./refresh.js' in refresh,'recovery page unavailable'
           status,refresh_script,_=get('/refresh.js')
-          assert status==200 and b'yantu-english-ii-' in refresh_script,'recovery script unavailable'
+          assert status==200 and b'./update.html?reauth=1' in refresh_script,'recovery script unavailable'
+          status,update,_=get('/update.html')
+          assert status==200 and b'./app.js?reauth=1' in update,'direct update entry unavailable'
           for suffix in ('/server/banya-sync/app.py','/docs/ECS_HANDOFF.md','/AGENTS.md'):
               status,_,_=get(suffix)
               assert status==404,(suffix,status)
@@ -140,7 +143,7 @@ jobs:
           bash -n server/banya-sync/install-pwa-fallback.sh
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
-          tar -czf /tmp/banya-site.tgz index.html refresh.html refresh.js styles.css app.js cloud-sync.js origin-transfer.js \
+          tar -czf /tmp/banya-site.tgz index.html update.html refresh.html refresh.js styles.css app.js cloud-sync.js origin-transfer.js \
             planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js \
             politics-core.js politics-plan-data.js politics-plan.json politics-ui.js \
             sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png
@@ -169,7 +172,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, pathlib, urllib.request, urllib.error
           base='https://124.70.128.201'
-          for path in ('index.html','refresh.html','refresh.js','sw.js','app.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
+          for path in ('index.html','update.html','refresh.html','refresh.js','sw.js','app.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
               with urllib.request.urlopen(base+'/'+path, timeout=20) as response:
                   assert response.status==200,(path,response.status)
                   remote=response.read()
