@@ -86,6 +86,14 @@ body{background:linear-gradient(180deg,#f8f8fd 0%,#f9fafc 50%,#f8f9fb 100%)}
 .advanced-adjust summary{padding:15px;font-size:13px;color:#625bc3;font-weight:750;cursor:pointer}
 .advanced-adjust[open] summary{border-bottom:1px solid #f0f1f7}
 .advanced-fields{padding:5px 15px 13px}
+.writing-time-editor{margin:16px 0;padding:15px;border:1px solid #e4e0f5;border-radius:18px;background:#faf9ff}
+.writing-time-editor h3{margin:0 0 6px;font-size:1rem}
+.writing-time-editor .setting-note{margin:6px 0 10px}
+.writing-time-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.writing-time-fields .form-line{min-width:0;margin:0}
+.writing-time-fields .form-line span{font-size:.78rem}
+.writing-time-fields input{width:100%;box-sizing:border-box}
+@media(max-width:390px){.writing-time-fields{grid-template-columns:1fr 1fr}.writing-time-fields .form-line:first-child{grid-column:1/-1}}
 .record-actions{display:grid;grid-template-columns:1fr 1.15fr;gap:9px}
 .record-actions .cta{min-width:0;padding-inline:8px}
 .cal-day.skipped{background:#fff2e2;color:#936528}
