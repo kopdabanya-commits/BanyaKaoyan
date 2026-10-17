@@ -2,6 +2,8 @@
 # This is .gitignore syntax: block everything, then allow only shipped PWA assets.
 *
 !index.html
+!refresh.html
+!refresh.js
 !styles.css
 !app.js
 !planner-core.js
