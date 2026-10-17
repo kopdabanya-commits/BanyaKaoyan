@@ -162,7 +162,7 @@ function renderSettings(){
  +'<section class="setting-section"><h2>学习偏好</h2><div class="setting-row-title"><span>外观</span><div class="theme-switch" role="group" aria-label="外观配色"><button type="button" data-action="theme" data-theme="light" class="'+(theme==='light'?'selected':'')+'" aria-pressed="'+(theme==='light')+'">浅色</button><button type="button" data-action="theme" data-theme="dark" class="'+(theme==='dark'?'selected':'')+'" aria-pressed="'+(theme==='dark')+'">深色</button></div></div>'
  +'</section>'
  +'<section class="setting-section"><h2>备份与恢复</h2><div class="button-row"><button class="cta secondary" data-action="export">导出英语备份</button><button class="cta ghost" data-action="import">导入备份</button></div><details><summary>恢复前的备份</summary><button class="cta ghost" data-action="export-previous">导出恢复前副本</button></details><input id="file-import" type="file" accept="application/json,.json" hidden></section>'
- +'<section class="setting-section"><h2>应用更新</h2><div class="button-row"><button class="cta secondary" data-action="refresh-app">检查应用更新</button><a class="cta ghost" href="./refresh.html">更新没反应？点这里修复</a></div><p class="setting-note" id="offline-status">'+esc(offlineStatus)+'</p></section></div>';
+ +'<section class="setting-section"><h2>应用更新</h2><div class="button-row"><button class="cta secondary" data-action="refresh-app">检查应用更新</button><a class="cta ghost" href="./update.html?reauth=1">更新没反应？点这里修复</a></div><p class="setting-note" id="offline-status">'+esc(offlineStatus)+'</p></section></div>';
 }
 
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}

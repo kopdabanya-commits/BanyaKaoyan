@@ -2,6 +2,7 @@
 # This is .gitignore syntax: block everything, then allow only shipped PWA assets.
 *
 !index.html
+!update.html
 !refresh.html
 !refresh.js
 !styles.css
