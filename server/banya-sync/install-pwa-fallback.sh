@@ -32,6 +32,8 @@ python3 "$stage/ecs_package.py" verify "$archive"
 # Online SQLite backup includes every private table. Never send backup to Actions.
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - <<'PYBACKUP'
 from pathlib import Path
+import sys
+sys.path.insert(0, '/opt/banya-sync')
 from backup_db import backup_once
 import sqlite3
 saved=backup_once(Path('/var/lib/banya-sync/sync.sqlite3'),Path('/var/lib/banya-sync/backups'))

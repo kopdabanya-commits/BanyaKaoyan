@@ -106,3 +106,23 @@ def test_repeated_release_requires_identical_members_bytes_and_no_symlinks(tmp_p
     with pytest.raises(ValueError):verify_installed(release,archive)
     (release/'app.js').unlink();(release/'app.js').symlink_to(ROOT/'app.js')
     with pytest.raises(ValueError):verify_installed(release,archive)
+
+
+def test_release_backup_works_from_ssh_home_directory(tmp_path):
+    import sqlite3, sys
+    backend=tmp_path/'backend';backend.mkdir()
+    shutil.copy(ROOT/'server/banya-sync/backup_db.py',backend)
+    db=tmp_path/'private/sync.sqlite3';db.parent.mkdir()
+    with sqlite3.connect(db) as con:
+        con.execute('CREATE TABLE synthetic(value TEXT)')
+        con.execute("INSERT INTO synthetic VALUES ('preserved')")
+    source=(ROOT/'server/banya-sync/install-pwa-fallback.sh').read_text()
+    body=source.split("<<'PYBACKUP'\n",1)[1].split('\nPYBACKUP',1)[0]
+    body=body.replace('/opt/banya-sync',str(backend)).replace('/var/lib/banya-sync',str(db.parent))
+    elsewhere=tmp_path/'ssh-home';elsewhere.mkdir()
+    result=subprocess.run([sys.executable,'-I','-'],input=body,text=True,cwd=elsewhere,capture_output=True)
+    assert result.returncode==0,result.stderr
+    backup=list((db.parent/'backups').glob('*.sqlite3'))
+    assert len(backup)==1 and backup[0].stat().st_mode & 0o777 == 0o600
+    with sqlite3.connect(backup[0]) as con:
+        assert con.execute('SELECT value FROM synthetic').fetchall()==[('preserved',)]
