@@ -37,7 +37,7 @@ function preview(packet,plan,rawState,core){
  if(!core||!core.validPlan(plan))throw Error('当前计划模板无法校验，已停止导入');
  if(data.planVersion&&data.planVersion!==plan.meta.planVersion)throw Error('计划版本已更新，请重新生成对应版本的变更包');
  const english=data.subject==='english',state=english?core.normalizeState(rawState):core.normalize(rawState);
- const before=structuredClone(state),lines=[],changedDates=new Set(),used=new Set();
+ const before=structuredClone(state),lines=[],skipped=[],changedDates=new Set(),used=new Set();
  const inRange=date=>english?core.inRange(date):core.cleanDate(date)&&date>=plan.meta.start&&date<=plan.meta.end;
  const dayTasks=date=>{
   if(!inRange(date))throw Error('日期超出当前计划范围：'+date);
@@ -66,8 +66,16 @@ function preview(packet,plan,rawState,core){
   const t=matches[0],id=t.id;
   if(used.has(id))throw Error('同一任务不能在变更包内重复修改');
   used.add(id);
-  if(state.done[id]||state.notDone[id])throw Error('已完成或已选不做的任务不能被导入计划覆盖');
-  if([state.notes[id],state.questionIds[id],state.actualMinutes[id],state.actualWritingMinutes[id],state.actualReviewMinutes[id],state.wrong[id]].some(x=>x!==undefined&&x!==''))throw Error('该任务已有学习记录，为保护历史内容请手动处理');
+  // Protected history stays untouched. The user sees every omission before approving a partial import.
+  if(state.done[id]||state.notDone[id]){
+   skipped.push('未应用 '+t.date+' '+t.title+'：原任务'+(state.done[id]?'已完成':'已选不做')+
+    (c.op==='update'?'；变更包中的新安排尚未补入':'；原状态保留'));
+   continue;
+  }
+  if([state.notes[id],state.questionIds[id],state.actualMinutes[id],state.actualWritingMinutes[id],state.actualReviewMinutes[id],state.wrong[id]].some(x=>x!==undefined&&x!=='')){
+   skipped.push('未应用 '+t.date+' '+t.title+'：已有学习记录，原记录保留'+(c.op==='update'?'；新安排尚未补入':''));
+   continue;
+  }
   changedDates.add(t.date);
   if(c.op==='notDo'){
    state.notDone[id]=true;
@@ -95,7 +103,7 @@ function preview(packet,plan,rawState,core){
   if(['added','moved','edits','notDone'].includes(field))continue;
   if(JSON.stringify(before[field])!==JSON.stringify(next[field]))throw Error('已停止：检测到学习记录可能变化');
  }
- return {subject:data.subject,state:next,lines,batchId:data.batchId,changedDates:[...changedDates].sort()};
+ return {subject:data.subject,state:next,lines,skipped,batchId:data.batchId,changedDates:[...changedDates].sort()};
 }
 function panel(){
  return '<section class="setting-section" aria-label="从聊天导入私人计划">'+
@@ -123,7 +131,7 @@ function renderResult(message,lines){
   box.appendChild(ul);
  }
 }
-function reset(){pending=null;const b=document.getElementById('banya-plan-import-apply');if(b)b.disabled=true;}
+function reset(){pending=null;const b=document.getElementById('banya-plan-import-apply');if(b){b.disabled=true;b.textContent='确认应用到本机';}}
 function initBrowser(){
  document.addEventListener('input',e=>{if(e.target?.id==='banya-plan-import-text')reset();});
  document.addEventListener('click',e=>{
@@ -137,9 +145,13 @@ function initBrowser(){
     if(raw===null)throw Error('该科目还没有本机学习记录，请先打开科目并保存一条记录');
     const template=localPlan(pkg.subject),templateRaw=JSON.stringify(template);
     const result=preview(pkg,template,JSON.parse(raw),currentCore(pkg.subject));
-    pending={input,key,raw,templateRaw,result};
-    renderResult('已通过检查：'+(pkg.subject==='english'?'英语二':'政治')+'，共'+result.lines.length+'项。确认前请仔细核对：',result.lines);
-    const apply=document.getElementById('banya-plan-import-apply');if(apply)apply.disabled=false;
+    const summary='检查结果：'+(pkg.subject==='english'?'英语二':'政治')+'，可应用'+result.lines.length+'项，受保护而跳过'+result.skipped.length+'项。';
+    const detail=result.skipped.length?' 跳过的任务不会被修改，也不会自动补上新的阅读安排；请核对后再决定是否只应用其余任务。':' 请核对改动再确认。';
+    renderResult(summary+detail,[...result.lines,...result.skipped]);
+    if(result.lines.length){
+     pending={input,key,raw,templateRaw,result};
+     const apply=document.getElementById('banya-plan-import-apply');if(apply){apply.disabled=false;apply.textContent=result.skipped.length?'仅应用其余'+result.lines.length+'项':'确认应用到本机';}
+    }
    }catch(error){renderResult(error.message||'预览失败');}
   }
   if(action==='apply'){
