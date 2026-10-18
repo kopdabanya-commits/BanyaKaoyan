@@ -1,0 +1,23 @@
+/* Assistant hub. Reuses the shared subject theme, with compact mobile-first cards. */
+.assistant-hub{--hub-accent:var(--study-accent,var(--brand));padding-bottom:8px}
+.assistant-hub-head{padding:8px 2px 18px}
+.assistant-hub-kicker{margin:0 0 8px;color:var(--hub-accent);font-size:12px;font-weight:750;letter-spacing:.035em}
+.assistant-hub-head h1{font-size:clamp(23px,6vw,29px);letter-spacing:-.6px;line-height:1.3;margin:0 0 10px}
+.assistant-hub-head>p:last-child{font-size:13px;line-height:1.7;color:var(--muted);margin:0}
+.assistant-hub-actions{display:grid;gap:11px}
+.assistant-hub-action{width:100%;min-height:86px;display:flex;align-items:center;gap:13px;text-align:left;border:1px solid var(--line);border-radius:19px;background:var(--paper);color:var(--text);padding:15px 16px;box-shadow:var(--shadow)}
+.assistant-hub-action.is-primary{border-color:var(--hub-accent)}
+.assistant-hub-icon{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--line);color:var(--hub-accent);font-size:23px;font-weight:650}
+.assistant-hub-action.is-primary .assistant-hub-icon{background:var(--hub-accent);color:#fff}
+.assistant-hub-action-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.assistant-hub-action-copy strong{font-size:15px;line-height:1.35;font-weight:750}
+.assistant-hub-action-copy small{font-size:12px;line-height:1.5;color:var(--muted)}
+.assistant-hub-arrow{font-size:24px;line-height:1;color:var(--muted)}
+.assistant-hub-status{margin-top:19px;padding:15px 16px;border:1px solid var(--line);border-radius:17px;background:var(--paper)}
+.assistant-hub-status h2{font-size:13px;line-height:1.4;margin:0 0 5px}
+.assistant-hub-status p,.assistant-hub-footnote{font-size:12px;line-height:1.7;color:var(--muted);margin:0}
+.assistant-hub-footnote{margin:15px 3px 0}
+.assistant-hub-action:focus-visible{outline:3px solid var(--hub-accent);outline-offset:3px}
+@media(hover:hover){.assistant-hub-action:hover{border-color:var(--hub-accent);box-shadow:0 8px 22px rgba(40,38,92,.07)}}
+@media(max-width:370px){.assistant-hub-action{gap:10px;padding:13px 12px}.assistant-hub-icon{flex-basis:38px;width:38px;height:38px}.assistant-hub-action-copy strong{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.assistant-hub-action{transition:none!important}}
