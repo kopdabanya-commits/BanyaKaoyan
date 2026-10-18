@@ -86,7 +86,7 @@ def public_task(task, record):
     return result
 
 
-def apply_patch(template, document, subject, operations, start, end):
+def apply_patch(template, document, subject, operations, start, end, *, policy=None, require_budget=False):
     if document.get("schema") != "banya.sync.v1" or document.get("subject") != subject:
         raise PlanError("invalid_snapshot", 409)
     if document.get("templateVersion") != template["meta"]["planVersion"]:
@@ -159,6 +159,7 @@ def apply_patch(template, document, subject, operations, start, end):
             target.setdefault("added", []).append(after)
         tasks[task_id] = after
         affected.add(after["date"])
+        if before: affected.add(before["date"])
         changes.append({"taskId": task_id, "before": public_task(before, record) if before else None,
                         "after": public_task(after, target)})
     for day in affected:
@@ -166,10 +167,13 @@ def apply_patch(template, document, subject, operations, start, end):
         total = sum(item["minutes"] for item in day_tasks)
         limit = 135
         if subject == "english":
-            if not any(item["id"] == day + "-vocab" for item in day_tasks):
+            if not any(item.get("type")=="单词" or item["id"] == day + "-vocab" for item in day_tasks):
                 total += record.get("settings", {}).get("vocab", 35)
             limit = min(135, max(130, record.get("settings", {}).get("budget", 130)))
         if total > limit:
             raise PlanError("day_budget_exceeded", 409)
+    if policy is not None:
+        from learning_policy import validate_limits
+        validate_limits(tasks,target,subject,affected,policy,require_budget=require_budget)
     next_document["requiredCapabilities"] = sorted(set(document.get("requiredCapabilities", [])) | {PROTOCOL})
     return next_document, changes

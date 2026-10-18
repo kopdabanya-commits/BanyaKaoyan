@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py server/banya-sync/test_deepseek_ai.py server/banya-sync/test_learning_memory.py
+          python -m pytest -q server/banya-sync/test_*.py
           bash -n server/banya-sync/upgrade-private-plan.sh
           test -n "$BANYA_SSH_PASSWORD"
           test -s server/banya-sync/known_hosts
@@ -35,7 +35,7 @@ jobs:
           ssh_opts=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15)
           remote="$BANYA_SSH_USER@124.70.128.201"
           sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-agent-stage'
-          tar -C server/banya-sync -cf - app.py agent_api.py deepseek_ai.py learning_memory.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
+          tar -C server/banya-sync -cf - app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
             sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-agent-stage -xf -'
           sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA"
       - name: Verify public schema and denied unauthenticated access without reading snapshots

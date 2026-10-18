@@ -5,7 +5,7 @@ import io
 from pathlib import Path
 import tarfile
 
-ASSETS=tuple('index.html update.html refresh.html refresh.js styles.css app.js study-assistant.js plan-import.js cloud-sync.js origin-transfer.js planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js politics-core.js politics-plan-data.js politics-plan.json politics-ui.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png'.split())
+ASSETS=tuple('index.html update.html refresh.html refresh.js styles.css app.js study-assistant.js learning-diagnostics.js plan-import.js cloud-sync.js origin-transfer.js planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js politics-core.js politics-plan-data.js politics-plan.json politics-ui.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png'.split())
 
 def hashes(root):
     return ''.join(hashlib.sha256((root/name).read_bytes()).hexdigest()+'  '+name+'\n' for name in ASSETS).encode()

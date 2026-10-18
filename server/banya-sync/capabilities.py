@@ -9,6 +9,8 @@ from pydantic import Field, ValidationError
 from agent_api import StrictModel, fail, read_model
 from context_engine import CONTEXT_VERSION, ContextRequest, build_context
 from learning_memory import SCHEMA, profile
+from learning_analysis import AnalysisRequest,analyze
+from learning_planner import PlanningRequest,prepare
 
 
 class ProfileInput(StrictModel):
@@ -36,12 +38,16 @@ class Capability:
 
 
 REGISTRY=(
+    Capability('learning.detect','1','只读检测已保存的学习证据，不估分，不调用模型。',AnalysisRequest,('analysisVersion','subject','sources','fingerprint','windows','future7Days','policy','issues','uncertainties','automaticExecution')),
+    Capability('learning.planning.prepare','1','准备每日、每周或阶段诊断上下文；仅预览，不执行。',PlanningRequest,('planningVersion','subject','mode','context','analysis','sources','fingerprint','previewOnly')),
     Capability('learning.profile.read','1','读取当前科目的私人档案；历史资料不是打卡。',ProfileInput,
                ('schemaVersion','subject','revision','entries','updatedAt')),
     Capability('learning.context.build','1','构建有限、带来源的只读学习上下文；不调用模型。',ContextRequest,
                ('contextVersion','subject','serverSafety','hardRules','background','tasks','sources','truncation')),
 )
-IMPLEMENTATIONS={'learning.profile.read':lambda con,templates,args:profile(con,args.subject),
+IMPLEMENTATIONS={'learning.detect':lambda con,templates,args:analyze(con,templates,args),
+                 'learning.planning.prepare':lambda con,templates,args:prepare(con,templates,args),
+                 'learning.profile.read':lambda con,templates,args:profile(con,args.subject),
                  'learning.context.build':lambda con,templates,args:build_context(con,templates,args)}
 
 
@@ -50,9 +56,9 @@ def available():
 
 
 def manifest():
-    return {'registryVersion':'m7.1-readonly-v1','capabilities':[
+    return {'registryVersion':'m7.2-readonly-v1','capabilities':[
         {'id':c.id,'version':c.version,'description':c.description,'inputSchema':c.input_model.model_json_schema(),
-         'outputSchema':{'type':'object','required':list(c.output_fields),'properties':{key:{'type':('integer' if key in ('schemaVersion','revision') else 'array' if key in ('entries','hardRules','background','tasks') else 'object' if key in ('serverSafety','sources','truncation') else ['string','null'] if key=='updatedAt' else 'string')} for key in c.output_fields}},
+         'outputSchema':{'type':'object','required':list(c.output_fields),'properties':{key:{'type':('integer' if key in ('schemaVersion','revision') else 'array' if key in ('entries','hardRules','background','tasks','future7Days','issues','uncertainties') else 'object' if key in ('serverSafety','sources','truncation','windows','policy','context','analysis') else 'boolean' if key in ('automaticExecution','previewOnly') else ['string','null'] if key=='updatedAt' else 'string')} for key in c.output_fields}},
          'access':'read_only','subjects':['english','politics'],'permissions':['owner:read'],
          'compatibility':{'profileSchema':c.profile_schema,'contextVersion':c.context_version},'enabled':True}
         for c in available()]}
@@ -90,3 +96,16 @@ def install_capability_routes(app,db,connect,authorize,templates):
         with closing(connect(db)) as con:
             con.execute('BEGIN')
             return build_context(con,templates,args)
+
+    for path,cap_id in (('/v1/ai/analysis','learning.detect'),('/v1/ai/planning/prepare','learning.planning.prepare')):
+        def endpoint_factory(capability_id):
+            async def endpoint(request: Request, authorization: str | None = Header(default=None)):
+                authorize(authorization)
+                selected=next((c for c in available() if c.id==capability_id),None)
+                if selected is None:fail('capability_unavailable',409)
+                args=await read_model(request,selected.input_model)
+                with closing(connect(db)) as con:
+                    con.execute('BEGIN')
+                    return IMPLEMENTATIONS[capability_id](con,templates,args)
+            return endpoint
+        app.add_api_route(path,endpoint_factory(cap_id),methods=['POST'])

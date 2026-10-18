@@ -19,6 +19,7 @@
 !plan-import.js
 !cloud-sync.js
 !study-assistant.js
+!learning-diagnostics.js
 !origin-transfer.js
 !sw.js
 !manifest.webmanifest

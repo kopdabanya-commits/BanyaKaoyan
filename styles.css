@@ -577,3 +577,10 @@ html[data-theme="dark"] .student-task.is-not-done{background:var(--paper);border
 .ai-change p{font-size:12px;line-height:1.7;color:var(--muted)}
 .ai-sheet textarea{min-height:100px;width:100%;resize:vertical}
 .ai-sheet button:disabled{opacity:.5}
+
+.diagnosis-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.diagnosis-cards .ai-proposal{margin:8px 0;padding:12px;font-size:12px}
+.diagnosis-sheet p,.diagnosis-sheet small{overflow-wrap:anywhere}
+.diagnosis-table{max-width:100%;overflow-x:auto}
+.diagnosis-table table{width:100%;font-size:12px;border-collapse:collapse}
+.diagnosis-table th,.diagnosis-table td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}
