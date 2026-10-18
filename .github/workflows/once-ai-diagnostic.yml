@@ -1,0 +1,48 @@
+name: One-time protected AI metadata preflight (no model call)
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/once-ai-diagnostic.yml]
+permissions:
+  contents: read
+jobs:
+  owner-metadata-only:
+    runs-on: ubuntu-latest
+    environment: banya-ai-production
+    timeout-minutes: 4
+    env:
+      BANYA_OWNER_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+    steps:
+      - name: Verify production AI readiness and snapshot revision only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_OWNER_TOKEN"
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error,os
+          base="https://124.70.128.201"
+          token=os.environ["BANYA_OWNER_TOKEN"]
+          def request(path):
+            q=urllib.request.Request(base+path,headers={"Authorization":"Bearer "+token,"X-Banya-Plan-Protocol":"1","Accept":"application/json"})
+            try:
+              with urllib.request.urlopen(q,timeout=12) as r: return json.load(r)
+            except urllib.error.HTTPError as e:
+              print("ENDPOINT_STATUS",path,e.code)
+              return {}
+            except Exception as e:
+              print("ENDPOINT_ERROR",path,type(e).__name__)
+              return {}
+          d=request("/v1/ai/status")
+          act=d.get("activation") if isinstance(d.get("activation"),dict) else {}
+          allowed=("configuredReady","ready","enabled","currency","monthlyBudget","monthlyCallLimit","monthlyCalls","estimatedReserved")
+          safe={k:d.get(k) for k in allowed}
+          safe["activationEnabled"]=act.get("enabled")
+          safe["activationRevision"]=act.get("revision")
+          print("AI_SAFE_STATUS",json.dumps(safe,ensure_ascii=False))
+          a=request("/v1/ai/auto/status")
+          ctl=a.get("control") if isinstance(a.get("control"),dict) else {}
+          print("AUTO_ENABLED",bool(ctl.get("enabled")))
+          for sub in ("english","politics"):
+            s=request("/v1/snapshot/"+sub)
+            print("SNAPSHOT",sub,"revision",s.get("revision"),"has_state",bool(s.get("state")),"has_data",bool(s.get("data")))
+          PY
