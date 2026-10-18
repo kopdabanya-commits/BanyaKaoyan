@@ -35,7 +35,7 @@ jobs:
           ssh_opts=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15)
           remote="$BANYA_SSH_USER@124.70.128.201"
           sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-agent-stage'
-          tar -C server/banya-sync -cf - app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
+          tar -C server/banya-sync -cf - app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
             sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-agent-stage -xf -'
           sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA"
       - name: Verify public schema and denied unauthenticated access without reading snapshots
@@ -47,7 +47,7 @@ jobs:
               schema = json.load(response)
           assert len(schema['paths']) == 5
           assert schema['paths']['/v1/agent/changes/{change_id}/commit']['post']['x-openai-isConsequential']
-          for path in ('/v1/agent/capabilities', '/v1/agent/grants', '/v1/agent/plans/english?start=2026-10-16&end=2026-10-16', '/v1/agent/changes/unauthorized-probe', '/v1/snapshot/english', '/v1/snapshot/politics'):
+          for path in ('/v1/agent/capabilities', '/v1/agent/grants', '/v1/agent/plans/english?start=2026-10-16&end=2026-10-16', '/v1/agent/changes/unauthorized-probe', '/v1/snapshot/english', '/v1/snapshot/politics', '/v1/ai/status', '/v1/ai/profiles/english', '/v1/ai/profiles/politics', '/v1/ai/auto/status'):
               try:
                   urllib.request.urlopen(base + path, timeout=20)
                   raise AssertionError('Unauthorized access unexpectedly succeeded')
@@ -67,3 +67,15 @@ jobs:
                   assert error.code == 401
           print('TLS, public schema and unauthorized 401 verified. No private record was requested with credentials.')
           PY
+      - name: Read-only production mobile smoke with no owner credentials
+        run: |
+          python -m pip install -r scripts/requirements-browser.txt
+          python -m playwright install --with-deps chromium
+          python scripts/production_browser.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-public-ui-${{ github.sha }}
+          path: artifacts/production-public/
+          if-no-files-found: warn
+          retention-days: 14

@@ -74,3 +74,16 @@ def test_upgrade_guard_preserves_ai_receipts_and_rejects_unexpected_creation(tmp
     with sqlite3.connect(db) as con:con.execute("UPDATE ai_requests SET cost_nano=2")
     with pytest.raises(RuntimeError,match='Private data changed'):
         verify_preserved(db,existing)
+
+
+def test_reviewed_release_installs_backup_and_preserves_fail_closed_controls():
+    from pathlib import Path
+    script=Path(__file__).with_name('upgrade-private-plan.sh').read_text()
+    workflow=Path(__file__).parents[2]/'.github/workflows/private-plan-release.yml'
+    assert 'app.py backup_db.py autonomous.py' in workflow.read_text()
+    assert script.count('app.py backup_db.py autonomous.py') == 5
+    for setting in ('BANYA_AI_ENABLED=0','BANYA_AUTO_ENABLED=0','DEEPSEEK_MONTHLY_BUDGET_USD=0','DEEPSEEK_MONTHLY_CALLS=0'):
+        assert setting in script
+    assert script.index('verify "$backup_path"') < script.index('systemctl start banya-sync.service')
+    assert script.index('cmp "$source_dir/$file"') < script.index('> /opt/banya-sync/RELEASE_SHA')
+    assert '"$previous/RELEASE_SHA"' in script
