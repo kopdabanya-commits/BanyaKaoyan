@@ -124,7 +124,7 @@ document.addEventListener('submit',e=>{if(!ready||!['p-progress-form','p-task-fo
  if(e.target.id==='p-plan-form'){
   const title=document.getElementById('p-plan-title').value.trim(),minutes=Number(document.getElementById('p-plan-minutes').value),id=e.target.dataset.id;
   if(!title||title.length>200||!Number.isInteger(minutes)||minutes<1||minutes>90){alert('请填写任务名称和 1—90 分钟的预计时间。');return}
-  if(id){if(!getDay(selected)?.items.some(t=>t.id===id))return;state.edits[id]={title,minutes}}
+  if(id){if(!getDay(selected)?.items.some(t=>t.id===id))return;state.edits[id]={...state.edits[id],title,minutes}}
   else state.added.push({id:'p-custom-'+Date.now()+'-'+Math.random().toString(16).slice(2,10),date:selected,title,minutes,type:'复盘',detail:'按自己的节奏完成。'});
   if(save())closePoliticsTask();else report(false);return;
  }

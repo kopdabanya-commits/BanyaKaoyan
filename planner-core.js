@@ -31,7 +31,7 @@ function normalizeState(s){
    if(k==='actualMinutes'&&(!Number.isInteger(v)||v<1||v>600))throw Error('实际用时无效');
    if(k==='actualWritingMinutes'&&(!Number.isInteger(v)||v<1||v>600))throw Error('实际写作时间无效');
    if(k==='actualReviewMinutes'&&(!Number.isInteger(v)||v<0||v>600))throw Error('实际批改复盘时间无效');
-   if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)||('writingMinutes'in v)!==('reviewMinutes'in v)||'writingMinutes'in v&&(!Number.isInteger(v.writingMinutes)||v.writingMinutes<1||!Number.isInteger(v.reviewMinutes)||v.reviewMinutes<1||v.writingMinutes+v.reviewMinutes!==v.minutes)))throw Error('任务修改无效');
+   if(k==='edits'&&(!object(v)||!('title'in v)&&!('minutes'in v)&&!('detail'in v)||'title'in v&&(typeof v.title!=='string'||!v.title.trim()||v.title.length>200)||'minutes'in v&&(!Number.isInteger(v.minutes)||v.minutes<1||v.minutes>90)||'detail'in v&&(typeof v.detail!=='string'||v.detail.length>3000)||('writingMinutes'in v)!==('reviewMinutes'in v)||'writingMinutes'in v&&(!Number.isInteger(v.writingMinutes)||v.writingMinutes<1||!Number.isInteger(v.reviewMinutes)||v.reviewMinutes<1||v.writingMinutes+v.reviewMinutes!==v.minutes)))throw Error('任务修改无效');
    if(k==='archive'&&(!task(v)||v.id!==id||!inRange(v.date)))throw Error('历史任务无效');
    n[k][id]=structuredClone(v);
   }

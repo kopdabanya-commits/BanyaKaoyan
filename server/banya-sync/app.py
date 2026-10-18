@@ -1,4 +1,4 @@
-"""板牙考研：single-user, two-subject snapshot API. No external login integrations."""
+"""板牙考研：single-user, two-subject snapshot API. Scoped private-plan access is opt-in."""
 from __future__ import annotations
 
 import hashlib
@@ -13,6 +13,9 @@ from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from agent_api import initialize_agent, install_routes
+from private_plan import PROTOCOL
 
 SUBJECTS = {"english", "politics"}
 MAX_BODY_BYTES = 524_288
@@ -54,26 +57,32 @@ def initialize(db_path: Path) -> None:
 
 def create_app(*, db_path: str | Path | None = None,
                token_sha256: str | None = None,
-               allowed_origin: str | None = None) -> FastAPI:
+               allowed_origin: str | None = None,
+               agent_enabled: bool | None = None,
+               template_dir: str | Path | None = None) -> FastAPI:
     db = Path(db_path or os.environ.get("BANYA_DB_PATH", "/var/lib/banya-sync/sync.sqlite3"))
     digest = token_sha256 if token_sha256 is not None else os.environ.get("BANYA_SYNC_TOKEN_SHA256", "")
     origin = allowed_origin or os.environ.get("BANYA_ALLOWED_ORIGIN", DEFAULT_ORIGIN)
     if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest.lower()):
         raise RuntimeError("BANYA_SYNC_TOKEN_SHA256 must be a SHA-256 hex digest; refuse insecure startup.")
     digest = digest.lower()
+    agent_on = agent_enabled if agent_enabled is not None else os.environ.get("BANYA_AGENT_ENABLED", "0") == "1"
+    templates = Path(template_dir or os.environ.get("BANYA_TEMPLATE_DIR", "/var/www/banya-pwa/current"))
     if not origin.startswith("https://") or "/" in origin[len("https://"):]:
         raise RuntimeError("BANYA_ALLOWED_ORIGIN must be one HTTPS origin without a path.")
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         initialize(db)
+        if agent_on:
+            initialize_agent(db)
         yield
 
     app = FastAPI(title="Banya Study Sync", version="1.0", docs_url=None,
                   redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.add_middleware(CORSMiddleware, allow_origins=[origin], allow_credentials=False,
-                       allow_methods=["GET", "PUT", "OPTIONS"],
-                       allow_headers=["Authorization", "Content-Type"],
+                       allow_methods=["GET", "PUT", "POST", "OPTIONS"],
+                       allow_headers=["Authorization", "Content-Type", "X-Banya-Plan-Protocol"],
                        expose_headers=["X-Cloud-Revision"])
 
     @app.middleware("http")
@@ -101,7 +110,9 @@ def create_app(*, db_path: str | Path | None = None,
         return {"ok": True, "service": "banya-study-sync", "version": 1}
 
     @app.get("/v1/snapshot/{subject}")
-    def read_snapshot(subject: str, authorization: str | None = Header(default=None)):
+    def read_snapshot(subject: str, authorization: str | None = Header(default=None),
+                      x_banya_plan_protocol: str | None = Header(default=None),
+                      plan_protocol: str | None = None):
         authorize(authorization)
         check_subject(subject)
         with closing(open_db(db)) as con:
@@ -110,6 +121,8 @@ def create_app(*, db_path: str | Path | None = None,
         if row is None:
             return JSONResponse({"subject": subject, "revision": 0,
                                  "state": None, "updatedAt": None})
+        if PROTOCOL in json.loads(row["state_json"]).get("requiredCapabilities", []) and x_banya_plan_protocol != "1" and plan_protocol != "1":
+            raise HTTPException(status_code=426, detail="Update the PWA before syncing private plan changes")
         return JSONResponse({"subject": subject, "revision": row["revision"],
                              "state": json.loads(row["state_json"]),
                              "updatedAt": row["updated_at"]},
@@ -157,6 +170,15 @@ def create_app(*, db_path: str | Path | None = None,
                 if revision != expected:
                     con.execute("ROLLBACK")
                     raise HTTPException(status_code=409, detail="Revision conflict: refresh before replacing")
+                previous_document = json.loads(prev["state_json"]) if prev is not None else {}
+                required = previous_document.get("requiredCapabilities", [])
+                if PROTOCOL in required:
+                    if request.headers.get("X-Banya-Plan-Protocol") != "1" and request.query_params.get("plan_protocol") != "1":
+                        raise HTTPException(status_code=426, detail="Update the PWA before syncing private plan changes")
+                    state["requiredCapabilities"] = required
+                    encoded = json.dumps(state, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+                    if len(encoded.encode("utf-8")) > MAX_BODY_BYTES:
+                        raise HTTPException(status_code=413, detail="Snapshot too large")
                 updated = revision + 1
                 if prev is not None:
                     con.execute("INSERT INTO history(subject,revision,state_json,updated_at) VALUES(?,?,?,?)",
@@ -177,6 +199,7 @@ def create_app(*, db_path: str | Path | None = None,
         return JSONResponse({"subject": subject, "revision": updated, "updatedAt": now},
                             headers={"X-Cloud-Revision": str(updated)})
 
+    install_routes(app, db, open_db, authorize, agent_on, templates)
     return app
 
 

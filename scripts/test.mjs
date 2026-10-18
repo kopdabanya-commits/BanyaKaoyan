@@ -395,3 +395,15 @@ test('actual time arithmetic supports optional legacy totals and rejects impossi
  for(const values of [['10','20',''],['30','20','5'],['','600','1'],['30','1.5',''],['','','-1']])assert.throws(()=>core.actualTimes(...values));
  assert.throws(()=>core.normalizeState({actualReviewMinutes:{a:-1}}));
 });
+
+test('private task content survives phone note saves without rewriting the public template',async()=>{
+ const task=plan.days[0].items[0],id=task.id,record=core.defaults();record.edits[id]={detail:'Synthetic private task guidance'};
+ const h=harness({storage:new Map([[key,JSON.stringify(record)]])});await h.settle();
+ await h.click('detail',{id,day:plan.days[0].date});assert(h.el('modal').innerHTML.includes('Synthetic private task guidance'));
+ for(const [field,value]of Object.entries({'task-title':task.title,'task-minutes':task.minutes,'task-move':plan.days[0].date,'task-wrong':'','task-note':'New synthetic note'}))h.input(field,value);
+ await h.event('submit',{id:'task-form',dataset:{id,day:plan.days[0].date}});
+ assert.equal(h.api.state.edits[id].detail,'Synthetic private task guidance');assert.equal(h.api.state.notes[id],'New synthetic note');
+ assert.equal(core.normalizeState(h.api.state).edits[id].detail,'Synthetic private task guidance');
+ assert.notEqual(task.detail,'Synthetic private task guidance');
+ assert.throws(()=>core.normalizeState({edits:{[id]:{detail:123}}}));
+});
