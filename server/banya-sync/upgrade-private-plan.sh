@@ -14,17 +14,17 @@ test -s /var/lib/banya-sync/sync.sqlite3
 grep -Fq "private-plan-v1" /var/www/banya-pwa/current/cloud-sync.js
 grep -Fq 'access_log off;' /etc/nginx/sites-available/banya-sync
 nginx -t
-for file in app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py; do test -s "$source_dir/$file"; done
-/opt/banya-sync/.venv/bin/python -m py_compile "$source_dir/app.py" "$source_dir/agent_api.py" "$source_dir/deepseek_ai.py" "$source_dir/learning_memory.py" "$source_dir/learning_policy.py" "$source_dir/learning_analysis.py" "$source_dir/learning_planner.py" "$source_dir/context_engine.py" "$source_dir/capabilities.py" "$source_dir/private_plan.py"
+for file in app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py; do test -s "$source_dir/$file"; done
+/opt/banya-sync/.venv/bin/python -m py_compile "$source_dir/app.py" "$source_dir/autonomous.py" "$source_dir/agent_api.py" "$source_dir/deepseek_ai.py" "$source_dir/learning_memory.py" "$source_dir/learning_policy.py" "$source_dir/learning_analysis.py" "$source_dir/learning_planner.py" "$source_dir/context_engine.py" "$source_dir/capabilities.py" "$source_dir/private_plan.py"
 previous="$(mktemp -d /root/banya-plan-upgrade.XXXXXX)"
 cp -p /etc/banya-sync.env "$previous/environment"
-for file in app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
+for file in app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
   if [[ -f "/opt/banya-sync/$file" ]]; then cp -p "/opt/banya-sync/$file" "$previous/$file"; fi
 done
 cd /opt/banya-sync
 rollback(){
   cp -p "$previous/environment" /etc/banya-sync.env
-  for file in app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
+  for file in app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
     if [[ -f "$previous/$file" ]]; then cp -p "$previous/$file" "/opt/banya-sync/$file"; else rm -f "/opt/banya-sync/$file"; fi
   done
   systemctl restart banya-sync.service || true
@@ -37,7 +37,7 @@ systemctl stop banya-sync.service
 backup_path="$(runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - backup < "$source_dir/upgrade_guard.py")"
 test -s "$backup_path"
 echo 'Private pre-upgrade backup integrity verified; no study data printed.'
-for file in app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$source_dir/$file" "/opt/banya-sync/$file"; done
+for file in app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$source_dir/$file" "/opt/banya-sync/$file"; done
 python3 - <<'PY'
 from pathlib import Path
 p = Path('/etc/banya-sync.env')
@@ -51,6 +51,7 @@ runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - <<'PYINIT'
 from pathlib import Path
 from app import initialize
 from agent_api import initialize_agent
+from autonomous import initialize_auto
 from learning_memory import initialize_memory
 from deepseek_ai import from_environment, initialize_ai
 from private_plan import load_template
@@ -60,6 +61,7 @@ db = Path('/var/lib/banya-sync/sync.sqlite3')
 initialize(db)
 initialize_agent(db)
 initialize_memory(db)
+initialize_auto(db)
 if from_environment().enabled:
     initialize_ai(db)
 PYINIT

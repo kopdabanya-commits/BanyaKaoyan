@@ -25,7 +25,7 @@ if ! id banya-sync >/dev/null 2>&1; then
 fi
 install -d -o root -g root -m 0755 /opt/banya-sync
 install -d -o banya-sync -g banya-sync -m 0700 /var/lib/banya-sync
-for file in app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$SRC/$file" "/opt/banya-sync/$file"; done
+for file in app.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$SRC/$file" "/opt/banya-sync/$file"; done
 install -m 0644 "$SRC/backup_db.py" /opt/banya-sync/backup_db.py
 install -m 0644 "$SRC/requirements.txt" /opt/banya-sync/requirements.txt
 python3 -m venv /opt/banya-sync/.venv
