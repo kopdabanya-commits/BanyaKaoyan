@@ -53,14 +53,14 @@ jobs:
           node scripts/check.mjs
           node scripts/sync-plan-mirrors.mjs --check
           node scripts/privacy-check.mjs
-          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/refresh-test.mjs scripts/plan-import-test.mjs scripts/study-assistant-test.mjs
+          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/refresh-test.mjs scripts/plan-import-test.mjs scripts/study-assistant-test.mjs scripts/learning-memory-test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Run server regression tests (without access to production database)
         run: |
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py server/banya-sync/test_deepseek_ai.py
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py server/banya-sync/test_deepseek_ai.py server/banya-sync/test_learning_memory.py
       - name: Verify intended existing Worker identity and public allowlist
         run: |
           set -euo pipefail

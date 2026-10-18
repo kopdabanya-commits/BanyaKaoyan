@@ -276,3 +276,39 @@ def test_existing_receipts_remain_readable_with_paid_calls_disabled(ai):
         assert response.status_code==200 and response.json()['status']=='prepared'
         assert chat(disabled,requestId='disabled-request-123').status_code==503
     assert len(calls)==old_call_count
+
+
+def test_memory_rules_are_in_provider_context_and_new_profile_invalidates_preview(ai):
+    from test_learning_memory import save, entry
+    client,db,calls,_=ai
+    assert save(client,[entry(category='constraint',text='Synthetic confirmed restriction')]).status_code==200
+    proposal=chat(client).json();assert proposal['status']=='prepared'
+    payload=json.loads(calls[0]['messages'][1]['content'])
+    assert payload['hardRules'][0]['value']['text']=='Synthetic confirmed restriction'
+    assert payload['sources']['profile']['revision']==1
+    assert all(c['access']=='read_only' for c in payload['capabilities'])
+    assert save(client,[entry(category='constraint',text='Synthetic changed restriction')],1,'synthetic-rule-change').status_code==200
+    assert client.get('/v1/ai/requests/'+proposal['requestId'],headers=OWNER_AUTH).json()['status']=='conflict'
+    before=snap(client)
+    assert client.post('/v1/ai/proposals/'+proposal['requestId']+'/commit',headers=OWNER_AUTH,json={'expectedRevision':1,'confirmation':'sync'}).status_code==409
+    assert snap(client)==before
+
+
+def test_changed_profile_during_thinking_rejects_stale_advice(ai):
+    from test_learning_memory import save, entry
+    client,db,calls,_=ai
+    def provider(config,payload):
+        assert save(client,[entry(category='constraint')]).status_code==200
+        return upstream()
+    # Reopen with a fake provider that changes only the synthetic local profile.
+    with TestClient(create_app(db_path=db,token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),template_dir=ai[3],
+                              ai_config=SETTINGS,ai_provider=provider)) as other:
+        before=snap(client)
+        assert chat(other).json()['status']=='conflict'
+        assert snap(client)==before
+
+
+def test_owner_credential_in_conversation_is_never_sent_to_provider(ai):
+    client,_,calls,_=ai
+    assert chat(client,messages=[{'role':'user','content':OWNER}]).status_code==422
+    assert not calls
