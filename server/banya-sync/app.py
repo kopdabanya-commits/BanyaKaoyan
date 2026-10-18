@@ -15,6 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from agent_api import initialize_agent, install_routes
+from learning_memory import initialize_memory, install_memory_routes
+from capabilities import install_capability_routes
 from private_plan import PROTOCOL
 from deepseek_ai import from_environment, initialize_ai, install_ai_routes
 
@@ -77,6 +79,7 @@ def create_app(*, db_path: str | Path | None = None,
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         initialize(db)
+        initialize_memory(db)
         if agent_on or ai_settings.enabled:
             initialize_agent(db)
         if ai_settings.enabled:
@@ -206,6 +209,8 @@ def create_app(*, db_path: str | Path | None = None,
 
     install_routes(app, db, open_db, authorize, agent_on, templates)
     install_ai_routes(app, db, open_db, authorize, ai_settings, templates, ai_provider)
+    install_memory_routes(app, db, open_db, authorize)
+    install_capability_routes(app, db, open_db, authorize, templates)
     return app
 
 
