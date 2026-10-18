@@ -8,7 +8,7 @@ from pathlib import Path
 
 from backup_db import backup_once
 
-TABLES = ("snapshots", "history", "agent_grants", "agent_changes", "agent_backups", "ai_requests", "learning_profiles", "learning_profile_history", "learning_profile_requests", "learning_summaries")
+TABLES = ("snapshots", "history", "agent_grants", "agent_changes", "agent_backups", "ai_requests", "learning_profiles", "learning_profile_history", "learning_profile_requests", "learning_summaries", "auto_control", "auto_permissions", "auto_permission_history", "auto_events", "auto_runs")
 
 
 def read_only(path):

@@ -1,6 +1,8 @@
 """板牙考研：single-user, two-subject snapshot API. Scoped private-plan access is opt-in."""
 from __future__ import annotations
 
+import asyncio
+from contextlib import suppress
 import hashlib
 import hmac
 import json
@@ -19,6 +21,7 @@ from learning_memory import initialize_memory, install_memory_routes
 from capabilities import install_capability_routes
 from private_plan import PROTOCOL
 from deepseek_ai import from_environment, initialize_ai, install_ai_routes
+from autonomous import initialize_auto,AutoService,install_auto_routes,enqueue_sync
 
 SUBJECTS = {"english", "politics"}
 MAX_BODY_BYTES = 524_288
@@ -63,7 +66,7 @@ def create_app(*, db_path: str | Path | None = None,
                allowed_origin: str | None = None,
                agent_enabled: bool | None = None,
                template_dir: str | Path | None = None,
-               ai_config=None, ai_provider=None) -> FastAPI:
+               ai_config=None, ai_provider=None, auto_enabled=None, auto_worker=True) -> FastAPI:
     db = Path(db_path or os.environ.get("BANYA_DB_PATH", "/var/lib/banya-sync/sync.sqlite3"))
     digest = token_sha256 if token_sha256 is not None else os.environ.get("BANYA_SYNC_TOKEN_SHA256", "")
     origin = allowed_origin or os.environ.get("BANYA_ALLOWED_ORIGIN", DEFAULT_ORIGIN)
@@ -76,15 +79,25 @@ def create_app(*, db_path: str | Path | None = None,
     if not origin.startswith("https://") or "/" in origin[len("https://"):]:
         raise RuntimeError("BANYA_ALLOWED_ORIGIN must be one HTTPS origin without a path.")
 
+    auto_on=auto_enabled if auto_enabled is not None else os.environ.get('BANYA_AUTO_ENABLED','0')=='1'
+    automation=AutoService(db,open_db,templates,ai_settings,auto_on,ai_provider,owner_digest=digest)
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         initialize(db)
         initialize_memory(db)
-        if agent_on or ai_settings.enabled:
+        initialize_auto(db)
+        if agent_on or ai_settings.enabled or auto_on:
             initialize_agent(db)
         if ai_settings.enabled:
             initialize_ai(db)
-        yield
+        automation.recover()
+        worker=asyncio.create_task(automation.loop()) if auto_worker and automation.ready() else None
+        try:yield
+        finally:
+            if worker:
+                worker.cancel()
+                with suppress(asyncio.CancelledError):await worker
 
     app = FastAPI(title="Banya Study Sync", version="1.0", docs_url=None,
                   redoc_url=None, openapi_url=None, lifespan=lifespan)
@@ -199,6 +212,8 @@ def create_app(*, db_path: str | Path | None = None,
                 con.execute("""DELETE FROM history WHERE subject=? AND id NOT IN
                                (SELECT id FROM history WHERE subject=? ORDER BY id DESC LIMIT ?)""",
                             (subject, subject, HISTORY_KEEP))
+                if auto_on:
+                    enqueue_sync(con,subject,updated,previous_document.get('record') if prev else None,record)
                 con.execute("COMMIT")
             except Exception:
                 if con.in_transaction:
@@ -211,6 +226,8 @@ def create_app(*, db_path: str | Path | None = None,
     install_ai_routes(app, db, open_db, authorize, ai_settings, templates, ai_provider)
     install_memory_routes(app, db, open_db, authorize)
     install_capability_routes(app, db, open_db, authorize, templates)
+    install_auto_routes(app,automation,authorize)
+    app.state.autonomy=automation
     return app
 
 

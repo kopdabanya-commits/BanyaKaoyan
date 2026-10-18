@@ -7,6 +7,7 @@
 - [ECS_RELEASE.md](ECS_RELEASE.md)：唯一日常 ECS 发布、备份回滚及历史 Cloudflare 边界。
 - [WORKFLOW.md](WORKFLOW.md)：PR、测试、发布与隐私检查。
 - [AI_AGENT_WORKFLOW.md](AI_AGENT_WORKFLOW.md)：用 GPT 正常提需求、额度不足时交给受限 API agent 开 PR 的流程和可复制提示词。
+- [M7_3_AUTONOMY.md](M7_3_AUTONOMY.md)：默认关闭的自主授权、执行、审计和安全撤销。
 - [M7_2_PLANNING.md](M7_2_PLANNING.md)：确定性学习检测、个人时间政策、三种规划预览和未执行边界。
 - [M7_1_MEMORY.md](M7_1_MEMORY.md)：私人学习档案、有限上下文、只读能力清单和本阶段验收边界。
 - [DEEPSEEK_ASSISTANT.md](DEEPSEEK_ASSISTANT.md)：App 内 DeepSeek 思考助手的工作流、隐私、预算和待启用事项。
