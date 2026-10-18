@@ -455,3 +455,14 @@ test('record dashboard keeps retired and unclassified history and never guesses 
  assert(translation.includes('有记录未打卡'));assert(translation.includes('总用时未填写'));assert(!translation.includes('总用时 30'));
  assert(html.includes('不推断实际完成日期'));assert.equal(JSON.stringify(h.api.state),before);
 });
+
+test('M7.4 current-tab presses do not add history; date details store current route',async()=>{
+ const h=harness();await h.settle();h.context.location.pathname='/index.html';h.context.location.search='';
+ const pushed=[];h.context.history={state:null,pushState(s){pushed.push(s);this.state=s},replaceState(s){this.state=s}};
+ h.api.nav('today');h.api.nav('today');assert.equal(pushed.length,0);
+ h.api.nav('calendar');assert.equal(pushed.length,1);h.api.nav('calendar');assert.equal(pushed.length,1);
+ await h.click('cal-day',{date:'2026-10-17'});
+ assert(pushed.at(-1).banyaRoute.detail);assert.equal(pushed.at(-1).banyaRoute.date,'2026-10-17');
+ await h.click('day',{date:'2026-10-18'});assert.equal(h.context.history.state.banyaRoute.date,'2026-10-18');
+ const before=JSON.stringify(h.api.state);assert(!before.includes('banyaRoute'));
+});

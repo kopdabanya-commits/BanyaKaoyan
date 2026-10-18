@@ -86,3 +86,9 @@ M7.3 后端开发线：基于开放 #56 的420af94，独立自主执行通道复
 - #57 后端、#58 UI、#59 助手集成为叠加 PR，前三个 Validate 已通过；最终接入准备另提 PR。所有阶段均未合并、未部署、未配置真实密钥、未修改生产学习数据。
 
 交付 PR：[#57 后端自主执行](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/57) → [#58 移动界面](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/58) → [#59 助手授权集成](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/59) → [#60 API 接入准备](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/60)。均保持开放，不涉及 main 或线上发布。
+
+## M7.4 UI 精修（开发与合成验收，未部署）
+
+基于 #60 的18fc637：修复重复导航入栈、政治日历月份恢复、日期详情路由和弹层清理；重整助手近况/规划/工具列表，授权及启用变化会使首页状态缓存失效。历史调整展示前后对照与原因，来源/版本放入折叠区域；任务可选记录折叠，时间输入在窄屏单列。
+
+本地 Node 145、Python 147、隐私/语法/双科/备份与 ECS 包检查通过。72张合成视口截图和6组浏览器场景通过；CI 新增可下载 PNG/HTML artifact，代表截图随 PR 提交，见 M7_4_VISUAL.md。未合并、未发布、未进行 Android 真机或生产验收，真实模型调用为零。

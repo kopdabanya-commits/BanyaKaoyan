@@ -54,20 +54,20 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 // Navigation metadata contains no learning records and never leaves this tab.
 const ROUTE_KEY='banya_ui_route_v1', VIEWS=['today','calendar','stats','assistant','settings'];
 const routeScroll={};
-function route(){return {view,subject,date:selectedDate,month:calendarMonth,detail:dayDetail,returnScroll:dayReturnScroll,politicsDate:window.PoliticsUI?.getDate?.(),scroll:window.scrollY||0};}
+function route(){return {view,subject,date:selectedDate,month:calendarMonth,detail:dayDetail,returnScroll:dayReturnScroll,politicsDate:window.PoliticsUI?.getDate?.(),politicsNavigation:window.PoliticsUI?.getNavigation?.(),scroll:window.scrollY||0};}
 function rememberRoute(){try{sessionStorage.setItem(ROUTE_KEY,JSON.stringify(route()));}catch{}}
 function restoreRoute(r){
  if(!r||!VIEWS.includes(r.view)||!['english','politics'].includes(r.subject))return false;
  view=r.view;subject=r.subject;if(inRange(r.date))selectedDate=r.date;
- if(/^\d{4}-\d{2}$/.test(r.month))calendarMonth=r.month;
- if(r.politicsDate)window.PoliticsUI?.setDate?.(r.politicsDate);
+ if(/^\d{4}-\d{2}$/.test(r.month)&&r.month>=data.meta.start.slice(0,7)&&r.month<=data.meta.end.slice(0,7))calendarMonth=r.month;
+ if(r.politicsNavigation)window.PoliticsUI?.restoreNavigation?.(r.politicsNavigation);else if(r.politicsDate)window.PoliticsUI?.setDate?.(r.politicsDate);
  dayDetail=!!r.detail;dayReturnScroll=Number.isFinite(r.returnScroll)?Math.max(0,r.returnScroll):0;return true;
 }
 let initialRouteScroll=0;
 try{const r=JSON.parse(sessionStorage.getItem(ROUTE_KEY));if(restoreRoute(r)&&Number.isFinite(r.scroll))initialRouteScroll=Math.max(0,r.scroll);}catch{}
 function markTabs(){document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});}
 function nav(next){
- if(!VIEWS.includes(next))return;
+ if(!VIEWS.includes(next)||next===view&&!dayDetail)return;
  routeScroll[subject+':'+view]=window.scrollY||0;
  if(typeof history!=='undefined'){history.replaceState?.({banyaRoute:route()},'');}
  dayDetail=false;document.body.classList.remove('day-detail-open');view=next;
@@ -90,6 +90,7 @@ function render(enter=false,justDone=''){
   document.body?.classList?.toggle?.('day-detail-open',dayDetail);
   if(document.documentElement?.dataset)document.documentElement.dataset.subject=subject;
  app.innerHTML = `<div class="view-content ${enter?'entering':''}">${dayDetail?'<div class="day-detail-head"><button type="button" class="day-back" data-action="close-day" aria-label="返回日历">‹ <span>返回日历</span></button><span class="day-detail-label">每日学习安排</span></div>':''}${dayDetail?'':subjectBar}${content}${assistantPanel}${importPanel}${cloudPanel}${transferPanel}</div>`;
+ if(!dayDetail&&view==='assistant')window.BanyaStudyAssistant?.refreshHome?.(subject);
  if(storageMessage&&subject==='english')app.insertAdjacentHTML('afterbegin',`<div class="skip-banner" role="alert">${esc(storageMessage)} <button class="cta small" data-action="export">导出备份</button></div>`);
  if(pendingPlan&&subject==='english')app.insertAdjacentHTML('afterbegin','<div class="tip">有新版复习计划，先查看变化再应用。 <button class="cta small" data-action="review-update">查看更新</button></div>');
 }
@@ -101,12 +102,14 @@ function renderSubjects(){
 }
 function renderPolitics(){ window.POLITICS_NAV=nav; return window.PoliticsUI.render(dayDetail?'today':view,today,esc,()=>render()); }
 function openDayDetail(date){
+  const origin=route();
   const valid=subject==='politics'?!!window.PoliticsUI?.setDate?.(date):inRange(date);
   if(!valid)return;
   if(subject==='english')selectedDate=date;
-  calendarMonth=date.slice(0,7);
-  if(!dayDetail){dayReturnScroll=window.scrollY;history.pushState({banyaDay:true,banyaRoute:route()},'',location.pathname+location.search+'#day/'+subject+'/'+date);}
-  dayDetail=true;render(true);window.scrollTo(0,0);
+  if(!dayDetail){dayReturnScroll=origin.scroll;history.replaceState?.({banyaRoute:origin},'');}
+  dayDetail=true;
+  history.pushState({banyaDay:true,banyaRoute:route()},'',location.pathname+location.search+'#day/'+subject+'/'+date);
+  render(true);window.scrollTo(0,0);
 }
 function closeDayDetail(){if(!dayDetail)return;dayDetail=false;render(true);window.scrollTo(0,dayReturnScroll);}
 window.BANYA_OPEN_DAY=openDayDetail;
@@ -116,7 +119,7 @@ window.addEventListener('popstate',event=>{const box=document.getElementById('mo
 function selectDay(date){
  if(subject==='politics'){if(!window.PoliticsUI?.setDate?.(date))return;}
  else {if(!inRange(date))return;selectedDate=date;}
- if(dayDetail&&history.state?.banyaDay)history.replaceState({...history.state},'',location.pathname+location.search+'#day/'+subject+'/'+date);
+ if(dayDetail&&history.state?.banyaDay)history.replaceState({...history.state,banyaRoute:route()},'',location.pathname+location.search+'#day/'+subject+'/'+date);
  render(true);
 }
 function renderWeekChart(week,compact=false){
@@ -209,23 +212,27 @@ function renderSettings(){
 function findTask(id,day){return allTasks(day).find(t=>t.id===id)}
 let modalFocus=null;
 function modal(content){modalFocus=document.activeElement;document.body.classList.add('modal-open');const box=document.getElementById('modal');box.classList.remove('hidden');box.innerHTML=`<div class="modal-card">${content}</div>`;box.querySelector('input,button,textarea')?.focus();}
-function closeModal(){document.getElementById('modal').classList.add('hidden');document.body.classList.remove('modal-open');modalFocus?.focus();}
+function closeModal(){if(typeof Event==='function')document.dispatchEvent?.(new Event('banya-modal-dismiss'));document.getElementById('modal').classList.add('hidden');document.body.classList.remove('modal-open');modalFocus?.focus();}
 function taskModal(id,day){const t=findTask(id,day);if(!t)return;
  const checked=!!state.done[t.id],notDone=!!state.notDone[t.id];
  const writing=Core.writingParts(t);
  modal(`<div class="modal-head"><div><div class="eyebrow">专项训练 · ${esc(t.type)}</div><h2>训练记录</h2></div><button class="close" data-action="close" aria-label="关闭训练记录">×</button></div>
  <div class="quickflex task-overview"><div><b>${esc(t.title)}</b><br><span>${esc(day)} · ${writing?`预计：动笔写${writing.writing}分钟、批改复盘${writing.review}分钟`:`预计${t.minutes}分钟`} · ${notDone?'已选不做':checked?'已完成':'待完成'}</span></div></div>
- <section class="study-guide" aria-label="训练方法"><span class="guide-label">这项练习怎么做</span><p>${esc(t.detail||'按自己的节奏独立完成，再核对答案并记录收获。')}</p></section>
+ <details class="study-guide" aria-label="训练方法"><summary class="guide-label">这项练习怎么做</summary><p>${esc(t.detail||'按自己的节奏独立完成，再核对答案并记录收获。')}</p></details>
  <form id="task-form" data-id="${esc(t.id)}" data-day="${esc(day)}">
  <div class="record-heading"><h3>做完后记录</h3><small>不必写很多，留下关键错因即可</small></div>
+ <details class="record-extra"><summary>错题数和题号（可选）</summary>
  <label class="form-line"><span>${['新题型','阅读'].includes(t.type)?'错题数（0—5）':t.type==='完形'?'错题数（0—20）':'错题数（可选）'}</span><input id="task-wrong" inputmode="numeric" type="number" min="0" max="${['新题型','阅读'].includes(t.type)?5:20}" placeholder="${t.type==='新题型'?'5道题中错了几道？':'没错填0；未统计可留空'}" value="${esc(state.wrong[t.id]??'')}"></label>
  <label class="form-line"><span>错的是哪几题（可选）</span><input id="task-question-ids" maxlength="500" placeholder="例如 3、8、12；不填也可以" value="${esc(state.questionIds[t.id]||'')}"></label>
+ </details>
  <section class="writing-time-editor" aria-label="做完后的实际用时"><h3>这次实际用了多久</h3><p class="setting-note">都是做完后的记录，不会改变计划。填总用时和答题用时，会自动算出批改复盘；也可以自己填。</p><div class="writing-time-fields">
  <label class="form-line"><span>实际总用时（分钟，可选）</span><input id="task-actual-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="例如 30" value="${esc(state.actualMinutes[t.id]??'')}"></label>
  <label class="form-line"><span>${t.type==='写作'?'实际写作用时':'实际答题／学习用时'}（分钟，可选）</span><input id="task-actual-writing-minutes" inputmode="numeric" type="number" min="1" max="600" placeholder="例如 20" value="${esc(state.actualWritingMinutes[t.id]??'')}"></label>
  <label class="form-line"><span>实际批改复盘用时（分钟，可选）</span><input id="task-actual-review-minutes" inputmode="numeric" type="number" min="0" max="600" placeholder="自动计算，也能自己填" value="${esc(state.actualReviewMinutes[t.id]??'')}"></label>
  </div><p class="setting-note" id="actual-time-hint" role="status">可以只记总用时；还没批改可以填 0，不填不会补成计划时间。</p></section>
+ <details class="record-extra"><summary>一句话复盘（可选）</summary>
  <label class="form-line"><span>一句话复盘（可选）</span><textarea id="task-note" maxlength="20000" placeholder="例如：定位词找对了，但没看转折句。">${esc(state.notes[t.id]||'')}</textarea></label>
+ </details>
  <details class="advanced-adjust"><summary>调整任务名称、预计时间或日期</summary><div class="advanced-fields">
  ${writing?`<section class="writing-time-editor" aria-label="作文计划用时"><h3>计划用时</h3><p class="setting-note">填总时间和写作时间，批改复盘会自动算好；也可以直接改批改复盘时间。</p><div class="writing-time-fields"><label class="form-line"><span>总时间（分钟）</span><input id="task-minutes" inputmode="numeric" type="number" min="2" max="90" required value="${t.minutes}"></label><label class="form-line"><span>动笔写（分钟）</span><input id="task-write-minutes" inputmode="numeric" type="number" min="1" max="89" required value="${writing.writing}"></label><label class="form-line"><span>批改复盘（分钟）</span><input id="task-review-minutes" inputmode="numeric" type="number" min="1" max="89" required value="${writing.review}"></label></div><p class="setting-note" id="writing-time-hint" role="status">${t.minutes} 分钟 = 写 ${writing.writing} 分钟 + 批改复盘 ${writing.review} 分钟；仍然只打卡一次。</p></section>`:''}
  <label class="form-line"><span>任务名称</span><input id="task-title" maxlength="200" required value="${esc(t.title)}" ${t.vocab?'disabled':''}></label>
