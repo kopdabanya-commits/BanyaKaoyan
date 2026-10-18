@@ -116,6 +116,7 @@ def initialize_ai(db, currency="USD"):
 
         if currency not in ('USD','CNY'): raise ValueError('unsupported billing currency')
         con.execute('CREATE TABLE IF NOT EXISTS ai_billing_policy (id INTEGER PRIMARY KEY CHECK(id=1), currency TEXT NOT NULL)')
+        con.execute('BEGIN IMMEDIATE')
         old=con.execute('SELECT currency FROM ai_billing_policy WHERE id=1').fetchone()
         previous=old[0] if old else 'USD'
         if previous!=currency and con.execute('SELECT 1 FROM ai_requests WHERE cost_nano>0 LIMIT 1').fetchone():
