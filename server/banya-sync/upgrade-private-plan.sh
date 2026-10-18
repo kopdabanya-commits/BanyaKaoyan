@@ -83,6 +83,24 @@ if from_environment().enabled:
 initialize_activation(db)
 PYINIT
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - verify "$backup_path" < "$source_dir/upgrade_guard.py"
+# Exercise deployed profile/diagnostic code read-only, without exposing its output.
+runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - <<'READONLY'
+import sqlite3
+from pathlib import Path
+from learning_memory import profile
+from learning_analysis import AnalysisRequest, analyze
+con=sqlite3.connect('file:/var/lib/banya-sync/sync.sqlite3?mode=ro',uri=True)
+con.row_factory=sqlite3.Row
+con.execute('PRAGMA query_only=ON')
+try:
+    for subject in ('english','politics'):
+        profile(con,subject)
+        report=analyze(con,Path('/var/www/banya-pwa/current'),AnalysisRequest(subject=subject))
+        assert report['subject']==subject
+finally:
+    con.close()
+print('Both subjects: read-only profile and free deterministic analysis passed; no record content printed.')
+READONLY
 systemctl start banya-sync.service
 ready=false
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
