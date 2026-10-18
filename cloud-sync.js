@@ -80,17 +80,36 @@ function panel() {
  '<p class="setting-note" role="status" id="banya-cloud-message">'+escaped(message)+'</p></section>';
 }
 function agentPanel() {
- return '<details class="agent-access"><summary>连接私人 GPT</summary><p class="setting-note">首次在自己的私人 GPT 中接入，之后在普通聊天讨论并确认同步。授权只用于选定范围的未完成计划，不能修改打卡、错题或实际用时；可随时撤销。</p><button type="button" class="cta ghost small" data-banya-action="agent-open">管理 GPT 授权</button></details>';
+ return '<details class="agent-access"><summary>其他接入：私人 GPT（可选）</summary><p class="setting-note">首次在自己的私人 GPT 中接入，之后在普通聊天讨论并确认同步。授权只用于选定范围的未完成计划，不能修改打卡、错题或实际用时；可随时撤销。</p><button type="button" class="cta ghost small" data-banya-action="agent-open">管理 GPT 授权</button></details>';
 }
-async function ownerApi(path,method='GET',body) {
+async function ownerApi(path,method='GET',body,namespace='agent') {
+ if(!['agent','ai'].includes(namespace))throw Error('不支持的私有接口');
  if(!config||endpoint(config.endpoint)!==API_ORIGIN)throw Error('请先连接云同步');
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),namespace==='ai'?110000:10000);
  try{
-  const response=await fetch(config.endpoint+'/v1/agent/'+path,{method,cache:'no-store',redirect:'error',credentials:'omit',signal:controller.signal,
+  const response=await fetch(config.endpoint+'/v1/'+namespace+'/'+path,{method,cache:'no-store',redirect:'error',credentials:'omit',signal:controller.signal,
    headers:{Authorization:'Bearer '+config.token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
-  if(!response.ok)throw Error((response.status===503||response.status===404)?'服务器尚未启用私人 GPT 接入':response.status===401?'请先检查云同步连接':'授权操作未完成，请稍后重试');
+  if(!response.ok){
+   if(namespace==='ai'){
+    let code='ai_request_failed';try{code=(await response.json()).detail?.code||code;}catch{}
+    const error=Error(response.status===401?'请先连接云同步':response.status===404||response.status===503?'学习助手尚未启用，当前不会调用 DeepSeek':response.status===429?'本月调用或预算额度已用完':'操作未完成，请检查同步版本或缩小日期范围');error.code=code;throw error;
+   }
+   throw Error((response.status===503||response.status===404)?'服务器尚未启用私人 GPT 接入':response.status===401?'请先检查云同步连接':'授权操作未完成，请稍后重试');
+  }
   return await response.json();
  }finally{clearTimeout(timer);}
+}
+async function prepareAssistant(subject) {
+ if(!SUBJECTS.includes(subject)||!config)throw Error('请先连接云同步并选择科目');
+ if(!await syncAll(true))throw Error('请先完成同步并处理冲突，再请 AI 分析');
+ const cloud=await api(subject,'GET'),meta=metaFor(subject),raw=localStorage.getItem(KEYS[subject]);
+ if(!meta||!raw||cloud.revision!==meta.revision||await fingerprint(raw)!==meta.hash)throw Error('本机记录仍在变化，请保存并同步后再试');
+ if(!cloud.state?.templateVersion)throw Error('请先更新应用并同步当前计划版本');
+ return {revision:cloud.revision,templateVersion:cloud.state.templateVersion};
+}
+function assistantRequest(path,method='GET',body) {
+ if(!/^(status|chat|requests\/[A-Za-z0-9_-]{8,80}|proposals\/[A-Za-z0-9_-]{8,80}\/commit)$/.test(path))throw Error('不支持的学习助手接口');
+ return ownerApi(path,method,body,'ai');
 }
 async function showAgentAccess() {
  const grants=await ownerApi('grants'),box=document.getElementById('modal');
@@ -373,5 +392,5 @@ root.addEventListener('online',function(){void syncAll();});
 root.addEventListener('focus',function(){void syncAll();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)void syncAll();});
 setInterval(function(){void syncAll();},20000);
-root.BanyaCloudSync={panel:panel,quickPanel:quickPanel,syncAll:syncAll,isConnected:()=>!!config};
+root.BanyaCloudSync={panel:panel,quickPanel:quickPanel,syncAll:syncAll,prepareAssistant:prepareAssistant,assistantRequest:assistantRequest,isConnected:()=>!!config};
 })(window);

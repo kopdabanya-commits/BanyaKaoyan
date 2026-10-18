@@ -12,7 +12,7 @@ test('direct update loads the same app shell with fresh CSS and every script',()
  const fresh=update.replace('<title>板牙考研 · 更新入口</title>','<title>板牙考研 · 英语二与政治</title>').replaceAll('?reauth=1','');
  assert.equal(fresh.split('\n').map(line=>line.trimEnd()).join('\n'),index.split('\n').map(line=>line.trimEnd()).join('\n'));
  const scripts=[...index.matchAll(/<script src="([^"]+)"/g)].map(match=>match[1]);
- assert.equal(scripts.length,11);
+ assert.equal(scripts.length,12);
  for(const asset of scripts)assert.ok(update.includes(`src="${asset}?reauth=1"`),asset);
  assert.ok(update.includes('href="./styles.css?reauth=1"'));
  assert.ok(!read('sw.js').includes("'./update.html'"),'recovery page must bypass old Service Worker cache');

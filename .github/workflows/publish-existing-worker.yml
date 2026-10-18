@@ -9,6 +9,7 @@ on:
       - refresh.js
       - styles.css
       - app.js
+      - study-assistant.js
       - cloud-sync.js
       - plan-import.js
       - origin-transfer.js
@@ -48,18 +49,18 @@ jobs:
       - name: All Node syntax, plans, offline, and both-subject tests
         run: |
           set -euo pipefail
-          for f in app.js plan-import.js refresh.js cloud-sync.js origin-transfer.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
+          for f in app.js study-assistant.js plan-import.js refresh.js cloud-sync.js origin-transfer.js planner-core.js politics-core.js politics-ui.js sw.js; do node --check "$f"; done
           node scripts/check.mjs
           node scripts/sync-plan-mirrors.mjs --check
           node scripts/privacy-check.mjs
-          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/refresh-test.mjs scripts/plan-import-test.mjs
+          node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/refresh-test.mjs scripts/plan-import-test.mjs scripts/study-assistant-test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Run server regression tests (without access to production database)
         run: |
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py server/banya-sync/test_deepseek_ai.py
       - name: Verify intended existing Worker identity and public allowlist
         run: |
           set -euo pipefail
@@ -144,7 +145,7 @@ jobs:
           bash -n server/banya-sync/install-pwa-fallback.sh
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
-          tar -czf /tmp/banya-site.tgz index.html update.html refresh.html refresh.js styles.css app.js plan-import.js cloud-sync.js origin-transfer.js \
+          tar -czf /tmp/banya-site.tgz index.html update.html refresh.html refresh.js styles.css app.js study-assistant.js plan-import.js cloud-sync.js origin-transfer.js \
             planner-core.js plan-data.js plan.json study-intelligence.js study-ui.js \
             politics-core.js politics-plan-data.js politics-plan.json politics-ui.js \
             sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png
@@ -173,7 +174,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, pathlib, urllib.request, urllib.error
           base='https://124.70.128.201'
-          for path in ('index.html','update.html','refresh.html','refresh.js','styles.css','sw.js','app.js','plan-import.js','cloud-sync.js','politics-core.js','politics-ui.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
+          for path in ('index.html','update.html','refresh.html','refresh.js','styles.css','sw.js','app.js','study-assistant.js','plan-import.js','cloud-sync.js','politics-core.js','politics-ui.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
               with urllib.request.urlopen(base+'/'+path, timeout=20) as response:
                   assert response.status==200,(path,response.status)
                   remote=response.read()
