@@ -22,3 +22,4 @@
 
 - [M7.3 移动界面](M7_3_MOBILE.md)
 - [M7.3 API 安全接入准备与未来启用步骤](M7_3_API_READINESS.md)
+- [M7.4 移动端精修与截图验收](M7_4_VISUAL.md)

@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert not page.locator('#auto-enabled').is_checked()
     page.locator('#auto-enabled').check();page.locator('#auto-budget').fill('1')
     page.locator('#auto-form details summary').click();page.locator('#auto-type-0').check();page.locator('#auto-consent').check()
-    page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent==='本科学习授权已保存。'")
+    page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent==='本学科授权已保存。'")
     if subject=='english':
      page.locator('#auto-master').click();page.wait_for_function("document.getElementById('auto-state').textContent==='总开关已更新。'")
     assert enqueue(client,subject).status_code==200

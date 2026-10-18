@@ -65,7 +65,7 @@ function trainingRecords(categories,{subject='english'}={}){
   }).join('');
   return '<details class="training-card" data-training-category="'+esc(c.label)+'"><summary><span class="training-card-heading">'+esc(c.label)+'<i aria-hidden="true">⌄</i></span><span class="training-card-count"><strong>'+c.done+'</strong> 项已打卡</span><span class="training-card-status">'+esc(status)+'</span><span class="training-card-time">'+esc(timeLabel)+'</span></summary><div class="training-card-records">'+(rows||'<p class="training-empty">保存一次练习记录后，就能在这里看到。</p>')+'</div></details>';
  }).join('');
- return header('我的学习记录','做过的、记下来的，都在这里。')+summary+hints+(items.length?'':'<div class="training-empty-banner">这里还没有已保存的记录。如果记录在云端，请先到设置点击“立即同步”。</div>')+'<div class="training-cards">'+cards+'</div><p class="training-source-note">点开卡片看明细。日期沿用任务安排，不推断实际完成日期；未来未记录的计划不计入统计。</p>';
+ return header('我的学习记录','做过的、记下来的，都在这里。')+summary+hints+(items.length?'':'<div class="training-empty-banner">这里还没有已保存的记录。如果记录在云端，请先到设置点击“立即同步”。</div>')+'<button type="button" class="stats-diagnosis" data-diagnosis-action="open" data-diagnosis-subject="'+subject+'"><span><b>看看近期训练与未来负荷</b><small>只读诊断，不产生模型费用</small></span><span>›</span></button><div class="training-cards">'+cards+'</div><p class="training-source-note">点开卡片看明细。日期沿用任务安排，不推断实际完成日期；未来未记录的计划不计入统计。</p>';
 }
 root.BanyaStudyUI={esc,dayAdd,shortDay,header,strip,dayHeading,task,stats,trainingRecords};
 })(typeof window==='object'?window:globalThis);

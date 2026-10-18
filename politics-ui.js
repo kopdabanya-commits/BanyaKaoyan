@@ -75,12 +75,12 @@ function showPoliticsTask(id){
  if(!box||!box.classList){openId=id;rerender();return}
  box.innerHTML='<div class="modal-card"><div class="modal-head"><div><span class="eyebrow">专项训练 · '+esc(t.type)+'</span><h2>训练记录</h2></div><button class="close" type="button" data-action="p-note-close" aria-label="关闭训练记录">×</button></div>'
  +'<div class="quickflex task-overview"><div><b>'+esc(t.title)+'</b><br><span>预计'+t.minutes+'分钟 · '+(notDone?'已选不做':done?'已完成':'待完成')+'</span></div></div>'
- +'<section class="study-guide"><span class="guide-label">这项练习怎么做</span><p>'+esc(t.detail)+'</p></section>'
- +'<form id="p-task-form" data-id="'+esc(id)+'"><label class="form-line"><span>错题数（可选）</span><input id="p-wrong" type="number" inputmode="numeric" min="0" max="100" value="'+(state.wrong[id]??'')+'"></label>'
+ +'<details class="study-guide"><summary class="guide-label">这项练习怎么做</summary><p>'+esc(t.detail)+'</p></details>'
+ +'<form id="p-task-form" data-id="'+esc(id)+'"><details class="record-extra"><summary>错题数和题号（可选）</summary><label class="form-line"><span>错题数（可选）</span><input id="p-wrong" type="number" inputmode="numeric" min="0" max="100" value="'+(state.wrong[id]??'')+'"></label>'
  +'<label class="form-line"><span>错的是哪几题（可选）</span><input id="p-question-ids" maxlength="500" placeholder="例如 马原第3、8题" value="'+esc(state.questionIds[id]||'')+'"></label>'
- +'<label class="form-line"><span>实际用了多久（可选）</span><input id="p-actual-minutes" type="number" inputmode="numeric" min="1" max="600" placeholder="分钟" value="'+esc(state.actualMinutes[id]??'')+'"></label>'
+ +'</details><label class="form-line"><span>实际总用时（分钟，可选）</span><input id="p-actual-minutes" type="number" inputmode="numeric" min="1" max="600" placeholder="分钟" value="'+esc(state.actualMinutes[id]??'')+'"></label>'
  +'<details class="record-extra"><summary>分别记录答题和批改时间</summary><label class="form-line"><span>实际答题／学习（分钟）</span><input id="p-actual-writing-minutes" type="number" min="1" max="600" inputmode="numeric" value="'+esc(state.actualWritingMinutes[id]??'')+'"></label><label class="form-line"><span>批改复盘（分钟）</span><input id="p-actual-review-minutes" type="number" min="0" max="600" inputmode="numeric" placeholder="可留空，保存时自动计算" value="'+esc(state.actualReviewMinutes[id]??'')+'"></label></details>'
- +'<label class="form-line"><span>简短记录（可选）</span><textarea id="p-note" rows="2" maxlength="3000">'+esc(state.notes[id]||'')+'</textarea></label>'
+ +'<details class="record-extra"><summary>一句话复盘（可选）</summary><label class="form-line"><span>简短记录（可选）</span><textarea id="p-note" rows="2" maxlength="3000">'+esc(state.notes[id]||'')+'</textarea></label></details>'
  +'<div class="button-row"><button class="cta secondary record-save-only" type="submit">只保存记录</button></div><div class="button-row record-status-actions"><button class="cta ghost" type="submit" data-not-done="'+(notDone?'false':'true')+'">'+(notDone?'恢复待完成':'标记不做')+'</button><button class="cta" type="submit" data-complete="true">'+(done?'保存并保持完成':'保存并打卡完成')+'</button></div></form>'
  +'<div class="button-row"><button type="button" class="cta ghost small" data-action="p-edit-task" data-id="'+esc(id)+'">修改计划项</button><button type="button" class="cta ghost small" data-action="p-remove-task" data-id="'+esc(id)+'">从计划移除</button></div></div>';
  box.classList.remove('hidden');
@@ -135,5 +135,5 @@ document.addEventListener('submit',e=>{if(!ready||!['p-progress-form','p-task-fo
 },true);
 document.addEventListener('change',async e=>{if(!ready||e.target.id!=='p-import-file')return;e.stopImmediatePropagation?.();const file=e.target.files?.[0];if(!file)return;try{if(file.size>2000000)throw Error('备份文件过大');const obj=JSON.parse(await file.text());if(obj.app!=='yantu-politics'||obj.version!==1)throw Error('不是有效的政治备份');const next=Core.normalize(obj.state);if(!confirm('恢复政治记录会替换原政治打卡，但不会影响英语二。恢复前将保留回退副本，继续吗？'))return;localStorage.setItem(Core.key+'_before_restore',JSON.stringify(state));const before=state;state=next;if(!save()){state=before;throw Error('本机写入失败')}rerender()}catch(err){alert('导入失败：'+err.message)}},true);
 root.addEventListener?.('storage',e=>{if(ready&&e.key===Core.key){restore();rerender()}});
-root.PoliticsUI={render,setDate,getDate:()=>selected};
+root.PoliticsUI={render,setDate,getDate:()=>selected,getNavigation:()=>({date:selected,month:pMonth}),restoreNavigation:r=>{if(!r||!setDate(r.date))return false;if(/^\d{4}-\d{2}$/.test(r.month)&&r.month>=plan.meta.start.slice(0,7)&&r.month<=plan.meta.end.slice(0,7))pMonth=r.month;return true;}};
 })(typeof window==='object'?window:globalThis);

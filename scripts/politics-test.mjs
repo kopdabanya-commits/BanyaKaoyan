@@ -188,3 +188,12 @@ test('private political date/content overlays and old learning records survive p
  assert(!h.storage.has('yantu_english_2026_m1'));
  assert.throws(()=>Core.normalize({moved:{[id]:'2026-02-31'}}));
 });
+
+test('M7.4 navigation restores calendar month independently of selected task date',()=>{
+ const h=harness();h.win.PoliticsUI.setDate('2026-10-18');h.render('calendar');h.click('p-cal-next');
+ const route=h.win.PoliticsUI.getNavigation();assert.equal(route.month,'2026-11');assert.equal(route.date,'2026-10-18');
+ h.win.PoliticsUI.setDate('2026-12-01');h.win.PoliticsUI.restoreNavigation(route);
+ assert.deepEqual(JSON.parse(JSON.stringify(h.win.PoliticsUI.getNavigation())),{date:'2026-10-18',month:'2026-11'});
+ assert(h.render('calendar').includes('2026年11月'));
+ h.win.PoliticsUI.restoreNavigation({date:'2026-10-18',month:'invalid'});assert(h.render('calendar').includes('2026年10月'));
+});

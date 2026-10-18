@@ -27,3 +27,33 @@ jobs:
           cache-dependency-path: server/banya-sync/requirements.txt
       - run: python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
       - run: bash scripts/validate.sh
+
+  mobile-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            server/banya-sync/requirements.txt
+            scripts/requirements-browser.txt
+      - run: python -m pip install -r server/banya-sync/requirements.txt -r scripts/requirements-browser.txt pytest==9.0.2 httpx==0.28.1
+      - run: python -m playwright install --with-deps chromium
+      - name: Synthetic mobile UI and isolated AI acceptance
+        run: python scripts/visual_acceptance.py --output artifacts/m74-visual
+      - name: Downloadable screenshots and HTML review index
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m74-mobile-synthetic-${{ github.sha }}
+          path: artifacts/m74-visual/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Review instructions
+        if: always()
+        run: |
+          echo '## Mobile visual acceptance' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Download the m74-mobile-synthetic artifact from this run and open index.html. All records and model responses are synthetic. Browser checks are not Android or production acceptance.' >> "$GITHUB_STEP_SUMMARY"
