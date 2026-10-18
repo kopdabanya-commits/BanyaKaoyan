@@ -1,0 +1,42 @@
+name: One-time private AI readiness gate
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/once-auto-readiness.yml]
+permissions:
+  contents: read
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: banya-ai-production
+    timeout-minutes: 4
+    env:
+      BANYA_OWNER_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+    steps:
+      - name: Read only sanitized AI and learning readiness metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_OWNER_TOKEN"
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import date,timedelta
+          from zoneinfo import ZoneInfo
+          base='https://124.70.128.201'
+          token=os.environ['BANYA_OWNER_TOKEN']
+          opener=urllib.request.build_opener(urllib.request.HTTPHandler())
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token,'X-Banya-Plan-Protocol':'1','Accept':'application/json'})
+              with opener.open(req,timeout=15) as response:return json.load(response)
+          s=get('/v1/ai/status')
+          a=get('/v1/ai/auto/status')
+          print('AI_CONFIG_READY',s.get('configuredReady'),'AI_APPROVED',s.get('ready'),'CURRENCY',s.get('currency'),'MONTHLY_BUDGET',s.get('monthlyBudget'),'MONTH_CALLS',s.get('monthlyCalls'),'APPROVAL_REV',s.get('activation',{}).get('revision'))
+          print('AUTO_CONTROL',a.get('control'),'SERVER_READY',a.get('serverReady'),'ACTIVE_SUBJECTS',[g['subject'] for g in a.get('grants',[]) if g['enabled']])
+          for sub in ('english','politics'):
+              p=get('/v1/ai/profiles/'+sub);snap=get('/v1/snapshot/'+sub)
+              today=date.today().isoformat()
+              valid=[e for e in p.get('entries',[]) if e.get('category')=='budget' and e.get('active') and e.get('temporal')=='current' and e.get('certainty') in ('confirmed','reported') and isinstance(e.get('value',{}).get('minutes'),int) and (not e.get('validUntil') or e['validUntil']>=today)]
+              print('READINESS',sub,'snapshotRev',snap.get('revision'),'profileRev',p.get('revision'),'hasBudget',bool(valid),'activeEntries',len([e for e in p.get('entries',[]) if e.get('active')]))
+          print('DATES',str(date.today()),str(date.today()+timedelta(days=1)))
+          PY
