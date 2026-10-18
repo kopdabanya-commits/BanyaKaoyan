@@ -155,3 +155,19 @@ def test_auto_upgrade_tables_are_empty_and_preserved(auto):
     from upgrade_guard import create_verified_backup,verify_preserved
     c,svc,db,_,_,root=auto;grant(c);enable(c);enqueue(c);svc.process_one()
     saved=create_verified_backup(db,root/'backups');initialize_auto(db);verify_preserved(db,saved)
+
+
+def test_owner_ai_pause_during_automatic_call_stops_before_write(auto):
+    from dataclasses import replace
+    c,service,db,calls,response,_=auto
+    service.config=replace(service.config,owner_approval_required=True,approval_stamp='synthetic-config')
+    assert c.post('/v1/ai/activation',headers=OWNER_AUTH,json={'expectedRevision':0,'enabled':True,'confirmation':'set_ai_activation'}).status_code==200
+    # The app config uses a test stamp ''; pin the service to that same config.
+    service.config=replace(service.config,approval_stamp='')
+    enable(c);grant(c);enqueue(c)
+    before=snapshot_rows(db)
+    def pause():
+        with sqlite3.connect(db) as con:con.execute('UPDATE ai_activation SET enabled=0,revision=revision+1')
+    response['during']=pause
+    assert service.process_one()=='ai_activation_changed'
+    assert snapshot_rows(db)==before and len(calls)==1

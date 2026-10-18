@@ -77,3 +77,12 @@ M7.3 后端开发线：基于开放 #56 的420af94，独立自主执行通道复
 - 助手中加入 AI 自动管理：默认关闭、总开关、双科独立授权、费用/次数/日期/字段/题型范围、历史与安全撤销。关闭服务器时不能从前端开启调用。
 - 浏览器连接真实本地后端、临时合成数据库与注入模拟模型：英语及政治各完成授权、自动调整和撤销，撤销后科目暂停；两次模拟调用，真实付费调用为零。
 - 未合并、未部署、未修改生产学习数据。
+
+## M7.3 API 安全接入准备（开发分支，2026-10-18）
+
+- 官方公开文档确认 flash 思考模式/high 参数；未发真实模型请求，账号响应兼容性待真实授权验收。
+- 新增 root 私有配置写入与手动 main-only 工作流，默认关闭/零费用；更换配置后 App 批准失效，须重新启用。查询及切换开关不调用模型。
+- 新增批准 CAS、调用中暂停、配置版本、升级保留、危险输入、收据不泄漏测试；Node 143 / Python 147 / ECS 包完整性与隐私检查通过。三种宽度双科浏览器验证还通过了系统返回关闭任务弹层及 Service Worker 离线重开；浏览器模拟与生产验收严格区分。
+- #57 后端、#58 UI、#59 助手集成为叠加 PR，前三个 Validate 已通过；最终接入准备另提 PR。所有阶段均未合并、未部署、未配置真实密钥、未修改生产学习数据。
+
+交付 PR：[#57 后端自主执行](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/57) → [#58 移动界面](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/58) → [#59 助手授权集成](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/59) → [#60 API 接入准备](https://github.com/kopdabanya-commits/BanyaKaoyan/pull/60)。均保持开放，不涉及 main 或线上发布。

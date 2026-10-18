@@ -63,7 +63,8 @@ function restoreRoute(r){
  if(r.politicsDate)window.PoliticsUI?.setDate?.(r.politicsDate);
  dayDetail=!!r.detail;dayReturnScroll=Number.isFinite(r.returnScroll)?Math.max(0,r.returnScroll):0;return true;
 }
-try{restoreRoute(JSON.parse(sessionStorage.getItem(ROUTE_KEY)));}catch{}
+let initialRouteScroll=0;
+try{const r=JSON.parse(sessionStorage.getItem(ROUTE_KEY));if(restoreRoute(r)&&Number.isFinite(r.scroll))initialRouteScroll=Math.max(0,r.scroll);}catch{}
 function markTabs(){document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});}
 function nav(next){
  if(!VIEWS.includes(next))return;
@@ -430,6 +431,7 @@ document.addEventListener('change',async e=>{
  }
 });
 render();
+if(initialRouteScroll&&typeof requestAnimationFrame==='function')requestAnimationFrame(()=>{window.scrollTo(0,initialRouteScroll);rememberRoute();});
 window.addEventListener('focus',refreshToday);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshToday();checkUpdates(true)}});
 setInterval(refreshToday,60000);

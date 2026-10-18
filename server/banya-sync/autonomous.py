@@ -14,7 +14,7 @@ from typing import Literal
 from fastapi import Header,Request,HTTPException
 from pydantic import Field,ValidationError,model_validator
 from agent_api import StrictModel,read_model,fail
-from deepseek_ai import call_deepseek,MAX_INPUT_BYTES,MAX_OUTPUT_TOKENS,SECRET_PATTERN
+from deepseek_ai import call_deepseek,ai_allowed,activation,provider_receipt,MAX_INPUT_BYTES,MAX_OUTPUT_TOKENS,SECRET_PATTERN
 from learning_memory import profile
 from learning_analysis import AnalysisRequest,analyze
 from learning_policy import resolve_policy
@@ -100,7 +100,9 @@ class AutoService:
         self.provider=provider or call_deepseek
         self.owner_digest=owner_digest
 
-    def ready(self):return self.enabled and self.config.ready
+    def ready(self):
+        if not self.enabled or not self.config.ready:return False
+        with closing(self.connect(self.db)) as con:return ai_allowed(self.config,con)
     def month(self):return datetime.fromtimestamp(self.clock(),timezone.utc).strftime('%Y-%m')
 
     def recover(self):
@@ -140,6 +142,8 @@ class AutoService:
         try:
             with closing(self.connect(self.db)) as con:
                 con.execute('BEGIN IMMEDIATE')
+                if not ai_allowed(self.config,con):return None
+                approval_revision=activation(con)['revision']
                 master=control(con)
                 if not master['enabled']:return None
                 if con.execute("SELECT 1 FROM auto_runs WHERE status='pending' LIMIT 1").fetchone():return None
@@ -191,6 +195,7 @@ class AutoService:
             suggestion=PlanningSuggestion.model_validate(json.loads(content))
             with closing(self.connect(self.db)) as con:
                 con.execute('BEGIN IMMEDIATE');current=permission(con,subject);current_master=control(con)
+                if self.config.owner_approval_required and (not ai_allowed(self.config,con) or activation(con)['revision']!=approval_revision):raise PlanError('ai_activation_changed',409)
                 if not current or not current['enabled'] or current['revision']!=grant['revision'] or not current_master['enabled'] or current_master['revision']!=master['revision']:raise PlanError('permission_changed',409)
                 if int(self.clock())-now>180:raise PlanError('automatic_result_expired',409)
                 # validate_suggestion pins profile, snapshot and template; then constrain fields/type/date.
@@ -208,8 +213,7 @@ class AutoService:
                         if t and (t['type'] not in cfg['types'] or not max(tomorrow,cfg['start'])<=t['date']<=cfg['end']):raise PlanError('automatic_scope_forbidden')
                 row=con.execute('SELECT * FROM snapshots WHERE subject=?',(subject,)).fetchone();document=json.loads(row['state_json'])
                 receipt={'summary':suggestion.summary,'reasons':[r.model_dump() for r in suggestion.reasons],'changes':changes,
-                         'usage':{k:v for k,v in (upstream.get('usage') or {}).items() if k in ('prompt_tokens','completion_tokens','total_tokens') and type(v) is int and 0<=v<=1_000_000},
-                         'providerRequestId':upstream.get('id','')[:100] if isinstance(upstream.get('id',''),str) and not SECRET_PATTERN.search(upstream.get('id','')) else '',
+                         **provider_receipt(upstream,self.config),
                          'sources':prepared['sources']}
                 revision=None
                 if changes:

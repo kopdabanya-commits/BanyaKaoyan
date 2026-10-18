@@ -47,6 +47,8 @@ class AIConfig:
     api_key: str = field(default="", repr=False)
     # Zero budget means no paid calls, even if a key exists.
     monthly_budget_nano: int = 0
+    approval_stamp: str = ""
+    owner_approval_required: bool = False  # Injected test configs may opt out; environment always opts in.
     monthly_calls: int = 100
     input_nano_per_token: int = 300  # Flash peak/cache-miss $0.30 / 1M, checked 2026-10-18.
     output_nano_per_token: int = 1200  # Flash peak $1.20 / 1M. Verify again before enabling.
@@ -63,6 +65,8 @@ def from_environment():
         if not budget.is_finite() or not 0 <= budget <= 100:
             raise ValueError()
         return AIConfig(enabled=os.environ.get("BANYA_AI_ENABLED") == "1",
+                        owner_approval_required=True,
+                        approval_stamp=os.environ.get("BANYA_AI_CONFIG_REVISION","legacy"),
                         api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
                         monthly_budget_nano=int(budget * 1_000_000_000),
                         monthly_calls=int(os.environ.get("DEEPSEEK_MONTHLY_CALLS", "100")),
@@ -107,6 +111,34 @@ def initialize_ai(db):
           expires_at INTEGER NOT NULL, applied_revision INTEGER, backup_id INTEGER)''')
 
 
+def initialize_activation(db):
+    with closing(sqlite3.connect(db)) as con:
+        con.execute('CREATE TABLE IF NOT EXISTS ai_activation (id INTEGER PRIMARY KEY CHECK(id=1),revision INTEGER NOT NULL,enabled INTEGER NOT NULL,config_stamp TEXT NOT NULL)')
+
+
+def activation(con):
+    row=con.execute('SELECT revision,enabled,config_stamp FROM ai_activation WHERE id=1').fetchone()
+    return {'revision':row[0],'enabled':bool(row[1]),'stamp':row[2]} if row else {'revision':0,'enabled':False,'stamp':''}
+
+
+def ai_allowed(config,con):
+    return config.ready and (not config.owner_approval_required or (activation(con)['enabled'] and activation(con)['stamp']==config.approval_stamp))
+
+
+def provider_receipt(upstream,config):
+    raw=upstream.get('usage')
+    usage={k:v for k,v in raw.items() if k in ('prompt_tokens','completion_tokens','total_tokens') and type(v) is int and 0<=v<=1_000_000} if isinstance(raw,dict) else {}
+    identifier=upstream.get('id','')
+    safe=isinstance(identifier,str) and re.fullmatch(r'[A-Za-z0-9._:-]{1,100}',identifier) and not SECRET_PATTERN.search(identifier) and config.api_key not in identifier
+    return {'usage':usage,'providerRequestId':identifier if safe else ''}
+
+
+class Activation(StrictModel):
+    expectedRevision: int=Field(ge=0)
+    enabled: bool
+    confirmation: Literal['set_ai_activation']
+
+
 class ProviderFailure(Exception):
     pass
 
@@ -135,9 +167,11 @@ def call_deepseek(config, payload):
 def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, provider=None, clock=time.time):
     provider = provider or call_deepseek
 
-    def ready():
-        if not config.ready:
-            fail('ai_not_configured_or_not_approved', 503)
+    def ready(con=None):
+        if con is None:
+            with closing(connect(db)) as check: allowed=ai_allowed(config,check)
+        else: allowed=ai_allowed(config,con)
+        if not allowed:fail('ai_not_configured_or_not_approved',503)
 
     def snapshot(con, subject):
         row = con.execute('SELECT * FROM snapshots WHERE subject=?', (subject,)).fetchone()
@@ -193,11 +227,25 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
         if config.enabled:
             with closing(connect(db)) as con:
                 count, used = con.execute('SELECT count(*),COALESCE(sum(cost_nano),0) FROM ai_requests WHERE month=?', (month(),)).fetchone()
-        return {'ready': config.ready, 'model': 'deepseek-flash', 'thinking': True, 'reasoningEffort': 'high', 'maxOutputTokens': MAX_OUTPUT_TOKENS, 'monthlyCallLimit': config.monthly_calls,
+        with closing(connect(db)) as con:
+            approval=activation(con);allowed=ai_allowed(config,con)
+            approval={k:approval[k] for k in ('revision','enabled')}
+            if config.owner_approval_required and not allowed:approval['enabled']=False
+        return {'ready': allowed,'configuredReady':config.ready,'activation':approval, 'model': 'deepseek-flash', 'thinking': True, 'reasoningEffort': 'high', 'maxOutputTokens': MAX_OUTPUT_TOKENS, 'monthlyCallLimit': config.monthly_calls,
                 'monthlyCalls': count, 'estimatedReservedUsd': used / 1_000_000_000,
                 'monthlyBudgetUsd': config.monthly_budget_nano / 1_000_000_000,
                 'billingNote': 'Conservative application estimate; provider billing and other account usage are separate.',
                 'reviewSharingDefault': False}
+
+    @app.post('/v1/ai/activation')
+    async def set_activation(request: Request,authorization: str|None=Header(default=None)):
+        owner_authorize(authorization);body=await read_model(request,Activation)
+        if body.enabled and not config.ready:fail('ai_not_configured',503)
+        with closing(connect(db)) as con:
+            con.execute('BEGIN IMMEDIATE');old=activation(con)
+            if old['revision']!=body.expectedRevision:fail('ai_activation_conflict',409)
+            con.execute('INSERT INTO ai_activation VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,enabled=excluded.enabled,config_stamp=excluded.config_stamp',(old['revision']+1,int(body.enabled),config.approval_stamp))
+            con.execute('COMMIT');return {'revision':old['revision']+1,'enabled':body.enabled,'providerCalled':False}
 
     @app.get('/v1/ai/requests/{request_id}')
     def request_status(request_id: str, authorization: str | None = Header(default=None)):
@@ -224,6 +272,8 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
         body_hash = hashlib.sha256(json.dumps(body.model_dump(), sort_keys=True).encode()).hexdigest()
         with closing(connect(db)) as con:
             con.execute('BEGIN IMMEDIATE')
+            ready(con)
+            approval_revision=activation(con)['revision']
             old = con.execute('SELECT * FROM ai_requests WHERE id=?', (body.requestId,)).fetchone()
             if old:
                 if old['body_hash'] != body_hash:
@@ -284,13 +334,14 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                 raise ValueError()
             if any('title' in change and not change['title'].strip() for change in patch):
                 raise ValueError()
-            answer = {'profileRevision':memory_context['sources']['profile']['revision'],'reply':suggestion.reply, 'changes':[], 'note':'建议尚未执行，请核对后确认。'}
+            answer = {**provider_receipt(upstream,config), 'profileRevision':memory_context['sources']['profile']['revision'],'reply':suggestion.reply, 'changes':[], 'note':'建议尚未执行，请核对后确认。'}
             if prepared:
                 answer.update(previewOnly=True,planningMode=body.planningMode,analysis=structured.model_dump(exclude={'proposedChanges'}),
                               sources=prepared['sources'],analysisFingerprint=prepared['fingerprint'])
             status_value = 'discussion'
             with closing(connect(db)) as con:
                 con.execute('BEGIN IMMEDIATE')
+                if config.owner_approval_required and (not ai_allowed(config,con) or activation(con)['revision']!=approval_revision):raise ValueError('activation changed')
                 live, live_document, live_template, live_digest = snapshot(con, body.subject)
                 if (live['revision'] != body.expectedRevision or live_digest != digest
                         or read_profile(con,body.subject)['revision'] != memory_context['sources']['profile']['revision']):
@@ -330,6 +381,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
         payload = await read_model(request, Commit)
         with closing(connect(db)) as con:
             con.execute('BEGIN IMMEDIATE')
+            ready(con)
             draft = con.execute('SELECT * FROM ai_requests WHERE id=?', (request_id,)).fetchone()
             if not draft:
                 fail('ai_request_not_found',404)
