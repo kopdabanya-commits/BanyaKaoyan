@@ -22,7 +22,7 @@ test('single 板牙考研 PWA: one shell, two active subject modules, same origi
  assert(script.includes("SUBJECT_KEY='banya_active_subject_v1'"),'only selected tab is new metadata');
  assert(!script.includes('政治为下一阶段预留了独立入口'),'no false politics waiting state');
  assert(intel.includes("status:'active'")&&intel.includes("id:'english'")&&intel.includes("id:'politics'"));
- assert.match(sw,/yantu-english-ii-m7-2-/);
+ assert.match(sw,/yantu-english-ii-m7-3-/);
  assert(html.includes('./plan-import.js'));
  assert(html.includes('./cloud-sync.js'));
  assert(html.includes('./origin-transfer.js'));
@@ -92,7 +92,7 @@ test('M4 shared task-first component is used by both subjects; stats are actual-
  const ui=txt('study-ui.js'),english=txt('app.js'),politics=txt('politics-ui.js');
  assert(ui.includes('dayHeading(')&&ui.includes('function task(')&&ui.includes('function stats('));
  assert(english.includes('UI.dayHeading(')&&english.includes('UI.task(')&&english.includes('BanyaStudyUI.trainingRecords('));
- assert(politics.includes('UI.dayHeading(')&&politics.includes('UI.task(')&&politics.includes('UI.stats('));
+ assert(politics.includes('UI.dayHeading(')&&politics.includes('UI.task(')&&politics.includes('UI.trainingRecords('));
  assert(!english.includes('premium-hero')&&!english.includes('focus-panel'));
  assert(english.includes('BanyaCloudSync.panel()'),'cloud controls stay in settings');
  assert(!english.includes('BanyaCloudSync.quickPanel()'),'cloud sync must not obscure the daily tasks');

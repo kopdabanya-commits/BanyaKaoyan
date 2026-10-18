@@ -19,3 +19,5 @@
 - [DOMAIN_ROLLOUT.md](DOMAIN_ROLLOUT.md)：原 Worker 与华为云备用入口的数据迁移边界。
 
 此前含个人学习近况的历史文档已从当前版本清除；不得从 Git 历史重新引用其内容。
+
+- [M7.3 移动界面](M7_3_MOBILE.md)
