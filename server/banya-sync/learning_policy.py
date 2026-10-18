@@ -3,9 +3,10 @@ from datetime import date
 from private_plan import PlanError
 
 
-def resolve_policy(document,subject,as_of=None):
+def resolve_policy(document,subject,as_of=None,*,include_review=True):
     today=(as_of or date.today()).isoformat()
     active=[e for e in document['entries'] if e['active'] and e['temporal']=='current' and e['certainty'] in ('confirmed','reported')
+            and (include_review or e.get('sensitivity')!='review')
             and (not e.get('validUntil') or e['validUntil']>=today)]
     active.sort(key=lambda e:(-e['entryRevision'],e['key']))
     def ref(e):return f"profile:{subject}:{document['revision']}:{e['key']}"

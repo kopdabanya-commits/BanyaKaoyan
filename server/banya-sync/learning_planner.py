@@ -97,6 +97,12 @@ def prepare(con,templates,args:PlanningRequest):
                          'previewOnly':True,'changeWindow':{'start':start,'end':end},'reasoningPolicy':{'current':'high_thinking','futureTiers':['deterministic','light_thinking','high_thinking']}}
     context['allowedSourceRefs']=[f"snapshot:{args.subject}:{report['sources']['snapshotRevision']}",f"analysis:{report['fingerprint']}"]+context['learningPolicy']['sourceRefs']+[e['sourceRef'] for e in context['hardRules']+context['background']]
     context['detection']=model_report(report,args.shareReview)
+    # A review-marked budget is also opt-in; aggregate policy must not bypass the profile filter.
+    context['detection']['policy']=context['learningPolicy']
+    if context['learningPolicy']['advisoryMinutes'] is None and report['policy']['advisoryMinutes'] is not None:
+        for day in context['detection']['future7Days']:day['budgetMinutes']=None
+        context['detection']['issues']=[i for i in context['detection']['issues'] if i['issueCode'] not in ('future_load_over_budget','goal_time_feasibility_review')]
+
     # Compress low-priority history first. Evidence/source versions and policy cannot be discarded.
     while size(context)>args.maxBytes and len(context['conversation'])>1:
         context['conversation'].pop(0);context['truncation']['conversationMessages']+=1

@@ -301,3 +301,14 @@ def test_vocabulary_scope_is_independent_and_total_hard_limit_includes_it(learni
     patch=[{'operation':'update','taskId':'synthetic-14-reading','minutes':22}]
     with open_db(db) as con,pytest.raises(PlanError,match='hard_daily_limit_exceeded'):
         validate_suggestion(con,path,args,prep,PlanningSuggestion.model_validate(suggestion(prep['context'],patch)))
+
+
+def test_sensitive_budget_cannot_leak_through_derived_policy_or_detection(learning):
+    c,_,_,calls,_=learning
+    assert save(c,[entry('time-budget','budget',value={'text':'Synthetic sensitive availability','minutes':43},sensitivity='review')],1,'synthetic-sensitive-budget').status_code==200
+    result=plan(c,mode='diagnosis').json();context=result['context']
+    assert context['learningPolicy']['advisoryMinutes'] is None
+    assert context['detection']['policy']['advisoryMinutes'] is None
+    assert all(d['budgetMinutes'] is None for d in context['detection']['future7Days'])
+    assert plan(c,mode='diagnosis',shareReview=True).json()['context']['learningPolicy']['advisoryMinutes']==43
+    assert not calls

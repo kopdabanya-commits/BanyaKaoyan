@@ -177,7 +177,7 @@ def build_context(con,templates,request: ContextRequest,as_of=None):
         relevant.append(entry)
         if historical:history_count+=1
     background=relevant
-    policy=resolve_policy(owner,request.subject,today)
+    policy=resolve_policy(owner,request.subject,today,include_review=request.shareReview)
     budget=policy['advisoryMinutes'];budget_source=policy['sourceRefs'][0] if budget is not None else 'unknown'
     result={'capabilities':[{'id':c.id,'version':c.version,'access':'read_only','description':c.description} for c in enabled],
             'contextVersion':CONTEXT_VERSION,'subject':request.subject,'purpose':request.purpose,'asOf':today.isoformat(),'start':start,'end':end,
