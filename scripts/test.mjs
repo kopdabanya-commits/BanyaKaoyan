@@ -223,7 +223,7 @@ test('M2.4 student interface gives focused guidance, accessible nav, and truthfu
  assert(sheet.includes('data-not-done="true"'));
  assert(sheet.includes('保存并打卡完成'));
  h.api.nav('calendar');assert(h.el('app').innerHTML.includes('选择日期查看安排'));
- h.api.nav('stats');assert(h.el('app').innerHTML.includes('近7日已打卡'));assert(h.el('app').innerHTML.includes('只统计已打卡'));
+ h.api.nav('stats');assert(h.el('app').innerHTML.includes('我的学习记录'));assert(h.el('app').innerHTML.includes('没有填写的用时和错题不会估算'));
  h.api.nav('settings');assert(h.el('app').innerHTML.includes('备份与恢复'));
  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
@@ -413,19 +413,45 @@ test('English progress separates all five training categories and preserves priv
  const state=core.defaults();
  const make=(suffix,type,title,date='2026-10-15')=>({id:'custom-stat-'+suffix,custom:true,date,title,type,minutes:10,detail:'Synthetic guidance'});
  state.added=[make('writing','写作','Synthetic composition'),make('reading','阅读','Synthetic reading'),make('translation','翻译','Synthetic translation'),make('newtype','新题型','Synthetic selection'),make('second','阅读','Synthetic reading 二刷'),make('extra','完形','Synthetic cloze')];
- state.done['custom-stat-writing']=true;state.notDone['custom-stat-second']=true;
+ state.done['custom-stat-writing']=true;state.notDone['custom-stat-second']=true;state.actualWritingMinutes['custom-stat-reading']=18;state.wrong['custom-stat-newtype']=0;state.wrong['custom-stat-extra']=1;
  state.moved['custom-stat-reading']='2026-10-20';state.notes['custom-stat-writing']='Synthetic private note';
  state.actualMinutes['custom-stat-writing']=22;state.actualWritingMinutes['custom-stat-writing']=15;state.actualReviewMinutes['custom-stat-writing']=7;
  const h=harness({storage:new Map([[pk,JSON.stringify(fixture)],[key,JSON.stringify(state)]]),fresh:fixture});await h.settle();
  const before=JSON.stringify(h.api.state);h.api.nav('stats');const html=h.el('app').innerHTML;
  const group=label=>html.split('data-training-category="'+label+'"')[1].split('</details>')[0];
  for(const label of ['作文','阅读','翻译','七选五','阅读二刷'])assert(html.includes('data-training-category="'+label+'"'));
- assert(group('作文').includes('已完成 1 / 1'));assert(group('阅读').includes('已完成 0 / 1'));
- assert(group('阅读').includes('data-day="2026-10-20"'));assert(group('阅读').includes('待完成 · 计划中'));
+ assert(group('作文').includes('<strong>1</strong> 项已打卡'));assert(group('阅读').includes('<strong>0</strong> 项已打卡'));
+ assert(group('阅读').includes('data-day="2026-10-20"'));assert(group('阅读').includes('有记录未打卡'));assert(group('阅读').includes('答题 18 分钟'));assert(group('阅读').includes('总用时未填写'));
  assert(!group('阅读').includes('custom-stat-second'));assert(group('阅读二刷').includes('不做 1 项'));
- assert(group('阅读二刷').includes('已完成 0 / 1'));assert(group('七选五').includes('custom-stat-newtype'));
+ assert(group('阅读二刷').includes('<strong>0</strong> 项已打卡'));assert(group('七选五').includes('错 0 题'));assert(!group('翻译').includes('custom-stat-translation'));
  assert(html.includes('data-training-category="完形"'));assert(!html.includes('Synthetic private note'));
- assert.equal(JSON.stringify(h.api.state),before,'viewing progress cannot modify learning records');
+ assert(group('作文').includes('总用时 22 分钟'));assert(group('作文').includes('动笔 15 分钟'));assert(group('作文').includes('批改复盘 7 分钟'));assert(!html.includes('已完成 1 /'));assert.equal(JSON.stringify(h.api.state),before,'viewing progress cannot modify learning records');
  await h.click('detail',{id:'custom-stat-reading',day:'2026-10-20'});
  assert(h.el('modal').innerHTML.includes('Synthetic reading'));
+});
+
+
+test('empty English dashboard never invents study progress from public schedules',async()=>{
+ const h=harness();await h.settle();h.api.nav('stats');const html=h.el('app').innerHTML;
+ assert(html.includes('这里还没有已保存的记录'));assert(html.includes('尚未填写'));
+ assert.equal((html.match(/data-training-category=/g)||[]).length,5);
+ assert(!html.includes('data-action="detail"'));assert(!html.includes('已完成 0 /'));
+ assert(!html.includes('近7日已打卡'));assert(!html.includes('待完成 · 计划中'));
+});
+
+test('record dashboard keeps retired and unclassified history and never guesses missing time or completion date',async()=>{
+ const fixture=clone(plan);fixture.meta.planVersion='synthetic-history';for(const d of fixture.days)d.items=[];
+ const state=core.defaults();
+ state.archive['synthetic-retired']={id:'synthetic-retired',date:'2026-10-15',type:'阅读',title:'Synthetic retired reading 二刷',minutes:40,retired:true};
+ state.notDone['synthetic-retired']=true;state.actualWritingMinutes['synthetic-retired']=12;state.actualReviewMinutes['synthetic-retired']=0;
+ state.done['synthetic-unknown']=true;state.notes['synthetic-unknown']='Synthetic history';
+ state.added=[{id:'custom-note-only',custom:true,date:'2026-10-15',type:'翻译',title:'Synthetic note only',minutes:30}];state.notes['custom-note-only']='Synthetic note';
+ const h=harness({storage:new Map([[pk,JSON.stringify(fixture)],[key,JSON.stringify(state)]]),fresh:fixture});await h.settle();
+ const before=JSON.stringify(h.api.state);h.api.nav('stats');const html=h.el('app').innerHTML;
+ assert(html.includes('Synthetic retired reading 二刷'));assert(html.includes('历史记录 · 仅查看'));
+ assert(html.includes('批改复盘 0 分钟'));assert(html.includes('总用时 12 分钟'));assert(!html.includes('40 分钟'));
+ assert(html.includes('历史学习记录（题型待确认）'));assert(html.includes('日期未记录'));
+ const translation=html.split('data-training-category="翻译"')[1].split('</details>')[0];
+ assert(translation.includes('有记录未打卡'));assert(translation.includes('总用时未填写'));assert(!translation.includes('总用时 30'));
+ assert(html.includes('不推断实际完成日期'));assert.equal(JSON.stringify(h.api.state),before);
 });

@@ -44,13 +44,28 @@ function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}
  const frac=d.total?Math.round(d.done/d.total*100):0,lab=days[new Date(d.date+'T12:00:00Z').getUTCDay()];
  return '<div class="student-stat-day"><div class="student-stat-track"><i style="height:'+frac+'%"></i></div><span>'+lab+'</span><small>'+d.done+'/'+d.total+'</small></div>';
  }).join('')+'</div><p>只统计已打卡的任务；未打卡不等于未学习。</p></section>';
- const categoriesHtml=categories.length?'<section class="student-stat-section"><h2>'+(subject==='politics'?'训练内容':'各项完成情况')+'</h2>'+(subject==='english'?'<p>按当前全部计划统计，含以后安排；不做不计为完成。点开查看每项记录。</p>':'')+'<div class="student-stat-types">'+categories.map(c=>{
-  if(subject!=='english'||!Array.isArray(c.items))return '<div class="student-stat-type"><span>'+esc(c.label)+'</span><strong>'+c.done+' / '+c.total+'</strong></div>';
-  const pending=c.total-c.done-c.notDone;
-  return '<details class="student-training-group" data-training-category="'+esc(c.label)+'"><summary><span>'+esc(c.label)+'</span><strong>已完成 '+c.done+' / '+c.total+'</strong></summary><p class="student-training-status">待完成 '+pending+' 项'+(c.notDone?' · 不做 '+c.notDone+' 项':'')+'</p><progress class="student-training-progress" max="'+(c.total||1)+'" value="'+c.done+'" aria-label="'+esc(c.label)+'完成进度"></progress>'+(c.items.length?c.items.map(t=>'<button type="button" class="student-record-row" data-action="detail" data-id="'+esc(t.id)+'" data-day="'+esc(t.date)+'"><span><small>'+esc(shortDay(t.date))+'</small> '+esc(t.title)+'</span><strong>'+(t.done?'✓ 已完成':t.notDone?'不做':t.date>today?'待完成 · 计划中':'待完成')+' ›</strong></button>').join(''):'<p class="student-training-status">还没有安排这类练习。</p>')+'</details>';
- }).join('')+'</div></section>':'';
+ const categoriesHtml=categories.length?'<section class="student-stat-section"><h2>'+(subject==='politics'?'训练内容':'题型训练')+'</h2><div class="student-stat-types">'+categories.map(c=>'<div class="student-stat-type"><span>'+esc(c.label)+'</span><strong>'+c.done+' / '+c.total+'</strong></div>').join('')+'</div></section>':'';
 
  return header('学习进度')+summary+bars+categoriesHtml;
 }
-root.BanyaStudyUI={esc,dayAdd,shortDay,header,strip,dayHeading,task,stats};
+function trainingRecords(categories){
+ const items=categories.flatMap(c=>c.items),completed=items.filter(t=>t.done).length,timed=items.filter(t=>t.total!==undefined),minutes=timed.reduce((sum,t)=>sum+t.total,0);
+ const summary='<div class="student-stat-grid training-overview"><div><span>累计打卡</span><strong>'+completed+'<small> 项</small></strong></div><div><span>已记录总用时</span><strong>'+(timed.length?minutes:'—')+'<small>'+(timed.length?' 分钟':' 尚未填写')+'</small></strong></div></div>';
+ const hints='<p class="training-source-note">来自这台设备已保存的学习记录，联网同步后也会更新。未打卡不等于没学；没有填写的用时和错题不会估算。</p>';
+ const cards=categories.map(c=>{
+  const active=c.items.filter(t=>!t.done&&!t.notDone).length,times=c.items.filter(t=>t.total!==undefined),total=times.reduce((sum,t)=>sum+t.total,0);
+  const work=c.items.filter(t=>t.work!==undefined),review=c.items.filter(t=>t.review!==undefined);
+  const timeLabel=times.length?'已记总用时 '+total+' 分钟':[work.length?(c.label==='作文'?'动笔 ':'答题 ')+work.reduce((sum,t)=>sum+t.work,0)+' 分钟':'',review.length?'批改复盘 '+review.reduce((sum,t)=>sum+t.review,0)+' 分钟':''].filter(Boolean).join(' · ')||'用时尚未填写';
+  const status=c.items.length?(active?'有记录未打卡 '+active+' 项':'已保存 '+c.items.length+' 项记录')+(c.notDone?' · 不做 '+c.notDone+' 项':''):'还没有保存记录';
+  const rows=c.items.map(t=>{
+   const status=t.done?'已完成':t.notDone?'不做':'有记录未打卡';
+   const facts=[t.total!==undefined?'总用时 '+t.total+' 分钟':'总用时未填写',t.work!==undefined?(c.label==='作文'?'动笔 ':'答题 ')+t.work+' 分钟':'',t.review!==undefined?'批改复盘 '+t.review+' 分钟':'',Number.isInteger(t.wrong)?'错 '+t.wrong+' 题':''].filter(Boolean).join(' · ');
+   const tag=t.viewable?'button':'div',attrs=t.viewable?' type="button" data-action="detail" data-id="'+esc(t.id)+'" data-day="'+esc(t.date)+'"':'';
+   return '<'+tag+attrs+' class="training-record"><span class="training-record-top"><small>'+(t.date?'任务日期 '+esc(shortDay(t.date)):'日期未记录')+'</small><b class="training-status '+(t.done?'is-done':t.notDone?'is-skipped':'is-recorded')+'">'+status+'</b></span><span class="training-record-title">'+esc(t.title)+'</span><span class="training-record-facts">'+esc(facts)+'</span>'+(!t.viewable?'<small class="training-history-note">历史记录 · 仅查看</small>':'')+'</'+tag+'>';
+  }).join('');
+  return '<details class="training-card" data-training-category="'+esc(c.label)+'"><summary><span class="training-card-heading">'+esc(c.label)+'<i aria-hidden="true">⌄</i></span><span class="training-card-count"><strong>'+c.done+'</strong> 项已打卡</span><span class="training-card-status">'+esc(status)+'</span><span class="training-card-time">'+esc(timeLabel)+'</span></summary><div class="training-card-records">'+(rows||'<p class="training-empty">保存一次练习记录后，就能在这里看到。</p>')+'</div></details>';
+ }).join('');
+ return header('我的学习记录','做过的、记下来的，都在这里。')+summary+hints+(items.length?'':'<div class="training-empty-banner">这里还没有已保存的记录。如果记录在云端，请先到设置点击“立即同步”。</div>')+'<div class="training-cards">'+cards+'</div><p class="training-source-note">点开卡片看明细。日期沿用任务安排，不推断实际完成日期；未来未记录的计划不计入统计。</p>';
+}
+root.BanyaStudyUI={esc,dayAdd,shortDay,header,strip,dayHeading,task,stats,trainingRecords};
 })(typeof window==='object'?window:globalThis);

@@ -406,7 +406,7 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .subject-rail{margin:0 0 16px;display:block}
 .subject-tabs{display:flex;width:100%;border-radius:13px;gap:3px;padding:4px;background:var(--paper);box-shadow:none;border-color:var(--line)}
 .subject-tab{flex:1;justify-content:center;min-height:38px;font-size:13px;gap:5px;border-radius:10px}
-.subject-tab.is-active{background:var(--study-soft);color:var(--study-accent)}
+.subject-tab.is-active{background:var(--line);color:var(--study-accent)}
 .subject-symbol{font-size:12px;box-shadow:none}
 .subject-context{display:none}
 .student-page{padding-bottom:10px}
@@ -423,7 +423,7 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-weekstrip .day-chip{padding:5px 0 6px;border-radius:11px;min-width:0}
 .student-weekstrip .day-chip .dow{font-size:11px;margin-bottom:5px}
 .student-weekstrip .day-chip .number{width:31px;height:31px;border-radius:10px;font-size:15px}
-.student-weekstrip .day-chip.selected{color:var(--study-accent);background:var(--study-soft)}
+.student-weekstrip .day-chip.selected{color:var(--study-accent);background:var(--line)}
 .student-weekstrip .day-chip.selected .number{background:var(--study-accent);color:white}
 .student-weekstrip .day-chip.today:not(.selected) .number{color:var(--study-accent);border:1px solid var(--study-accent)}
 .student-day-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 2px 8px}
@@ -477,18 +477,31 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-stat-type{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
 .student-stat-type:last-child{border-bottom:0}
 .student-stat-type strong{font-size:12px;color:var(--study-accent)}
-.student-training-group{border-bottom:1px solid var(--line);padding:4px 0}
-.student-training-group:last-child{border-bottom:0}
-.student-training-group summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;font-size:14px;cursor:pointer;list-style:none}
-.student-training-group summary::-webkit-details-marker{display:none}
-.student-training-group summary>span::before{content:'›';display:inline-block;margin-right:8px;color:var(--study-accent);transition:transform .18s ease}
-.student-training-group[open] summary>span::before{transform:rotate(90deg)}
-.student-training-group summary strong{font-size:12px;color:var(--study-accent);white-space:nowrap}
-.student-training-group .student-training-status{font-size:12px;color:var(--muted);margin:0 0 10px}
-.student-training-progress{display:block;width:100%;height:6px;margin:0 0 12px;accent-color:var(--study-accent)}
-.student-training-group .student-record-row span{overflow-wrap:anywhere}
-.student-training-group .student-record-row small{color:var(--muted)}
-@media(prefers-reduced-motion:reduce){.student-training-group summary>span::before{transition:none}}
+.training-source-note{font-size:12px;color:var(--muted);line-height:1.7;margin:14px 2px}
+.training-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.training-card{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.training-card:nth-child(5),.training-card[open]{grid-column:1/-1}
+.training-card summary{list-style:none;cursor:pointer;padding:14px;display:flex;flex-direction:column;gap:6px;min-height:144px}
+.training-card summary::-webkit-details-marker{display:none}
+.training-card summary:focus-visible{outline:2px solid var(--study-accent);outline-offset:-4px;border-radius:20px}
+.training-card-heading{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:750;gap:8px}
+.training-card-heading i{font-style:normal;color:var(--muted);transition:transform .18s ease}
+.training-card[open] .training-card-heading i{transform:rotate(180deg)}
+.training-card-count{font-size:11px;color:var(--muted);line-height:1.3}
+.training-card-count strong{font-size:34px;color:var(--brand);font-weight:800;letter-spacing:-1px;margin-right:5px}
+.training-card-status{font-size:11px;line-height:1.6;color:var(--text)}
+.training-card-time{font-size:11px;line-height:1.6;color:var(--muted)}
+.training-card-records{padding:0 16px 10px}
+.training-record{display:flex;flex-direction:column;gap:8px;width:100%;min-height:84px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);text-align:left;padding:14px 0}
+.training-record-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.training-record-top small,.training-history-note{font-size:11px;color:var(--muted)}
+.training-status{font-size:10px;padding:4px 7px;border-radius:8px;background:var(--line);white-space:nowrap;font-weight:600}
+.training-status.is-done{color:var(--brand);background:var(--line)}
+.training-record-title{font-size:13px;font-weight:650;line-height:1.6;overflow-wrap:anywhere}
+.training-record-facts{font-size:11px;line-height:1.8;color:var(--muted)}
+.training-empty,.training-empty-banner{font-size:12px;color:var(--muted);line-height:1.7;padding:12px 0}
+.training-empty-banner{border-radius:14px;padding:14px;background:var(--paper);border:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){.training-card-heading i{transition:none}}
 .student-record-row{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);padding:11px 0;font-size:12px}
 .student-record-row strong{flex:0 0 auto;color:var(--study-accent)}
 .student-page .calendar{margin:0;border:1px solid var(--line);box-shadow:none;border-radius:15px;padding:14px}
@@ -511,7 +524,7 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-page .setting-note{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 .bottom-nav{gap:3px;padding:7px 11px calc(5px + env(safe-area-inset-bottom));}
 .nav-tab{min-height:48px;border-radius:13px;font-size:11px}
-.nav-tab.active{background:var(--study-soft);color:var(--study-accent)}
+.nav-tab.active{background:var(--line);color:var(--study-accent)}
 .day-detail-open .student-page{padding-top:2px}
 html[data-theme="dark"] .student-task,html[data-theme="dark"] .student-task-detail,
 html[data-theme="dark"] .student-stat-grid>div,html[data-theme="dark"] .student-stat-section{background:var(--paper);border-color:var(--line)}

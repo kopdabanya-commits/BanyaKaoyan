@@ -91,7 +91,7 @@ test('ECS fallback serves only PWA allowlist while keeping the authenticated API
 test('M4 shared task-first component is used by both subjects; stats are actual-record-only',()=>{
  const ui=txt('study-ui.js'),english=txt('app.js'),politics=txt('politics-ui.js');
  assert(ui.includes('dayHeading(')&&ui.includes('function task(')&&ui.includes('function stats('));
- assert(english.includes('UI.dayHeading(')&&english.includes('UI.task(')&&english.includes('UI.stats('));
+ assert(english.includes('UI.dayHeading(')&&english.includes('UI.task(')&&english.includes('BanyaStudyUI.trainingRecords('));
  assert(politics.includes('UI.dayHeading(')&&politics.includes('UI.task(')&&politics.includes('UI.stats('));
  assert(!english.includes('premium-hero')&&!english.includes('focus-panel'));
  assert(english.includes('BanyaCloudSync.panel()'),'cloud controls stay in settings');
