@@ -16,6 +16,7 @@
 !politics-plan-data.js
 !politics-plan.json
 !politics-ui.js
+!plan-import.js
 !cloud-sync.js
 !origin-transfer.js
 !sw.js
