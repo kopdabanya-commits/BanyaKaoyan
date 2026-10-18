@@ -20,7 +20,7 @@ cp -p "$live" "$stage/nginx-before.conf"
 install -d -m 0755 "$base" "$base/releases"
 mkdir -p "$dest"
 tar -xzf "$archive" -C "$dest" --no-same-owner
-for file in index.html update.html refresh.html refresh.js app.js cloud-sync.js origin-transfer.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png; do test -s "$dest/$file"; done
+for file in index.html update.html refresh.html refresh.js app.js plan-import.js cloud-sync.js origin-transfer.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png; do test -s "$dest/$file"; done
 chown -R root:root "$dest"
 chmod -R a+rX "$dest"
 ln -sfn "$dest" "$base/current.next"
