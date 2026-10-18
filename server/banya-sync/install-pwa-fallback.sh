@@ -18,7 +18,16 @@ test -f "$live"
 old_link="$(readlink "$base/current" 2>/dev/null || true)"
 cp -p "$live" "$stage/nginx-before.conf"
 install -d -m 0755 "$base" "$base/releases"
-test ! -e "$dest" || { echo 'Immutable release already exists; refuse overwrite' >&2; exit 1; }
+reuse=false
+if [[ -e "$dest" || -L "$dest" ]]; then
+  python3 "$stage/ecs_package.py" verify-installed "$archive" --root "$dest"
+  reuse=true
+  if [[ "$old_link" == "$dest" ]]; then
+    python3 "$stage/verify_ecs.py" --root "$dest"
+    echo 'Matching immutable release already active and verified; nothing replaced.'
+    exit 0
+  fi
+fi
 python3 "$stage/ecs_package.py" verify "$archive"
 # Online SQLite backup includes every private table. Never send backup to Actions.
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - <<'PYBACKUP'
@@ -30,17 +39,24 @@ with sqlite3.connect(saved) as con:
     assert con.execute('PRAGMA integrity_check').fetchall()==[('ok',)]
 print('Private pre-release backup integrity verified; no data printed.')
 PYBACKUP
-mkdir -p "$dest"
-tar -xzf "$archive" -C "$dest" --no-same-owner
-for file in index.html update.html refresh.html refresh.js app.js study-assistant.js learning-diagnostics.js plan-import.js cloud-sync.js origin-transfer.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png; do test -s "$dest/$file"; done
-chown -R root:root "$dest"
-chmod -R a+rX "$dest"
+created_here=false
 rollback(){
   cp -p "$stage/nginx-before.conf" "$live"
   if [[ -n "$old_link" ]]; then ln -sfn "$old_link" "$base/current.next"; mv -Tf "$base/current.next" "$base/current"; else rm -f "$base/current"; fi
   nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+  # Quarantine only this invocation's new public assets; never touch private data.
+  if [[ "$created_here" == true && -d "$dest" ]]; then mv "$dest" "$dest.failed.$(date +%s%N)" || true; fi
 }
 trap 'rollback; echo "ECS release failed; previous route restored" >&2' ERR
+if [[ "$reuse" != true ]]; then
+  created_here=true
+  mkdir -p "$dest"
+  tar -xzf "$archive" -C "$dest" --no-same-owner
+fi
+python3 "$stage/ecs_package.py" verify-installed "$archive" --root "$dest"
+for file in index.html update.html refresh.html refresh.js app.js study-assistant.js learning-diagnostics.js plan-import.js cloud-sync.js origin-transfer.js sw.js manifest.webmanifest icons/icon-192.png icons/icon-512.png; do test -s "$dest/$file"; done
+chown -R root:root "$dest"
+chmod -R a+rX "$dest"
 ln -sfn "$dest" "$base/current.next"
 mv -Tf "$base/current.next" "$base/current"
 install -m 0644 "$config" "$live"

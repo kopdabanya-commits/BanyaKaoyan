@@ -466,3 +466,11 @@ test('M7.4 current-tab presses do not add history; date details store current ro
  await h.click('day',{date:'2026-10-18'});assert.equal(h.context.history.state.banyaRoute.date,'2026-10-18');
  const before=JSON.stringify(h.api.state);assert(!before.includes('banyaRoute'));
 });
+
+test('M7.4 political cloud refresh dismisses stale modal like English without touching English records',async()=>{
+ const h=harness();await h.settle();h.context.PoliticsCore={key:'yantu_politics_2026_v1'};
+ let hidden=false;h.el('modal').classList={add(name){if(name==='hidden')hidden=true},remove(){},contains(){return hidden}};
+ const english=JSON.stringify(h.api.state);
+ for(const callback of h.winHandlers.storage||[])callback({key:'yantu_politics_2026_v1',newValue:'synthetic value not read by English'});
+ assert(hidden);assert.equal(JSON.stringify(h.api.state),english);
+});

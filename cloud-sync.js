@@ -147,7 +147,7 @@ async function api(subject,method,body) {
  let res;
  try {
   res=await fetch(config.endpoint+'/v1/snapshot/'+subject+'?plan_protocol=1',{
-   method:method,mode:'cors',cache:'no-store',
+   method:method,mode:'cors',cache:'no-store',redirect:'error',credentials:'omit',
    ...(controller?{signal:controller.signal}:{}),
    headers:{Authorization:'Bearer '+config.token,...(method==='PUT'?{'Content-Type':'application/json'}:{})},
    ...(body?{body:JSON.stringify(body)}:{})
@@ -287,6 +287,7 @@ async function syncOne(subject) {
  if(cloud.revision===m.revision) {
   const version=templateVersion(subject);
   if(localHash===m.hash&&(!version||cloud.state?.templateVersion===version))return;
+  if(localStorage.getItem(KEYS[subject])!==raw)throw Error(NAMES[subject]+'在同步期间产生新记录，已停止旧记录上传');
   const next=await api(subject,'PUT',{expectedRevision:m.revision,state:envelope(subject,state)});
   saveMeta(subject,next.revision,localHash);
   notify(NAMES[subject]+'本机更改已安全上传。');
@@ -295,13 +296,16 @@ async function syncOne(subject) {
  // Different cloud revision + local edits: fail closed; neither side is overwritten.
  if(localHash!==m.hash)throw Error(NAMES[subject]+'本机与云端都发生更改，已停止同步。请先分别备份');
  const latest=remoteState(subject,cloud);
- const newRaw=JSON.stringify(latest);
+ const newRaw=JSON.stringify(latest),newHash=await fingerprint(newRaw);
  if(localStorage.getItem(KEYS[subject])!==raw)throw Error(NAMES[subject]+'在云端读取期间产生新记录，已停止覆盖');
  localStorage.setItem(KEYS[subject]+'_before_cloud_restore',raw);
  localStorage.setItem(KEYS[subject],newRaw);
- saveMeta(subject,cloud.revision,await fingerprint(newRaw));
- notify(NAMES[subject]+'收到新版云端记录，即将刷新显示。');
- root.location.reload();
+ saveMeta(subject,cloud.revision,newHash);
+ // Update in-memory task state synchronously before reload can accept another tap.
+ if(typeof StorageEvent==='function'&&typeof root.dispatchEvent==='function'){
+  root.dispatchEvent(new StorageEvent('storage',{key:KEYS[subject],oldValue:raw,newValue:newRaw,storageArea:localStorage}));
+  notify(NAMES[subject]+'已收到新版云端记录。');
+ }else{notify(NAMES[subject]+'收到新版云端记录，即将刷新显示。');root.location.reload();}
 }
 async function syncAll(manual=false) {
  if(busy){if(manual)notify('同步正在进行，无须重复操作');return false;}
@@ -392,5 +396,5 @@ root.addEventListener('online',function(){void syncAll();});
 root.addEventListener('focus',function(){void syncAll();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)void syncAll();});
 setInterval(function(){void syncAll();},20000);
-root.BanyaCloudSync={panel:panel,quickPanel:quickPanel,syncAll:syncAll,prepareAssistant:prepareAssistant,assistantRequest:assistantRequest,isConnected:()=>!!config};
+root.BanyaCloudSync={panel:panel,quickPanel:quickPanel,syncAll:syncAll,prepareAssistant:prepareAssistant,assistantRequest:assistantRequest,isConnected:()=>!!config,isSyncing:()=>busy};
 })(window);

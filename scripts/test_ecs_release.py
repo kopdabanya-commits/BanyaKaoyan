@@ -83,3 +83,26 @@ def test_failed_release_restores_old_link_config_and_never_replaces_db(tmp_path)
     assert (base/'current').resolve()==base/'old'
     assert live.read_text()=='synthetic old config'
     assert db.read_text()=='synthetic private data'
+    assert not (base/'releases'/('a'*40)).exists()
+    assert list((base/'releases').glob('*.failed.*'))
+    # A failed attempt can be retried, then repeated without overwriting immutable files.
+    (stage/'verify_ecs.py').write_text('raise SystemExit(0)')
+    rerun=lambda:subprocess.run(['bash',str(script),'a'*40],env={**os.environ,'PATH':str(bin_dir)+':'+os.environ['PATH']},capture_output=True)
+    assert rerun().returncode==0
+    active=base/'releases'/('a'*40);assert (base/'current').resolve()==active
+    assert rerun().returncode==0
+    (active/'app.js').write_text('synthetic tamper')
+    assert rerun().returncode!=0
+    assert (base/'current').resolve()==active and db.read_text()=='synthetic private data'
+
+
+def test_repeated_release_requires_identical_members_bytes_and_no_symlinks(tmp_path):
+    from ecs_package import verify_installed
+    archive=tmp_path/'site.tgz';package(ROOT,archive)
+    release=tmp_path/'release';release.mkdir()
+    with tarfile.open(archive) as tar:tar.extractall(release,filter='data')
+    verify_installed(release,archive);verify_installed(release,archive)
+    (release/'app.js').write_text('synthetic tamper')
+    with pytest.raises(ValueError):verify_installed(release,archive)
+    (release/'app.js').unlink();(release/'app.js').symlink_to(ROOT/'app.js')
+    with pytest.raises(ValueError):verify_installed(release,archive)

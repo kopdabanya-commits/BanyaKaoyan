@@ -99,6 +99,7 @@ class AutoService:
         self.db,self.connect,self.templates,self.config,self.enabled,self.clock=db,connect,templates,config,enabled,clock
         self.provider=provider or call_deepseek
         self.owner_digest=owner_digest
+        self.last_subject=None  # Fair polling; authorization/quota state remains in SQLite.
 
     def ready(self):
         if not self.enabled or not self.config.ready:return False
@@ -147,8 +148,9 @@ class AutoService:
                 master=control(con)
                 if not master['enabled']:return None
                 if con.execute("SELECT 1 FROM auto_runs WHERE status='pending' LIMIT 1").fetchone():return None
-                event=con.execute("SELECT * FROM auto_events WHERE status='queued' ORDER BY created_at,id LIMIT 1").fetchone()
+                event=con.execute("SELECT * FROM auto_events WHERE status='queued' ORDER BY CASE WHEN subject=? THEN 1 ELSE 0 END,created_at,id LIMIT 1",(self.last_subject,)).fetchone()
                 if not event:return None
+                self.last_subject=event['subject']
                 grant=permission(con,event['subject']);subject=event['subject'];now=int(self.clock())
                 if not grant or not grant['enabled']:
                     con.execute("UPDATE auto_events SET status='skipped' WHERE id=?",(event['id'],));con.execute('COMMIT');return 'not_authorized'

@@ -27,8 +27,22 @@ def verify(archive):
         expected=''.join(hashlib.sha256(tar.extractfile(name).read()).hexdigest()+'  '+name+'\n' for name in ASSETS).encode()
         if tar.extractfile('SHA256SUMS').read()!=expected:raise ValueError('Package hash mismatch')
 
+def verify_installed(root,archive):
+    """A repeated SHA is reusable only when its complete immutable content matches."""
+    verify(archive)
+    if root.is_symlink() or not root.is_dir():raise ValueError('Unsafe release directory')
+    entries=list(root.rglob('*'))
+    if any(p.is_symlink() for p in entries):raise ValueError('Release contains symlink')
+    directories={str(Path(name).parent) for name in ASSETS if str(Path(name).parent)!='.'}
+    if {p.relative_to(root).as_posix() for p in entries}!=set(ASSETS)|{'SHA256SUMS'}|directories:raise ValueError('Release members differ')
+    with tarfile.open(archive,'r:gz') as tar:
+        for name in (*ASSETS,'SHA256SUMS'):
+            if (root/name).read_bytes()!=tar.extractfile(name).read():raise ValueError('Immutable release differs')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['build','verify']);p.add_argument('archive',type=Path);p.add_argument('--root',type=Path,default=Path('.'));args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['build','verify','verify-installed']);p.add_argument('archive',type=Path);p.add_argument('--root',type=Path,default=Path('.'));args=p.parse_args()
     if args.action=='build':package(args.root,args.archive)
+    elif args.action=='verify-installed':verify_installed(args.root,args.archive)
     else:verify(args.archive)
     print('ECS static allowlist and hashes verified; no private files packaged.')
