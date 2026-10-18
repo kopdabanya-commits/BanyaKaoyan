@@ -477,6 +477,18 @@ html[data-theme="dark"][data-subject="politics"]{--study-soft:#213f3c;--study-ac
 .student-stat-type{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
 .student-stat-type:last-child{border-bottom:0}
 .student-stat-type strong{font-size:12px;color:var(--study-accent)}
+.student-training-group{border-bottom:1px solid var(--line);padding:4px 0}
+.student-training-group:last-child{border-bottom:0}
+.student-training-group summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;font-size:14px;cursor:pointer;list-style:none}
+.student-training-group summary::-webkit-details-marker{display:none}
+.student-training-group summary>span::before{content:'›';display:inline-block;margin-right:8px;color:var(--study-accent);transition:transform .18s ease}
+.student-training-group[open] summary>span::before{transform:rotate(90deg)}
+.student-training-group summary strong{font-size:12px;color:var(--study-accent);white-space:nowrap}
+.student-training-group .student-training-status{font-size:12px;color:var(--muted);margin:0 0 10px}
+.student-training-progress{display:block;width:100%;height:6px;margin:0 0 12px;accent-color:var(--study-accent)}
+.student-training-group .student-record-row span{overflow-wrap:anywhere}
+.student-training-group .student-record-row small{color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.student-training-group summary>span::before{transition:none}}
 .student-record-row{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--text);padding:11px 0;font-size:12px}
 .student-record-row strong{flex:0 0 auto;color:var(--study-accent)}
 .student-page .calendar{margin:0;border:1px solid var(--line);box-shadow:none;border-radius:15px;padding:14px}
