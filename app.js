@@ -144,12 +144,15 @@ function calendarDetails(date){const tasks=specialTasks(date),p=dateProgress(dat
 function renderStats(){
  const UI=window.BanyaStudyUI;
  const days=data.days.filter(d=>d.date<=today).map(d=>({date:d.date,...dateProgress(d.date)}));
- const groups=new Map(),recorded=[];
- for(const d of data.days.filter(d=>d.date<=today)){
+ const groups=new Map(['作文','阅读','翻译','七选五','阅读二刷'].map(label=>[label,{label,done:0,total:0,notDone:0,items:[]}])),recorded=[];
+ for(const d of data.days){
   for(const t of specialTasks(d.date)){
-   if(!groups.has(t.type))groups.set(t.type,{label:t.type,done:0,total:0});
-   const g=groups.get(t.type);g.total++;if(state.done[t.id])g.done++;
-   if(state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')recorded.push({date:d.date,task:t,wrong:state.wrong[t.id]});
+   const label=t.type==='写作'?'作文':t.type==='新题型'?'七选五':t.type==='阅读'&&/二刷|二轮|第二[轮遍次]|复刷/.test(t.title)?'阅读二刷':t.type;
+   if(!groups.has(label))groups.set(label,{label,done:0,total:0,notDone:0,items:[]});
+   const g=groups.get(label),done=!!state.done[t.id],notDone=!!state.notDone[t.id];
+   g.total++;if(done)g.done++;if(notDone)g.notDone++;
+   g.items.push({id:t.id,title:t.title,date:d.date,done,notDone});
+   if(d.date<=today&&state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')recorded.push({date:d.date,task:t,wrong:state.wrong[t.id]});
   }
  }
  const recordedHtml=recorded.length?'<section class="student-stat-section"><h2>最近的错题记录</h2>'+recorded.slice(-5).reverse().map(r=>'<button class="student-record-row" data-action="detail" data-id="'+esc(r.task.id)+'" data-day="'+esc(r.date)+'"><span>'+esc(r.task.title)+'</span><strong>错 '+esc(r.wrong)+' 题 ›</strong></button>').join('')+'</section>':'';

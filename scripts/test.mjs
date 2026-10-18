@@ -407,3 +407,25 @@ test('private task content survives phone note saves without rewriting the publi
  assert.notEqual(task.detail,'Synthetic private task guidance');
  assert.throws(()=>core.normalizeState({edits:{[id]:{detail:123}}}));
 });
+
+test('English progress separates all five training categories and preserves private task status and moves',async()=>{
+ const fixture=clone(plan);fixture.meta.planVersion='synthetic-training';for(const day of fixture.days)day.items=[];
+ const state=core.defaults();
+ const make=(suffix,type,title,date='2026-10-15')=>({id:'custom-stat-'+suffix,custom:true,date,title,type,minutes:10,detail:'Synthetic guidance'});
+ state.added=[make('writing','写作','Synthetic composition'),make('reading','阅读','Synthetic reading'),make('translation','翻译','Synthetic translation'),make('newtype','新题型','Synthetic selection'),make('second','阅读','Synthetic reading 二刷'),make('extra','完形','Synthetic cloze')];
+ state.done['custom-stat-writing']=true;state.notDone['custom-stat-second']=true;
+ state.moved['custom-stat-reading']='2026-10-20';state.notes['custom-stat-writing']='Synthetic private note';
+ state.actualMinutes['custom-stat-writing']=22;state.actualWritingMinutes['custom-stat-writing']=15;state.actualReviewMinutes['custom-stat-writing']=7;
+ const h=harness({storage:new Map([[pk,JSON.stringify(fixture)],[key,JSON.stringify(state)]]),fresh:fixture});await h.settle();
+ const before=JSON.stringify(h.api.state);h.api.nav('stats');const html=h.el('app').innerHTML;
+ const group=label=>html.split('data-training-category="'+label+'"')[1].split('</details>')[0];
+ for(const label of ['作文','阅读','翻译','七选五','阅读二刷'])assert(html.includes('data-training-category="'+label+'"'));
+ assert(group('作文').includes('已完成 1 / 1'));assert(group('阅读').includes('已完成 0 / 1'));
+ assert(group('阅读').includes('data-day="2026-10-20"'));assert(group('阅读').includes('待完成 · 计划中'));
+ assert(!group('阅读').includes('custom-stat-second'));assert(group('阅读二刷').includes('不做 1 项'));
+ assert(group('阅读二刷').includes('已完成 0 / 1'));assert(group('七选五').includes('custom-stat-newtype'));
+ assert(html.includes('data-training-category="完形"'));assert(!html.includes('Synthetic private note'));
+ assert.equal(JSON.stringify(h.api.state),before,'viewing progress cannot modify learning records');
+ await h.click('detail',{id:'custom-stat-reading',day:'2026-10-20'});
+ assert(h.el('modal').innerHTML.includes('Synthetic reading'));
+});

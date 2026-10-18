@@ -44,7 +44,12 @@ function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}
  const frac=d.total?Math.round(d.done/d.total*100):0,lab=days[new Date(d.date+'T12:00:00Z').getUTCDay()];
  return '<div class="student-stat-day"><div class="student-stat-track"><i style="height:'+frac+'%"></i></div><span>'+lab+'</span><small>'+d.done+'/'+d.total+'</small></div>';
  }).join('')+'</div><p>只统计已打卡的任务；未打卡不等于未学习。</p></section>';
- const categoriesHtml=categories.length?'<section class="student-stat-section"><h2>'+(subject==='politics'?'训练内容':'题型训练')+'</h2><div class="student-stat-types">'+categories.map(c=>'<div class="student-stat-type"><span>'+esc(c.label)+'</span><strong>'+c.done+' / '+c.total+'</strong></div>').join('')+'</div></section>':'';
+ const categoriesHtml=categories.length?'<section class="student-stat-section"><h2>'+(subject==='politics'?'训练内容':'各项完成情况')+'</h2>'+(subject==='english'?'<p>按当前全部计划统计，含以后安排；不做不计为完成。点开查看每项记录。</p>':'')+'<div class="student-stat-types">'+categories.map(c=>{
+  if(subject!=='english'||!Array.isArray(c.items))return '<div class="student-stat-type"><span>'+esc(c.label)+'</span><strong>'+c.done+' / '+c.total+'</strong></div>';
+  const pending=c.total-c.done-c.notDone;
+  return '<details class="student-training-group" data-training-category="'+esc(c.label)+'"><summary><span>'+esc(c.label)+'</span><strong>已完成 '+c.done+' / '+c.total+'</strong></summary><p class="student-training-status">待完成 '+pending+' 项'+(c.notDone?' · 不做 '+c.notDone+' 项':'')+'</p><progress class="student-training-progress" max="'+(c.total||1)+'" value="'+c.done+'" aria-label="'+esc(c.label)+'完成进度"></progress>'+(c.items.length?c.items.map(t=>'<button type="button" class="student-record-row" data-action="detail" data-id="'+esc(t.id)+'" data-day="'+esc(t.date)+'"><span><small>'+esc(shortDay(t.date))+'</small> '+esc(t.title)+'</span><strong>'+(t.done?'✓ 已完成':t.notDone?'不做':t.date>today?'待完成 · 计划中':'待完成')+' ›</strong></button>').join(''):'<p class="student-training-status">还没有安排这类练习。</p>')+'</details>';
+ }).join('')+'</div></section>':'';
+
  return header('学习进度')+summary+bars+categoriesHtml;
 }
 root.BanyaStudyUI={esc,dayAdd,shortDay,header,strip,dayHeading,task,stats};
