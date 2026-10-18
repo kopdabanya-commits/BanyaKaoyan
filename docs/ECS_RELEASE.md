@@ -17,3 +17,5 @@ Cloudflare 的 `Workers Builds: english-ii-plan` 是平台外部 GitHub 集成�
 需要关闭时：Cloudflare 控制台 → Workers & Pages → english-ii-plan → Settings → Builds → Build configuration → 断开 Git 仓库连接（Disconnect）。只断开自动构建，**不要删除 Worker**；旧网站继续作为恢复入口。若仓库分支保护把该检查列为必需，还需 GitHub 仓库 Settings → Rules → Rulesets（或 Branches 的保护规则）→ Required status checks，移除 `Workers Builds: english-ii-plan`，保留 Validate planner。此项未操作，外部失败状态可能仍显示，但不作为 ECS/M7.2 验收条件。
 
 清理阶段本地验证：138 项 Node、96 项 Python（含7项 ECS 包、路径防护、公开验证和沙盒失败回滚）通过；静态包完整性、原双科/云同步、语法及隐私检查通过。模拟服务和沙盒文件不代表生产发布，真实 HTTPS/SSH 发布仍未运行。
+
+M7.4 增加相同 SHA 的完整字节校验与可重复执行；本次新建目录的失败内容隔离，不覆盖既有不可变目录或私人数据库。备份先完整性验证再发布及清理旧副本。沙盒演练与尚未进行的生产验收见 M7_4_ACCEPTANCE.md。

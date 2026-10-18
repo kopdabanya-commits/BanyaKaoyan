@@ -19,9 +19,13 @@ def backup_once(db_path: Path, backup_dir: Path, keep: int = 30) -> Path:
     destination = backup_dir / ("sync-" + suffix + ".sqlite3")
     temporary = backup_dir / ("." + destination.name + ".tmp")
     try:
+        descriptor=os.open(temporary,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+        os.close(descriptor)
         with sqlite3.connect("file:" + str(db_path) + "?mode=ro", uri=True, timeout=15) as src:
             with sqlite3.connect(temporary, timeout=15) as dst:
                 src.backup(dst)
+                if dst.execute('PRAGMA integrity_check').fetchall()!=[('ok',)]:
+                    raise sqlite3.DatabaseError('Backup integrity check failed; previous backups retained')
         os.chmod(temporary, 0o600)
         os.replace(temporary, destination)
         older = sorted(backup_dir.glob("sync-*.sqlite3"))

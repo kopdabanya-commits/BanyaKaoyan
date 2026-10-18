@@ -171,3 +171,13 @@ def test_owner_ai_pause_during_automatic_call_stops_before_write(auto):
     response['during']=pause
     assert service.process_one()=='ai_activation_changed'
     assert snapshot_rows(db)==before and len(calls)==1
+
+
+def test_cooling_subject_cannot_starve_other_subjects_queue(auto):
+    c,service,db,calls,_,_=auto;enable(c);grant(c);grant(c,'politics')
+    enqueue(c);assert service.process_one()=='applied'
+    enqueue(c,revision=2);enqueue(c,'politics',revision=1)
+    # English remains in cooldown; independent politics must still be processed.
+    results=[service.process_one(),service.process_one()]
+    assert 'applied' in results and len(calls)==2
+    assert any(r['subject']=='politics' and r['status']=='applied' for r in c.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['runs'])

@@ -12,7 +12,8 @@ const key='yantu_english_2026_m1';
 const meta='banya_cloud_sync_meta_v1_english';
 const state=(done=false)=>({done:{task:done},notes:{task:'private study note'}});
 const pack=(subject,record)=>({schema:'banya.sync.v1',subject,record});
-function harness(initial={},remote={subject:'english',revision:0,state:null}){
+function harness(initial={},remote={subject:'english',revision:0,state:null},{liveEvents=false}={}){
+ const hooks={},events=[];let digestCount=0;
  const store=new Map(Object.entries(initial)),calls=[],listeners={},reloads=[],notifications=[],elements={};
  let cloud=remote;
  const localStorage={
@@ -23,12 +24,13 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
  const el=id=>elements[id]??=( {value:'',innerHTML:'',hidden:true,classList:{add(){},remove(){}},select(){},set textContent(value){notifications.push(value)}} );
  const win={PlannerCore:{validPlan:englishCore.validPlan,normalizeState(s){englishCore.normalizeState(s);return s;}},
   PoliticsCore:{normalize(s){politicsCore.normalize(s);return s;}},
-  addEventListener(){},confirm:()=>true,location:{reload:()=>reloads.push('reloaded')}};
+  addEventListener(){},dispatchEvent:e=>events.push(e),confirm:()=>true,location:{reload:()=>reloads.push('reloaded')}};
  const context={window:win,localStorage,document:{
   addEventListener:(event,fn)=>{const previous=listeners[event];listeners[event]=previous?async e=>{await previous(e);await fn(e)}:fn;},getElementById:el,body:{classList:{add(){},remove(){}}}
- },navigator:{onLine:true,clipboard:{writeText:async()=>{}}},AbortController,setTimeout:()=>0,clearTimeout(){},crypto:webcrypto,TextEncoder,URL,Blob,setInterval(){},
+ },navigator:{onLine:true,clipboard:{writeText:async()=>{}}},AbortController,setTimeout:()=>0,clearTimeout(){},crypto:{subtle:{digest:async(...args)=>{await hooks.onDigest?.(++digestCount);return webcrypto.subtle.digest(...args)}}},StorageEvent:liveEvents?class{constructor(type,options){this.type=type;Object.assign(this,options)}}:undefined,TextEncoder,URL,Blob,setInterval(){},
   fetch:async(url,init)=>{
    calls.push({url,init});
+   if(init.method==='GET')await hooks.onGet?.();
    if(url.includes('/v1/agent/'))return {ok:true,json:async()=>url.endsWith('/grants')&&init.method==='POST'?{accessKey:'synthetic-one-time-key',grantId:'synthetic-grant'}:{grants:[]}};
    if(init.method==='PUT'){const body=JSON.parse(init.body);if(body.expectedRevision!==cloud.revision)
     return {ok:false,status:409};
@@ -37,7 +39,7 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
    return {ok:true,json:async()=>cloud};
   }};
  vm.runInNewContext(code,context);
- return {win,store,calls,reloads,listeners,notifications,network:context.navigator,el,cloud:()=>cloud};
+ return {hooks,events,win,store,calls,reloads,listeners,notifications,network:context.navigator,el,cloud:()=>cloud};
 }
 const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
 test('no endpoint sends nothing; connected empty cloud safely starts the first backup',async()=>{
@@ -276,4 +278,28 @@ test('AI bridge checks a clean phone/cloud baseline and never returns authentica
  assert.equal(call.url,connected.endpoint+'/v1/ai/status');assert.equal(call.init.headers.Authorization,'Bearer '+connected.token);
  assert.equal(call.init.redirect,'error');assert.equal(call.init.credentials,'omit');
  assert.throws(()=>h.win.BanyaCloudSync.assistantRequest('../snapshot/english'));
+});
+
+test('M7.4 snapshot transport rejects redirects and omits unrelated browser credentials',async()=>{
+ const raw=JSON.stringify(state(true)),h=harness({[configKey]:JSON.stringify(connected),[key]:raw});
+ await h.win.BanyaCloudSync.syncAll();assert(h.calls.length>0);
+ for(const call of h.calls){assert.equal(call.init.redirect,'error');assert.equal(call.init.credentials,'omit');}
+});
+test('M7.4 new phone record during GET prevents uploading stale state',async()=>{
+ const raw=JSON.stringify(state(false)),next=JSON.stringify(state(true));
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:next,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},{subject:'english',revision:1,state:pack('english',JSON.parse(raw))});
+ h.hooks.onGet=async()=>h.store.set(key,JSON.stringify({...state(true),notes:{task:'synthetic newest note'}}));
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),false);
+ assert.equal(h.calls.filter(c=>c.init.method==='PUT').length,0);assert(h.store.get(key).includes('synthetic newest note'));
+});
+test('M7.4 local change during cloud hashing is retained, not overwritten',async()=>{
+ const raw=JSON.stringify(state(false)),latest=JSON.stringify({...state(true),notes:{task:'synthetic concurrent tap'}});
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},{subject:'english',revision:2,state:pack('english',state(true))});
+ h.hooks.onDigest=async n=>{if(n===2)h.store.set(key,latest)};
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),false);assert.equal(h.store.get(key),latest);assert.equal(h.reloads.length,0);
+});
+test('M7.4 received plan updates notify the live task state before reloading',async()=>{
+ const raw=JSON.stringify(state(false)),h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},{subject:'english',revision:2,state:pack('english',state(true))},{liveEvents:true});
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);assert.equal(h.events.length,1);
+ assert.equal(h.events[0].key,key);assert.equal(h.events[0].newValue,h.store.get(key));assert.equal(h.reloads.length,0);
 });

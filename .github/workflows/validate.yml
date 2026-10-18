@@ -44,6 +44,8 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Synthetic mobile UI and isolated AI acceptance
         run: python scripts/visual_acceptance.py --output artifacts/m74-visual
+      - name: Actual PWA sync transport against isolated backend
+        run: python scripts/integration_browser.py > artifacts/m74-visual/transport-report.txt
       - name: Downloadable screenshots and HTML review index
         if: always()
         uses: actions/upload-artifact@v4
