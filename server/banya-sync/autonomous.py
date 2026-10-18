@@ -14,7 +14,7 @@ from typing import Literal
 from fastapi import Header,Request,HTTPException
 from pydantic import Field,ValidationError,model_validator
 from agent_api import StrictModel,read_model,fail
-from deepseek_ai import call_deepseek,ai_allowed,activation,provider_receipt,MAX_INPUT_BYTES,MAX_OUTPUT_TOKENS,SECRET_PATTERN
+from deepseek_ai import call_deepseek,ai_allowed,activation,provider_receipt,MAX_INPUT_BYTES,MAX_OUTPUT_TOKENS,SECRET_PATTERN,billing_totals
 from learning_memory import profile
 from learning_analysis import AnalysisRequest,analyze
 from learning_policy import resolve_policy
@@ -180,9 +180,9 @@ class AutoService:
                 if len(encoded)>MAX_INPUT_BYTES:raise PlanError('context_required_data_exceeds_budget',413)
                 if SECRET_PATTERN.search(encoded.decode()) or self.config.api_key in encoded.decode() or (self.owner_digest and any(hashlib.sha256(t.encode()).hexdigest()==self.owner_digest for t in re.findall(r'[A-Za-z0-9_-]{32,}',encoded.decode()))):raise PlanError('context_contains_credentials')
                 reserve=(len(encoded)+1024)*self.config.input_nano_per_token+MAX_OUTPUT_TOKENS*self.config.output_nano_per_token
-                global_count,global_cost=con.execute('SELECT count(*),COALESCE(sum(cost_nano),0) FROM ai_requests WHERE month=?',(self.month(),)).fetchone()
+                global_count,global_cost=billing_totals(con,self.config,self.month())
                 if cost_month+reserve>cfg['monthlyBudgetCents']*10_000_000 or global_cost+reserve>self.config.monthly_budget_nano:return 'budget_exhausted'
-                if global_count>=self.config.monthly_calls:return 'call_limit'
+                if self.config.monthly_calls is not None and global_count>=self.config.monthly_calls:return 'call_limit'
                 if con.execute("SELECT 1 FROM ai_requests WHERE status='pending' AND created_at>?",(now-180,)).fetchone():return 'busy'
                 run_id=uuid.uuid4().hex;src=prepared['sources']
                 con.execute('INSERT INTO auto_runs(id,event_id,subject,status,code,permission_revision,control_revision,base_revision,profile_revision,template_hash,created_at,cost_nano,month,result_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -264,7 +264,7 @@ def install_auto_routes(app,service,authorize):
     def status(authorization: str|None=Header(default=None)):
         authorize(authorization)
         with closing(connect(db)) as con:
-            return {'control':control(con),'serverReady':service.ready(),'grants':[{'subject':r['subject'],'revision':r['revision'],'enabled':bool(r['enabled']),'config':json.loads(r['config_json'])} for r in con.execute('SELECT * FROM auto_permissions')],
+            return {'control':control(con),'currency':service.config.currency,'serverReady':service.ready(),'grants':[{'subject':r['subject'],'revision':r['revision'],'enabled':bool(r['enabled']),'config':json.loads(r['config_json'])} for r in con.execute('SELECT * FROM auto_permissions')],
                     'runs':[{'id':r['id'],'subject':r['subject'],'status':r['status'],'code':r['code'],'createdAt':r['created_at'],'appliedRevision':r['applied_revision'],'undoRevision':r['undo_revision'],'result':json.loads(r['result_json'])} for r in con.execute('SELECT * FROM auto_runs ORDER BY created_at DESC,rowid DESC LIMIT 20')],
                     'billing':'conservative reservation, not provider bill'}
     @app.post('/v1/ai/auto/control')
