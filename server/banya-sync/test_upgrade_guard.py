@@ -57,3 +57,20 @@ def test_corrupt_backup_is_rejected(tmp_path):
     corrupt.write_bytes(b'not a database')
     with pytest.raises(sqlite3.DatabaseError):
         verify_preserved(db, corrupt)
+
+
+def test_upgrade_guard_preserves_ai_receipts_and_rejects_unexpected_creation(tmp_path):
+    from deepseek_ai import initialize_ai
+    db=sample(tmp_path)
+    saved=create_verified_backup(db,tmp_path/'backups')
+    initialize_ai(db)
+    verify_preserved(db,saved)
+    with sqlite3.connect(db) as con:
+        con.execute("INSERT INTO ai_requests(id,body_hash,subject,base_revision,template_hash,date_start,date_end,status,cost_nano,month,created_at,expires_at) VALUES ('synthetic','synthetic','english',1,'synthetic','x','x','discussion',1,'synthetic',1,1)")
+    with pytest.raises(RuntimeError,match='unexpectedly created'):
+        verify_preserved(db,saved)
+    existing=create_verified_backup(db,tmp_path/'backups')
+    verify_preserved(db,existing)
+    with sqlite3.connect(db) as con:con.execute("UPDATE ai_requests SET cost_nano=2")
+    with pytest.raises(RuntimeError,match='Private data changed'):
+        verify_preserved(db,existing)

@@ -6,6 +6,7 @@
 - [SINGLE_APP_CONTRACT.md](SINGLE_APP_CONTRACT.md)：单一 PWA、双科数据隔离和兼容约束。
 - [WORKFLOW.md](WORKFLOW.md)：PR、测试、发布与隐私检查。
 - [AI_AGENT_WORKFLOW.md](AI_AGENT_WORKFLOW.md)：用 GPT 正常提需求、额度不足时交给受限 API agent 开 PR 的流程和可复制提示词。
+- [DEEPSEEK_ASSISTANT.md](DEEPSEEK_ASSISTANT.md)：App 内 DeepSeek 思考助手的工作流、隐私、预算和待启用事项。
 - [PRIVATE_PLAN_ACCESS.md](PRIVATE_PLAN_ACCESS.md)：普通聊天的受限私人计划接口、一次性授权与真实接入边界。
 - [BACKLOG.md](BACKLOG.md)：尚待完成的技术验收与隐私限制。
 - [DECISIONS.md](DECISIONS.md)：公开的架构决定。

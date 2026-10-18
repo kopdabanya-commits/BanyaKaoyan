@@ -265,3 +265,15 @@ test('owner creates a separate private GPT key only in transient UI, never backu
  await h.listeners.click({target:{closest:()=>({dataset:{banyaAction:'agent-close'}})}});
  assert.equal(h.el('agent-key').value,'');
 });
+
+test('AI bridge checks a clean phone/cloud baseline and never returns authentication material',async()=>{
+ const raw=JSON.stringify(state(false)),remote={subject:'english',revision:1,state:{...pack('english',JSON.parse(raw)),templateVersion:'synthetic-template'}};
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},remote);
+ h.win.STUDY_PLAN={meta:{planVersion:'synthetic-template'}};
+ const baseline=await h.win.BanyaCloudSync.prepareAssistant('english');assert.equal(baseline.revision,1);assert.equal(baseline.templateVersion,'synthetic-template');
+ assert(!JSON.stringify(baseline).includes(connected.token));
+ await h.win.BanyaCloudSync.assistantRequest('status');const call=h.calls.at(-1);
+ assert.equal(call.url,connected.endpoint+'/v1/ai/status');assert.equal(call.init.headers.Authorization,'Bearer '+connected.token);
+ assert.equal(call.init.redirect,'error');assert.equal(call.init.credentials,'omit');
+ assert.throws(()=>h.win.BanyaCloudSync.assistantRequest('../snapshot/english'));
+});

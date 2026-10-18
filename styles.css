@@ -559,3 +559,21 @@ html[data-subject="politics"] .modal .eyebrow{color:var(--study-accent)}
 .student-task.is-not-done{border-color:#ead9bd;background:#fffdf9}
 html[data-theme="dark"] .student-task.is-not-done{background:var(--paper);border-color:#766344}
 @media(max-width:375px){.record-status-actions{grid-template-columns:1fr}}
+
+/* Same-PWA study assistant; conversation text stays plain text. */
+.ai-sheet{max-width:640px}
+.ai-scope{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ai-scope label:first-child{grid-column:1/-1}
+.ai-scope input,.ai-scope select{width:100%;min-width:0}
+.ai-check{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.7;margin:14px 0}
+.ai-check input{width:18px;height:18px;flex:0 0 auto;margin-top:3px;accent-color:var(--brand)}
+.ai-message{padding:13px 14px;border:1px solid var(--line);background:var(--paper);border-radius:16px;margin:12px 0}
+.ai-message.user{border-color:var(--brand)}
+.ai-message small{font-size:11px;color:var(--muted)}
+.ai-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:13px;margin:8px 0 0}
+.ai-proposal{padding:15px;border:1px solid var(--brand);border-radius:16px;margin:15px 0}
+.ai-proposal h3{font-size:15px;margin:0 0 12px}
+.ai-change{border-top:1px solid var(--line);padding:12px 0;font-size:13px;overflow-wrap:anywhere}
+.ai-change p{font-size:12px;line-height:1.7;color:var(--muted)}
+.ai-sheet textarea{min-height:100px;width:100%;resize:vertical}
+.ai-sheet button:disabled{opacity:.5}

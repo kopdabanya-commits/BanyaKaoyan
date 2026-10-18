@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 
 from agent_api import initialize_agent, install_routes
 from private_plan import PROTOCOL
+from deepseek_ai import from_environment, initialize_ai, install_ai_routes
 
 SUBJECTS = {"english", "politics"}
 MAX_BODY_BYTES = 524_288
@@ -59,13 +60,15 @@ def create_app(*, db_path: str | Path | None = None,
                token_sha256: str | None = None,
                allowed_origin: str | None = None,
                agent_enabled: bool | None = None,
-               template_dir: str | Path | None = None) -> FastAPI:
+               template_dir: str | Path | None = None,
+               ai_config=None, ai_provider=None) -> FastAPI:
     db = Path(db_path or os.environ.get("BANYA_DB_PATH", "/var/lib/banya-sync/sync.sqlite3"))
     digest = token_sha256 if token_sha256 is not None else os.environ.get("BANYA_SYNC_TOKEN_SHA256", "")
     origin = allowed_origin or os.environ.get("BANYA_ALLOWED_ORIGIN", DEFAULT_ORIGIN)
     if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest.lower()):
         raise RuntimeError("BANYA_SYNC_TOKEN_SHA256 must be a SHA-256 hex digest; refuse insecure startup.")
     digest = digest.lower()
+    ai_settings = ai_config if ai_config is not None else from_environment()
     agent_on = agent_enabled if agent_enabled is not None else os.environ.get("BANYA_AGENT_ENABLED", "0") == "1"
     templates = Path(template_dir or os.environ.get("BANYA_TEMPLATE_DIR", "/var/www/banya-pwa/current"))
     if not origin.startswith("https://") or "/" in origin[len("https://"):]:
@@ -74,8 +77,10 @@ def create_app(*, db_path: str | Path | None = None,
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         initialize(db)
-        if agent_on:
+        if agent_on or ai_settings.enabled:
             initialize_agent(db)
+        if ai_settings.enabled:
+            initialize_ai(db)
         yield
 
     app = FastAPI(title="Banya Study Sync", version="1.0", docs_url=None,
@@ -200,6 +205,7 @@ def create_app(*, db_path: str | Path | None = None,
                             headers={"X-Cloud-Revision": str(updated)})
 
     install_routes(app, db, open_db, authorize, agent_on, templates)
+    install_ai_routes(app, db, open_db, authorize, ai_settings, templates, ai_provider)
     return app
 
 
