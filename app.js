@@ -142,22 +142,32 @@ function renderCalendar(){
 }
 function calendarDetails(date){const tasks=specialTasks(date),p=dateProgress(date);return '<section class="calendar-details" aria-label="所选日期的任务"><div class="calendar-details-head"><h2>'+esc(dateHeading(date))+'</h2><span>已完成 '+p.done+'/'+p.total+'</span></div>'+(p.skipped?'<p class="calendar-rest">这天想休息一下，任务还在。</p>':'')+(tasks.length?tasks.map(t=>'<button type="button" class="calendar-task-row" data-action="open-day" data-date="'+esc(date)+'"><span>'+esc(t.title)+'</span><small>'+(state.done[t.id]?'✓ 已完成':state.notDone[t.id]?'不做':'待完成')+'</small></button>').join(''):'<p class="calendar-rest">这天没有安排，按自己的节奏来。</p>')+'</section>'}
 function renderStats(){
- const UI=window.BanyaStudyUI;
- const days=data.days.filter(d=>d.date<=today).map(d=>({date:d.date,...dateProgress(d.date)}));
- const groups=new Map(['作文','阅读','翻译','七选五','阅读二刷'].map(label=>[label,{label,done:0,total:0,notDone:0,items:[]}])),recorded=[];
- for(const d of data.days){
-  for(const t of specialTasks(d.date)){
-   const label=t.type==='写作'?'作文':t.type==='新题型'?'七选五':t.type==='阅读'&&/二刷|二轮|第二[轮遍次]|复刷/.test(t.title)?'阅读二刷':t.type;
-   if(!groups.has(label))groups.set(label,{label,done:0,total:0,notDone:0,items:[]});
-   const g=groups.get(label),done=!!state.done[t.id],notDone=!!state.notDone[t.id];
-   g.total++;if(done)g.done++;if(notDone)g.notDone++;
-   g.items.push({id:t.id,title:t.title,date:d.date,done,notDone});
-   if(d.date<=today&&state.wrong[t.id]!==undefined&&state.wrong[t.id]!=='')recorded.push({date:d.date,task:t,wrong:state.wrong[t.id]});
-  }
+ const groups=new Map(['作文','阅读','翻译','七选五','阅读二刷'].map(label=>[label,{label,done:0,notDone:0,items:[]}]));
+ const known=new Map();
+ for(const d of data.days)for(const task of specialTasks(d.date))known.set(task.id,{...task,date:d.date,viewable:true});
+ // Retired archives can still contain real learning records. Keep them visible,
+ // without offering an editor that only understands current plan tasks.
+ for(const [id,task]of Object.entries(state.archive))if(!known.has(id)&&!task.vocab)known.set(id,{...task,...state.edits[id],date:state.moved[id]||task.date,viewable:false});
+ const fields=['done','notDone','notes','wrong','questionIds','actualMinutes','actualWritingMinutes','actualReviewMinutes'];
+ const ids=new Set(fields.flatMap(field=>Object.keys(state[field])));
+ for(const id of ids){
+  if(!known.has(id)&&id.endsWith('-vocab'))continue;
+  const done=!!state.done[id],notDone=!!state.notDone[id],wrong=state.wrong[id];
+  const total=state.actualMinutes[id],work=state.actualWritingMinutes[id],review=state.actualReviewMinutes[id];
+  const hasRecord=done||notDone||Number.isInteger(wrong)||total!==undefined||work!==undefined||review!==undefined||state.notes[id]?.trim()||state.questionIds[id]?.trim();
+  if(!hasRecord)continue;
+  const t=known.get(id)||{id,title:'历史学习记录（题型待确认）',type:'其他记录',viewable:false};
+  if(t.vocab||t.type==='单词')continue;
+  const label=t.type==='写作'?'作文':t.type==='新题型'?'七选五':t.type==='阅读'&&/二刷|二轮|第二[轮遍次]|复刷/.test(t.title)?'阅读二刷':t.type;
+  if(!groups.has(label))groups.set(label,{label,done:0,notDone:0,items:[]});
+  const g=groups.get(label);if(done)g.done++;if(notDone)g.notDone++;
+  g.items.push({id,title:t.title,date:t.date,viewable:t.viewable,done,notDone,wrong,
+   total:total??(work!==undefined&&review!==undefined?work+review:undefined),work,review});
  }
- const recordedHtml=recorded.length?'<section class="student-stat-section"><h2>最近的错题记录</h2>'+recorded.slice(-5).reverse().map(r=>'<button class="student-record-row" data-action="detail" data-id="'+esc(r.task.id)+'" data-day="'+esc(r.date)+'"><span>'+esc(r.task.title)+'</span><strong>错 '+esc(r.wrong)+' 题 ›</strong></button>').join('')+'</section>':'';
- return '<div class="student-page student-english">'+UI.stats({days,categories:[...groups.values()],wrongCount:recorded.length,today,subject:'english'})+recordedHtml+'</div>';
+ for(const group of groups.values())group.items.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.id.localeCompare(b.id));
+ return '<div class="student-page student-english">'+window.BanyaStudyUI.trainingRecords([...groups.values()])+'</div>';
 }
+
 function renderSettings(){
  const UI=window.BanyaStudyUI;
  return '<div class="student-page student-english">'+UI.header('设置')
