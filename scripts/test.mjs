@@ -227,7 +227,7 @@ test('M2.4 student interface gives focused guidance, accessible nav, and truthfu
  h.api.nav('settings');assert(h.el('app').innerHTML.includes('备份与恢复'));
  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../styles.css',import.meta.url),'utf8');
- assert.equal((html.match(/class="nav-icon" viewBox/g)||[]).length,4);
+ assert.equal((html.match(/class="nav-icon" viewBox/g)||[]).length,5);
  assert(css.includes('prefers-reduced-motion:reduce'));
  assert(css.includes('.modal:not(.hidden) .modal-card'));
 });

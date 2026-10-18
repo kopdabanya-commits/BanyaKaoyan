@@ -13,7 +13,7 @@ const deep=x=>JSON.parse(JSON.stringify(x));
 function harness(initial={}){
  const handlers={},storage=new Map(Object.entries(initial)),elements={};
  const doc={addEventListener:(event,fn)=>(handlers[event]??=[]).push(fn),getElementById:id=>elements[id]||(elements[id]={value:'',innerHTML:'',classList:{_set:new Set(),add(x){this._set.add(x)},remove(x){this._set.delete(x)},contains(x){return this._set.has(x)}},querySelector:()=>null}),body:{classList:{add(){},remove(){}}},createElement:()=>({click(){}})};
- const win={PoliticsCore:Core,POLITICS_PLAN:politics,addEventListener(){},POLITICS_NAV(v){lastNav=v}};let lastNav='';
+ const win={PlannerCore:require('../planner-core.js'),PoliticsCore:Core,POLITICS_PLAN:politics,addEventListener(){},POLITICS_NAV(v){lastNav=v}};let lastNav='';
  const ctx={window:win,document:doc,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},Date,Blob,URL:{createObjectURL:()=>'',revokeObjectURL(){}},setTimeout(){},console,confirm:()=>true,alert:()=>{}};
  vm.createContext(ctx);vm.runInContext(sharedCode,ctx);vm.runInContext(uiCode,ctx);
  const render=(view='today',day='2026-10-16')=>win.PoliticsUI.render(view,day,x=>x,()=>{});

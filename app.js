@@ -51,14 +51,39 @@ function fits(day,id,minutes){return allTasks(day).filter(t=>t.id!==id).reduce((
 function canPlace(day,id,minutes){if(fits(day,id,minutes))return true;toast('该日训练超过了新计划的时间预算，请缩短或改期其他任务');return false;}
 function dateProgress(s){const a=specialTasks(s);return {done:a.filter(x=>state.done[x.id]).length,total:a.length,minutes:a.reduce((n,x)=>n+x.minutes,0),skipped:!!state.skipped[s]}}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('on'),2800)}
-function nav(next){if(dayDetail){dayDetail=false;document.body.classList.remove('day-detail-open');}if(next==='today'&&view!=='today'){const meta=subject==='politics'?window.POLITICS_PLAN?.meta:data.meta;const date=meta&&today>=meta.start&&today<=meta.end?today:meta?.start;if(date){if(subject==='politics')window.PoliticsUI?.setDate?.(date);else selectedDate=date;}}view=next;document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});render(true);window.scrollTo(0,0)}
+// Navigation metadata contains no learning records and never leaves this tab.
+const ROUTE_KEY='banya_ui_route_v1', VIEWS=['today','calendar','stats','assistant','settings'];
+const routeScroll={};
+function route(){return {view,subject,date:selectedDate,month:calendarMonth,detail:dayDetail,returnScroll:dayReturnScroll,politicsDate:window.PoliticsUI?.getDate?.(),scroll:window.scrollY||0};}
+function rememberRoute(){try{sessionStorage.setItem(ROUTE_KEY,JSON.stringify(route()));}catch{}}
+function restoreRoute(r){
+ if(!r||!VIEWS.includes(r.view)||!['english','politics'].includes(r.subject))return false;
+ view=r.view;subject=r.subject;if(inRange(r.date))selectedDate=r.date;
+ if(/^\d{4}-\d{2}$/.test(r.month))calendarMonth=r.month;
+ if(r.politicsDate)window.PoliticsUI?.setDate?.(r.politicsDate);
+ dayDetail=!!r.detail;dayReturnScroll=Number.isFinite(r.returnScroll)?Math.max(0,r.returnScroll):0;return true;
+}
+try{restoreRoute(JSON.parse(sessionStorage.getItem(ROUTE_KEY)));}catch{}
+function markTabs(){document.querySelectorAll('.nav-tab').forEach(el=>{const active=el.dataset.view===view;el.classList.toggle('active',active);if(active)el.setAttribute?.('aria-current','page');else el.removeAttribute?.('aria-current');});}
+function nav(next){
+ if(!VIEWS.includes(next))return;
+ routeScroll[subject+':'+view]=window.scrollY||0;
+ if(typeof history!=='undefined'){history.replaceState?.({banyaRoute:route()},'');}
+ dayDetail=false;document.body.classList.remove('day-detail-open');view=next;
+ if(typeof history!=='undefined')history.pushState?.({banyaRoute:route()},'');
+ markTabs();render(true);window.scrollTo(0,routeScroll[subject+':'+view]||0);rememberRoute();
+}
+window.addEventListener('pagehide',rememberRoute);
+if(typeof MutationObserver!=='undefined'){const box=document.getElementById('modal');let visible=false;new MutationObserver(()=>{const next=!box.classList.contains('hidden');if(next===visible)return;visible=next;if(next){history.pushState({banyaModal:true,banyaRoute:route()},'');}else if(history.state?.banyaModal){history.back();}}).observe(box,{attributes:true,attributeFilter:['class']});}
+
 function render(enter=false,justDone=''){
+ markTabs();rememberRoute();
  document.getElementById('system-date').textContent=`${niceDate(today)} · ${weekday(today)}`;
  const app=document.getElementById('app');
- const content=subject==='politics'?renderPolitics():dayDetail?renderToday(justDone):view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
+ const content=!dayDetail&&view==='assistant'?'':subject==='politics'?renderPolitics():dayDetail?renderToday(justDone):view==='settings'?renderSettings():view==='today'?renderToday(justDone):view==='calendar'?renderCalendar():renderStats();
  const subjectBar=renderSubjects();
  const importPanel=!dayDetail&&view==='settings'&&window.BanyaPlanImport?window.BanyaPlanImport.panel():'';
- const assistantPanel=!dayDetail&&view==='settings'&&window.BanyaStudyAssistant?window.BanyaStudyAssistant.panel(subject):'';
+ const assistantPanel=!dayDetail&&view==='assistant'&&window.BanyaStudyAssistant?window.BanyaStudyAssistant.panel(subject):'';
  const cloudPanel=!dayDetail&&view==='settings'&&window.BanyaCloudSync?window.BanyaCloudSync.panel():'';
  const transferPanel=!dayDetail&&view==='settings'&&window.BanyaOriginTransfer?window.BanyaOriginTransfer.panel():'';
   document.body?.classList?.toggle?.('day-detail-open',dayDetail);
@@ -73,20 +98,20 @@ function renderSubjects(){
  ${Intel.SUBJECTS.map(item=>`<button type="button" data-action="switch-subject" data-subject="${item.id}" class="subject-tab ${subject===item.id?'is-active':''}" aria-pressed="${subject===item.id}"><span class="subject-symbol">${item.id==='english'?'英':'政'}</span><span>${item.label}</span>${item.status!=='active'?'<span class="subject-new">待建档</span>':''}</button>`).join('')}
  </div></section>`;
 }
-function renderPolitics(){ window.POLITICS_NAV=nav; return window.PoliticsUI.render(view,today,esc,()=>render()); }
+function renderPolitics(){ window.POLITICS_NAV=nav; return window.PoliticsUI.render(dayDetail?'today':view,today,esc,()=>render()); }
 function openDayDetail(date){
   const valid=subject==='politics'?!!window.PoliticsUI?.setDate?.(date):inRange(date);
   if(!valid)return;
   if(subject==='english')selectedDate=date;
   calendarMonth=date.slice(0,7);
-  if(!dayDetail){dayReturnScroll=window.scrollY;history.pushState({banyaDay:true},'',location.pathname+location.search+'#day/'+subject+'/'+date);}
+  if(!dayDetail){dayReturnScroll=window.scrollY;history.pushState({banyaDay:true,banyaRoute:route()},'',location.pathname+location.search+'#day/'+subject+'/'+date);}
   dayDetail=true;render(true);window.scrollTo(0,0);
 }
 function closeDayDetail(){if(!dayDetail)return;dayDetail=false;render(true);window.scrollTo(0,dayReturnScroll);}
 window.BANYA_OPEN_DAY=openDayDetail;
 window.BANYA_SELECT_DAY=selectDay;
 window.BANYA_VIEW=()=>view;
-window.addEventListener('popstate',()=>{if(dayDetail)closeDayDetail();});
+window.addEventListener('popstate',event=>{const box=document.getElementById('modal');if(typeof KeyboardEvent!=='undefined'&&box&&!box.classList.contains('hidden')){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return;}const r=event?.state?.banyaRoute;if(r&&restoreRoute(r)){render(true);window.scrollTo(0,r.scroll||0);}else if(dayDetail)closeDayDetail();});
 function selectDay(date){
  if(subject==='politics'){if(!window.PoliticsUI?.setDate?.(date))return;}
  else {if(!inRange(date))return;selectedDate=date;}

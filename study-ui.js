@@ -31,7 +31,7 @@ function task({item,day,done=false,notDone=false,wrong,hasNote=false,subject='en
  +'<button type="button" class="student-task-check'+(done?' checked':'')+'" data-action="'+toggle+'" data-id="'+id+'"'+dayAttr+' aria-pressed="'+done+'" aria-label="'+(done?'取消完成':'标记完成')+'：'+esc(item.title)+'">'+(done?'✓':'')+'</button>'
  +'<button type="button" class="student-task-body" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="查看任务详情：'+esc(item.title)+'">'
  +'<span class="student-task-name">'+esc(item.title)+'</span>'
- +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> '+duration+(notDone?'<span class="student-task-status">不做</span>':'')+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
+ +'<span class="student-task-meta">'+esc(item.type)+' <span aria-hidden="true">·</span> '+duration+('<span class="student-task-status">'+(done?'已完成':notDone?'不做':'待完成')+'</span>')+wrongLabel+(hasNote?'<span class="student-task-record">有记录</span>':'')+'</span></button>'
  +'<button type="button" class="student-task-more" data-action="'+open+'" data-id="'+id+'"'+dayAttr+' aria-label="展开任务记录">›</button></article>';
 }
 function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}){
@@ -48,7 +48,7 @@ function stats({days:rows=[],categories=[],wrongCount=0,today,subject='english'}
 
  return header('学习进度')+summary+bars+categoriesHtml;
 }
-function trainingRecords(categories){
+function trainingRecords(categories,{subject='english'}={}){
  const items=categories.flatMap(c=>c.items),completed=items.filter(t=>t.done).length,timed=items.filter(t=>t.total!==undefined),minutes=timed.reduce((sum,t)=>sum+t.total,0);
  const summary='<div class="student-stat-grid training-overview"><div><span>累计打卡</span><strong>'+completed+'<small> 项</small></strong></div><div><span>已记录总用时</span><strong>'+(timed.length?minutes:'—')+'<small>'+(timed.length?' 分钟':' 尚未填写')+'</small></strong></div></div>';
  const hints='<p class="training-source-note">来自这台设备已保存的学习记录，联网同步后也会更新。未打卡不等于没学；没有填写的用时和错题不会估算。</p>';
@@ -60,7 +60,7 @@ function trainingRecords(categories){
   const rows=c.items.map(t=>{
    const status=t.done?'已完成':t.notDone?'不做':'有记录未打卡';
    const facts=[t.total!==undefined?'总用时 '+t.total+' 分钟':'总用时未填写',t.work!==undefined?(c.label==='作文'?'动笔 ':'答题 ')+t.work+' 分钟':'',t.review!==undefined?'批改复盘 '+t.review+' 分钟':'',Number.isInteger(t.wrong)?'错 '+t.wrong+' 题':''].filter(Boolean).join(' · ');
-   const tag=t.viewable?'button':'div',attrs=t.viewable?' type="button" data-action="detail" data-id="'+esc(t.id)+'" data-day="'+esc(t.date)+'"':'';
+   const tag=t.viewable?'button':'div',attrs=t.viewable?' type="button" data-action="'+(subject==='politics'?'p-detail':'detail')+'" data-id="'+esc(t.id)+'" data-day="'+esc(t.date)+'"':'';
    return '<'+tag+attrs+' class="training-record"><span class="training-record-top"><small>'+(t.date?'任务日期 '+esc(shortDay(t.date)):'日期未记录')+'</small><b class="training-status '+(t.done?'is-done':t.notDone?'is-skipped':'is-recorded')+'">'+status+'</b></span><span class="training-record-title">'+esc(t.title)+'</span><span class="training-record-facts">'+esc(facts)+'</span>'+(!t.viewable?'<small class="training-history-note">历史记录 · 仅查看</small>':'')+'</'+tag+'>';
   }).join('');
   return '<details class="training-card" data-training-category="'+esc(c.label)+'"><summary><span class="training-card-heading">'+esc(c.label)+'<i aria-hidden="true">⌄</i></span><span class="training-card-count"><strong>'+c.done+'</strong> 项已打卡</span><span class="training-card-status">'+esc(status)+'</span><span class="training-card-time">'+esc(timeLabel)+'</span></summary><div class="training-card-records">'+(rows||'<p class="training-empty">保存一次练习记录后，就能在这里看到。</p>')+'</div></details>';
