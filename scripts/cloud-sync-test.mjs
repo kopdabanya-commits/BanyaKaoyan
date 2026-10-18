@@ -13,21 +13,23 @@ const meta='banya_cloud_sync_meta_v1_english';
 const state=(done=false)=>({done:{task:done},notes:{task:'private study note'}});
 const pack=(subject,record)=>({schema:'banya.sync.v1',subject,record});
 function harness(initial={},remote={subject:'english',revision:0,state:null}){
- const store=new Map(Object.entries(initial)),calls=[],listeners={},reloads=[],notifications=[];
+ const store=new Map(Object.entries(initial)),calls=[],listeners={},reloads=[],notifications=[],elements={};
  let cloud=remote;
  const localStorage={
   getItem:k=>store.has(k)?store.get(k):null,
   setItem:(k,v)=>store.set(k,String(v)),
   removeItem:k=>store.delete(k)
  };
+ const el=id=>elements[id]??=( {value:'',innerHTML:'',hidden:true,classList:{add(){},remove(){}},select(){},set textContent(value){notifications.push(value)}} );
  const win={PlannerCore:{validPlan:englishCore.validPlan,normalizeState(s){englishCore.normalizeState(s);return s;}},
   PoliticsCore:{normalize(s){politicsCore.normalize(s);return s;}},
   addEventListener(){},confirm:()=>true,location:{reload:()=>reloads.push('reloaded')}};
  const context={window:win,localStorage,document:{
-  addEventListener:(event,fn)=>listeners[event]=fn,getElementById:()=>({set textContent(value){notifications.push(value)}})
- },navigator:{onLine:true},crypto:webcrypto,TextEncoder,URL,Blob,setInterval(){},
+  addEventListener:(event,fn)=>{const previous=listeners[event];listeners[event]=previous?async e=>{await previous(e);await fn(e)}:fn;},getElementById:el,body:{classList:{add(){},remove(){}}}
+ },navigator:{onLine:true,clipboard:{writeText:async()=>{}}},AbortController,setTimeout:()=>0,clearTimeout(){},crypto:webcrypto,TextEncoder,URL,Blob,setInterval(){},
   fetch:async(url,init)=>{
    calls.push({url,init});
+   if(url.includes('/v1/agent/'))return {ok:true,json:async()=>url.endsWith('/grants')&&init.method==='POST'?{accessKey:'synthetic-one-time-key',grantId:'synthetic-grant'}:{grants:[]}};
    if(init.method==='PUT'){const body=JSON.parse(init.body);if(body.expectedRevision!==cloud.revision)
     return {ok:false,status:409};
     cloud={subject:body.state.subject,revision:cloud.revision+1,state:body.state};
@@ -35,7 +37,7 @@ function harness(initial={},remote={subject:'english',revision:0,state:null}){
    return {ok:true,json:async()=>cloud};
   }};
  vm.runInNewContext(code,context);
- return {win,store,calls,reloads,listeners,notifications,network:context.navigator,cloud:()=>cloud};
+ return {win,store,calls,reloads,listeners,notifications,network:context.navigator,el,cloud:()=>cloud};
 }
 const connected={endpoint:'https://124.70.128.201',token:'1234567890abcdef1234567890abcdef1234567890'};
 test('no endpoint sends nothing; connected empty cloud safely starts the first backup',async()=>{
@@ -212,4 +214,54 @@ test('local restore retains a validated cloud baseline without storing the sync 
   values:{[key]:raw,[meta]:JSON.stringify({revision:4,hash:'bad'})}})};
  await h.listeners.change({target:{id:'banya-local-backup-file',files:[invalid],value:'bad.json'}});
  assert.equal(h.store.get(meta),baseline,'invalid baseline must not replace the valid one');
+});
+
+test('phone safely upgrades template metadata without changing the learning record',async()=>{
+ const raw=JSON.stringify(state(true)),h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},
+  {subject:'english',revision:1,state:pack('english',JSON.parse(raw))});
+ h.win.STUDY_PLAN={meta:{planVersion:'synthetic-template'}};
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
+ assert.equal(h.cloud().revision,2);assert.equal(h.cloud().state.templateVersion,'synthetic-template');
+ assert.deepEqual(JSON.parse(JSON.stringify(h.cloud().state.record)),JSON.parse(raw));
+ assert(h.calls.every(call=>call.url.endsWith('?plan_protocol=1')));
+ assert(h.calls.every(call=>!('X-Banya-Plan-Protocol'in call.init.headers)),'staged frontend release must preserve legacy CORS compatibility');
+});
+test('private plan delivery backs up clean local state and stops for simultaneous offline edits',async()=>{
+ const previous=JSON.stringify(state(false)),modified={...state(false),edits:{task:{detail:'Synthetic private guidance'}},moved:{task:'2026-10-21'}};
+ const remote={subject:'english',revision:2,state:{...pack('english',modified),templateVersion:'synthetic-template',requiredCapabilities:['private-plan-v1']}};
+ const h=harness({[configKey]:JSON.stringify(connected),[key]:previous,[meta]:JSON.stringify({revision:1,hash:hash(previous)})},remote);
+ h.win.STUDY_PLAN={meta:{planVersion:'synthetic-template'}};
+ assert.equal(await h.win.BanyaCloudSync.syncAll(),true);
+ assert.equal(h.store.get(key+'_before_cloud_restore'),previous);
+ assert.equal(JSON.parse(h.store.get(key)).edits.task.detail,'Synthetic private guidance');assert.equal(h.reloads.length,1);
+ const changed=JSON.stringify({...state(false),notes:{task:'offline local note'}}),conflict=harness({[configKey]:JSON.stringify(connected),[key]:changed,[meta]:JSON.stringify({revision:1,hash:hash(previous)})},remote);
+ conflict.win.STUDY_PLAN=h.win.STUDY_PLAN;
+ assert.equal(await conflict.win.BanyaCloudSync.syncAll(),false);assert.equal(conflict.store.get(key),changed);
+ assert.equal(conflict.calls.filter(call=>call.init.method==='PUT').length,0);assert.equal(conflict.reloads.length,0);
+});
+test('unsupported private plan capabilities or templates cannot overwrite phone records',async()=>{
+ const raw=JSON.stringify(state(false));
+ for(const [capability,version]of [['future-protocol','synthetic-template'],['private-plan-v1','different-template']]){
+  const h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},
+   {subject:'english',revision:2,state:{...pack('english',state(true)),requiredCapabilities:[capability],templateVersion:version}});
+  h.win.STUDY_PLAN={meta:{planVersion:'synthetic-template'}};
+  assert.equal(await h.win.BanyaCloudSync.syncAll(),false);assert.equal(h.store.get(key),raw);assert.equal(h.reloads.length,0);
+ }
+});
+test('owner creates a separate private GPT key only in transient UI, never backups or local storage',async()=>{
+ const raw=JSON.stringify(state(false)),h=harness({[configKey]:JSON.stringify(connected),[key]:raw,[meta]:JSON.stringify({revision:1,hash:hash(raw)})},
+  {subject:'english',revision:1,state:pack('english',state(false))});
+ const button={dataset:{banyaAction:'agent-open'}};
+ await h.listeners.click({target:{closest:()=>button}});
+ assert(h.el('modal').innerHTML.includes('私人 GPT 授权'));
+ for(const [id,value]of Object.entries({'agent-subject':'english','agent-permission':'write','agent-start':'2026-10-20','agent-end':'2026-10-21','agent-days':'7'}))h.el(id).value=value;
+ await h.listeners.submit({target:{id:'banya-agent-grant',querySelector:()=>({disabled:false})},preventDefault(){}});
+ assert.equal(h.el('agent-key').value,'synthetic-one-time-key');assert.equal(h.el('agent-key-box').hidden,false);
+ assert(!Array.from(h.store.values()).some(raw=>raw.includes('synthetic-one-time-key')));
+ assert(!h.el('modal').innerHTML.includes('synthetic-one-time-key'));
+ const created=h.calls.find(call=>call.url.endsWith('/v1/agent/grants')&&call.init.method==='POST');
+ assert.deepEqual(JSON.parse(created.init.body).permissions,['plan:read','plan:write']);
+ assert.equal(created.init.headers.Authorization,'Bearer '+connected.token);
+ await h.listeners.click({target:{closest:()=>({dataset:{banyaAction:'agent-close'}})}});
+ assert.equal(h.el('agent-key').value,'');
 });

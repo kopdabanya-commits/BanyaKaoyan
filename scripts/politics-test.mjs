@@ -10,8 +10,8 @@ const serialized=fs.readFileSync(new URL('../politics-plan-data.js',import.meta.
 const uiCode=fs.readFileSync(new URL('../politics-ui.js',import.meta.url),'utf8');
 const sharedCode=fs.readFileSync(new URL('../study-ui.js',import.meta.url),'utf8');
 const deep=x=>JSON.parse(JSON.stringify(x));
-function harness(){
- const handlers={},storage=new Map(),elements={};
+function harness(initial={}){
+ const handlers={},storage=new Map(Object.entries(initial)),elements={};
  const doc={addEventListener:(event,fn)=>(handlers[event]??=[]).push(fn),getElementById:id=>elements[id]||(elements[id]={value:'',innerHTML:'',classList:{_set:new Set(),add(x){this._set.add(x)},remove(x){this._set.delete(x)},contains(x){return this._set.has(x)}},querySelector:()=>null}),body:{classList:{add(){},remove(){}}},createElement:()=>({click(){}})};
  const win={PoliticsCore:Core,POLITICS_PLAN:politics,addEventListener(){},POLITICS_NAV(v){lastNav=v}};let lastNav='';
  const ctx={window:win,document:doc,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},Date,Blob,URL:{createObjectURL:()=>'',revokeObjectURL(){}},setTimeout(){},console,confirm:()=>true,alert:()=>{}};
@@ -169,4 +169,22 @@ test('M4.1 politics task details open the same sheet as English without displaci
  const saved=JSON.parse(h.storage.get(Core.key));
  assert.equal(saved.wrong[id],2);assert.equal(saved.notes[id],'多选题漏了限制词');
  assert(!h.storage.has('yantu_english_2026_m1'));
+});
+
+
+test('private political date/content overlays and old learning records survive phone edits',()=>{
+ const task=politics.days[0].items[0],id=task.id,record=Core.defaults();
+ record.moved[id]='2026-10-17';record.edits[id]={detail:'Synthetic private guidance'};
+ record.notes[id]='Existing private note';record.actualWritingMinutes[id]=20;record.actualReviewMinutes[id]=0;
+ const normalized=Core.normalize(record);
+ assert(!Core.tasks(politics,normalized,'2026-10-16').items.some(t=>t.id===id));
+ assert.equal(Core.tasks(politics,normalized,'2026-10-17').items.filter(t=>t.id===id).length,1);
+ const h=harness({[Core.key]:JSON.stringify(record)});h.win.PoliticsUI.setDate('2026-10-17');h.render();h.click('p-detail',{id});
+ assert(h.elements.modal.innerHTML.includes('Synthetic private guidance'));
+ h.click('p-edit-task',{id});h.elements['p-plan-title']={value:task.title};h.elements['p-plan-minutes']={value:String(task.minutes)};
+ h.submit('p-plan-form',{id});const saved=JSON.parse(h.storage.get(Core.key));
+ assert.equal(saved.edits[id].detail,'Synthetic private guidance');assert.equal(saved.moved[id],'2026-10-17');
+ assert.equal(saved.notes[id],'Existing private note');assert.equal(saved.actualWritingMinutes[id],20);assert.equal(saved.actualReviewMinutes[id],0);
+ assert(!h.storage.has('yantu_english_2026_m1'));
+ assert.throws(()=>Core.normalize({moved:{[id]:'2026-02-31'}}));
 });

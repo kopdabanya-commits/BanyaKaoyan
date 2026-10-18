@@ -1,0 +1,57 @@
+name: Reviewed private-plan channel upgrade
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: banya-existing-worker-production
+  cancel-in-progress: false
+jobs:
+  upgrade:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify the reviewed channel before touching ECS
+        run: |
+          set -euo pipefail
+          python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py
+          bash -n server/banya-sync/upgrade-private-plan.sh
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+      - name: Reuse authorized SSH and perform a backup-first upgrade
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          ssh_opts=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15)
+          remote="$BANYA_SSH_USER@124.70.128.201"
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-agent-stage'
+          tar -C server/banya-sync -cf - app.py agent_api.py private_plan.py agent-openapi.json upgrade-private-plan.sh |
+            sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-agent-stage -xf -'
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA"
+      - name: Verify public schema and denied unauthenticated access without reading snapshots
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error
+          base = 'https://124.70.128.201'
+          with urllib.request.urlopen(base + '/v1/agent/openapi.json', timeout=20) as response:
+              schema = json.load(response)
+          assert len(schema['paths']) == 5
+          assert schema['paths']['/v1/agent/changes/{change_id}/commit']['post']['x-openai-isConsequential']
+          for path in ('/v1/agent/capabilities', '/v1/agent/grants', '/v1/snapshot/english'):
+              try:
+                  urllib.request.urlopen(base + path, timeout=20)
+                  raise AssertionError('Unauthorized access unexpectedly succeeded')
+              except urllib.error.HTTPError as error:
+                  assert error.code == 401
+          print('TLS, public schema and unauthorized 401 verified. No private record was requested with credentials.')
+          PY

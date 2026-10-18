@@ -12,13 +12,14 @@ const forbiddenPaths = [
 const forbiddenContent = [
   ['private key', /-----BEGIN (?:OPENSSH|RSA|EC|DSA|ENCRYPTED)? ?PRIVATE KEY-----/],
   ['GitHub token', /(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})/],
+  ['private plan access key', /banya_plan_[A-Za-z0-9_-]{40,}/],
   ['AWS access key', /AKIA[0-9A-Z]{16}/],
   ['hardcoded deployment credential', /(?:BANYA_ECS_SSH_PASSWORD|BANYA_SYNC_TOKEN|CLOUDFLARE_API_TOKEN|CF_API_TOKEN)\s*[:=]\s*['"]?(?!configured\b|available\b|missing\b)[A-Za-z0-9+/=_-]{8,}/],
   ['personal phone number', /(?<!\d)1[3-9]\d{9}(?!\d)/],
 ];
 const violations = [];
 for (const file of files) {
-  if (file.endsWith('.json') && !['plan.json', 'politics-plan.json'].includes(file)) {
+  if (file.endsWith('.json') && !['plan.json', 'politics-plan.json', 'server/banya-sync/agent-openapi.json'].includes(file)) {
     violations.push(`${file}: unapproved JSON file (may contain a learning backup)`);
     continue;
   }

@@ -58,7 +58,7 @@ jobs:
       - name: Run server regression tests (without access to production database)
         run: |
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py
       - name: Verify intended existing Worker identity and public allowlist
         run: |
           set -euo pipefail
