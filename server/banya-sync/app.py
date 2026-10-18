@@ -91,7 +91,7 @@ def create_app(*, db_path: str | Path | None = None,
         if agent_on or ai_settings.enabled or auto_on:
             initialize_agent(db)
         if ai_settings.enabled:
-            initialize_ai(db)
+            initialize_ai(db,ai_settings.currency)
         automation.recover()
         worker=asyncio.create_task(automation.loop()) if auto_worker and auto_on else None
         try:yield

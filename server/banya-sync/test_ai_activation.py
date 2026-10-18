@@ -78,10 +78,10 @@ def test_config_preserves_sync_and_defaults_disabled_and_zero_budget(monkeypatch
         key,value=line.split('=',1);monkeypatch.setenv(key,value)
     config=from_environment()
     assert config.owner_approval_required and config.approval_stamp and not config.ready
-    for budget,calls in [('NaN','1'),('101','1'),('2','41'),('0','40'),('2','0')]:
+    for budget,calls in [('NaN','1'),('101','1'),('2','1001'),('0','40'),('2','0')]:
         with pytest.raises(ValueError):render('', 'synthetic-key-'+'x'*25,'prepare-enabled',budget,calls)
     enabled=render('', 'synthetic-key-'+'x'*25,'prepare-enabled','2','40')
-    assert 'BANYA_AI_ENABLED=1' in enabled and 'BANYA_AUTO_ENABLED=1' in enabled
+    assert 'BANYA_AI_ENABLED=1' in enabled and 'BANYA_AUTO_ENABLED=0' in enabled
     assert 'DEEPSEEK_MONTHLY_BUDGET_USD=2' in enabled and 'DEEPSEEK_MONTHLY_CALLS=40' in enabled
 
 

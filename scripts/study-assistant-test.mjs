@@ -86,3 +86,9 @@ test('M7.2 structured advice renders safely without offering or allowing commit'
  assert(!h.el('ai-preview').innerHTML.includes('data-ai-action="commit"'));assert(h.el('ai-preview').innerHTML.includes('Synthetic finding'));assert.equal(h.session.size,0,'finished read-only preview must not block opening another subject');
  await h.click('commit');assert.equal(h.calls.filter(c=>c.path.endsWith('/commit')).length,0);
 });
+
+
+test('native CNY billing shows unlimited calls without a fake dollar total',()=>{
+ const root={};vm.runInNewContext(source.split('\n')[1],{window:root});const text=root.BanyaAIBilling.format({currency:'CNY',monthlyBudget:50,estimatedReserved:0.1,monthlyCallLimit:null,monthlyCalls:1002});
+ assert(text.includes('¥50'));assert(text.includes('不设月调用次数上限'));assert(!text.includes('$'));assert(!text.includes('/0'));
+});

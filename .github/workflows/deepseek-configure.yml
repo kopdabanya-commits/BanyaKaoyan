@@ -1,4 +1,4 @@
-name: Reviewed DeepSeek configuration (no model call)
+name: Reviewed DeepSeek configuration and authorized verification
 on:
   workflow_dispatch:
     inputs:
@@ -7,14 +7,23 @@ on:
         options: [install-disabled, prepare-enabled]
         default: install-disabled
         description: Install disabled, or prepare limits for separate App approval
-      monthly_budget_usd:
+      monthly_budget:
         type: string
         default: '0'
-        description: Explicit application ceiling; recommended future initial value 2
+        description: Explicit application ceiling in selected currency
       monthly_calls:
         type: string
         default: '0'
-        description: Explicit application ceiling; recommended future initial value 40
+        description: Positive monthly call cap or unlimited; budget always enforced
+      currency:
+        type: choice
+        options: [CNY, USD]
+        default: CNY
+        description: Native account billing currency
+      verify_real:
+        type: boolean
+        default: false
+        description: Separately authorized paid verification; never commits plans
 permissions:
   contents: read
 concurrency:
@@ -30,15 +39,17 @@ jobs:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
       OPERATION: ${{ inputs.operation }}
-      BUDGET: ${{ inputs.monthly_budget_usd }}
+      BUDGET: ${{ inputs.monthly_budget }}
       CALLS: ${{ inputs.monthly_calls }}
+      CURRENCY: ${{ inputs.currency }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate non-secret parameters and protected configuration scripts
         run: |
           set -euo pipefail
           [[ "$OPERATION" == install-disabled || "$OPERATION" == prepare-enabled ]]
-          [[ "$BUDGET" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ && "$CALLS" =~ ^[0-9]{1,2}$ ]]
+          [[ "$BUDGET" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ && ( "$CALLS" =~ ^[0-9]{1,4}$ || "$CALLS" == unlimited ) ]]
+          [[ "$CURRENCY" == CNY || "$CURRENCY" == USD ]]
           [[ "$SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           test -n "$SSHPASS"
           test -n "$DEEPSEEK_API_KEY"
@@ -55,4 +66,11 @@ jobs:
           tar -C server/banya-sync -cf - configure_ai.py configure-ai.sh |
             sshpass -e ssh "${opts[@]}" "$remote" 'tar -C /root/banya-ai-stage -xf -'
           printf '%s' "$DEEPSEEK_API_KEY" |
-            sshpass -e ssh "${opts[@]}" "$remote" "bash /root/banya-ai-stage/configure-ai.sh '$OPERATION' '$BUDGET' '$CALLS'"
+            sshpass -e ssh "${opts[@]}" "$remote" "bash /root/banya-ai-stage/configure-ai.sh '$OPERATION' '$BUDGET' '$CALLS' '$CURRENCY'"
+      - name: Explicitly authorized real preview-only verification
+        if: inputs.verify_real && inputs.operation == 'prepare-enabled'
+        env:
+          BANYA_OWNER_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+        run: |
+          test -n "$BANYA_OWNER_TOKEN"
+          python3 scripts/verify_real_ai.py

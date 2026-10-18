@@ -49,19 +49,22 @@ class AIConfig:
     monthly_budget_nano: int = 0
     approval_stamp: str = ""
     owner_approval_required: bool = False  # Injected test configs may opt out; environment always opts in.
-    monthly_calls: int = 100
+    monthly_calls: int | None = 100
+    currency: str = "USD"
     input_nano_per_token: int = 300  # Flash peak/cache-miss $0.30 / 1M, checked 2026-10-18.
     output_nano_per_token: int = 1200  # Flash peak $1.20 / 1M. Verify again before enabling.
 
     @property
     def ready(self):
         return (self.enabled and len(self.api_key) >= 16 and self.monthly_budget_nano > 0
-                and 1 <= self.monthly_calls <= 1000 and self.input_nano_per_token > 0 and self.output_nano_per_token > 0)
+                and self.currency in ("USD", "CNY") and (self.monthly_calls is None or 1 <= self.monthly_calls <= 1000) and self.input_nano_per_token > 0 and self.output_nano_per_token > 0)
 
 
 def from_environment():
     try:
-        budget = Decimal(os.environ.get("DEEPSEEK_MONTHLY_BUDGET_USD", "0"))
+        currency = os.environ.get("DEEPSEEK_BILLING_CURRENCY", "USD")
+        if currency not in ("USD", "CNY"): raise ValueError()
+        budget = Decimal(os.environ.get("DEEPSEEK_MONTHLY_BUDGET_" + currency, "0"))
         if not budget.is_finite() or not 0 <= budget <= 100:
             raise ValueError()
         return AIConfig(enabled=os.environ.get("BANYA_AI_ENABLED") == "1",
@@ -69,9 +72,10 @@ def from_environment():
                         approval_stamp=os.environ.get("BANYA_AI_CONFIG_REVISION","legacy"),
                         api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
                         monthly_budget_nano=int(budget * 1_000_000_000),
-                        monthly_calls=int(os.environ.get("DEEPSEEK_MONTHLY_CALLS", "100")),
-                        input_nano_per_token=int(os.environ.get("DEEPSEEK_INPUT_NANO_PER_TOKEN", "300")),
-                        output_nano_per_token=int(os.environ.get("DEEPSEEK_OUTPUT_NANO_PER_TOKEN", "1200")))
+                        currency=currency,
+                        monthly_calls=None if os.environ.get("DEEPSEEK_MONTHLY_CALLS") == "unlimited" else int(os.environ.get("DEEPSEEK_MONTHLY_CALLS", "100")),
+                        input_nano_per_token=int(os.environ.get("DEEPSEEK_INPUT_NANO_PER_TOKEN", "2000" if currency == "CNY" else "300")),
+                        output_nano_per_token=int(os.environ.get("DEEPSEEK_OUTPUT_NANO_PER_TOKEN", "8000" if currency == "CNY" else "1200")))
     except (ValueError, InvalidOperation, OverflowError):
         return AIConfig()  # Configuration error fails closed, never prints its contents.
 
@@ -100,7 +104,7 @@ class Suggestion(StrictModel):
     changes: list[TaskChange] = Field(max_length=12)
 
 
-def initialize_ai(db):
+def initialize_ai(db, currency="USD"):
     with closing(sqlite3.connect(db)) as con:
         con.execute('''CREATE TABLE IF NOT EXISTS ai_requests (
           id TEXT PRIMARY KEY, body_hash TEXT NOT NULL, subject TEXT NOT NULL,
@@ -109,6 +113,21 @@ def initialize_ai(db):
           patch_json TEXT, result_json TEXT, status TEXT NOT NULL,
           cost_nano INTEGER NOT NULL, month TEXT NOT NULL, created_at INTEGER NOT NULL,
           expires_at INTEGER NOT NULL, applied_revision INTEGER, backup_id INTEGER)''')
+
+        if currency not in ('USD','CNY'): raise ValueError('unsupported billing currency')
+        con.execute('CREATE TABLE IF NOT EXISTS ai_billing_policy (id INTEGER PRIMARY KEY CHECK(id=1), currency TEXT NOT NULL)')
+        old=con.execute('SELECT currency FROM ai_billing_policy WHERE id=1').fetchone()
+        previous=old[0] if old else 'USD'
+        if previous!=currency and con.execute('SELECT 1 FROM ai_requests WHERE cost_nano>0 LIMIT 1').fetchone():
+            raise RuntimeError('Billing currency migration requires review; prior reservations cannot be reset')
+        con.execute('INSERT INTO ai_billing_policy VALUES(1,?) ON CONFLICT(id) DO UPDATE SET currency=excluded.currency',(currency,))
+        con.commit()
+
+
+def billing_totals(con, config, month):
+    policy=con.execute('SELECT currency FROM ai_billing_policy WHERE id=1').fetchone()
+    if not policy or policy[0]!=config.currency: fail('ai_billing_currency_changed',409)
+    return con.execute('SELECT count(*),COALESCE(sum(cost_nano),0) FROM ai_requests WHERE month=?',(month,)).fetchone()
 
 
 def initialize_activation(db):
@@ -226,14 +245,15 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
         used = count = 0
         if config.enabled:
             with closing(connect(db)) as con:
-                count, used = con.execute('SELECT count(*),COALESCE(sum(cost_nano),0) FROM ai_requests WHERE month=?', (month(),)).fetchone()
+                count, used = billing_totals(con,config,month())
         with closing(connect(db)) as con:
             approval=activation(con);allowed=ai_allowed(config,con)
             approval={k:approval[k] for k in ('revision','enabled')}
             if config.owner_approval_required and not allowed:approval['enabled']=False
         return {'ready': allowed,'configuredReady':config.ready,'activation':approval, 'model': 'deepseek-flash', 'thinking': True, 'reasoningEffort': 'high', 'maxOutputTokens': MAX_OUTPUT_TOKENS, 'monthlyCallLimit': config.monthly_calls,
-                'monthlyCalls': count, 'estimatedReservedUsd': used / 1_000_000_000,
-                'monthlyBudgetUsd': config.monthly_budget_nano / 1_000_000_000,
+                'monthlyCalls': count, 'currency':config.currency, 'estimatedReserved':used/1_000_000_000, 'monthlyBudget':config.monthly_budget_nano/1_000_000_000,
+                'estimatedReservedUsd':used/1_000_000_000 if config.currency=='USD' else None,
+                'monthlyBudgetUsd':config.monthly_budget_nano/1_000_000_000 if config.currency=='USD' else None,
                 'billingNote': 'Conservative application estimate; provider billing and other account usage are separate.',
                 'reviewSharingDefault': False}
 
@@ -307,8 +327,8 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                     or (authorization and authorization[7:] in encoded.decode())):
                 fail('ai_remove_credentials_from_message')
             reserve = (len(encoded)+1024)*config.input_nano_per_token + MAX_OUTPUT_TOKENS*config.output_nano_per_token
-            count, used = con.execute('SELECT count(*),COALESCE(sum(cost_nano),0) FROM ai_requests WHERE month=?', (month(),)).fetchone()
-            if count >= config.monthly_calls or used + reserve > config.monthly_budget_nano:
+            count, used = billing_totals(con,config,month())
+            if (config.monthly_calls is not None and count >= config.monthly_calls) or used + reserve > config.monthly_budget_nano:
                 fail('ai_monthly_limit_reached', 429)
             if con.execute("SELECT count(*) FROM ai_requests WHERE status='pending' AND created_at>?", (int(clock())-180,)).fetchone()[0]:
                 fail('ai_request_in_progress', 409)

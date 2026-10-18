@@ -3,9 +3,10 @@
 set -Eeuo pipefail
 umask 077
 [[ $(id -u) -eq 0 ]] || exit 1
-mode="${1:?operation required}"; budget="${2:?budget required}"; calls="${3:?calls required}"
+mode="${1:?operation required}"; budget="${2:?budget required}"; calls="${3:?calls required}"; currency="${4:-USD}"
 [[ "$mode" == install-disabled || "$mode" == prepare-enabled ]] || exit 1
-[[ "$budget" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ && "$calls" =~ ^[0-9]{1,2}$ ]] || exit 1
+[[ "$budget" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ && ( "$calls" =~ ^[0-9]{1,4}$ || "$calls" == unlimited ) ]] || exit 1
+[[ "$currency" == USD || "$currency" == CNY ]] || exit 1
 source_dir="$(cd "$(dirname "$0")" && pwd)"
 test -f /opt/banya-sync/autonomous.py
 grep -Fq 'owner_approval_required' /opt/banya-sync/deepseek_ai.py
@@ -16,7 +17,7 @@ cp -p /etc/banya-sync.env "$saved/environment"
 rollback(){ cp -p "$saved/environment" /etc/banya-sync.env; systemctl restart banya-sync.service || true; echo 'Previous protected configuration restored; no database replaced.' >&2; }
 trap rollback ERR
 # stdin goes directly to the validated root-only writer, never a shell variable.
-python3 "$source_dir/configure_ai.py" "$mode" "$budget" "$calls"
+python3 "$source_dir/configure_ai.py" "$mode" "$budget" "$calls" "$currency"
 systemctl restart banya-sync.service
 ready=false
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
