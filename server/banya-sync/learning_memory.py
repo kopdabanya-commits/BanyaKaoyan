@@ -35,12 +35,17 @@ class Value(StrictModel):
     count: int | None = Field(default=None, ge=0, le=100000)
     total: int | None = Field(default=None, ge=1, le=100000)
 
+    scope: Literal['non_vocabulary','total','vocabulary','course'] | None = None
+    rule: Literal['daily_limit','course_limit','daily_practice','no_carry_all'] | None = None
+
     @model_validator(mode='after')
     def ranges(self):
         if self.targetMin is not None and self.targetMax is not None and self.targetMin > self.targetMax:
             raise ValueError('invalid range')
         if self.count is not None and self.total is not None and self.count > self.total:
             raise ValueError('invalid count')
+        if self.rule in ('daily_limit','course_limit') and self.minutes is None:
+            raise ValueError('numeric hard rules require minutes')
         return self
 
 
@@ -67,6 +72,8 @@ class Entry(StrictModel):
         for d in (self.observedOn, self.validUntil):
             if d is not None and not valid_date(d):
                 raise ValueError('invalid date')
+        if self.value.rule is not None and self.category!='constraint':
+            raise ValueError('structured hard rules require constraint category')
         if self.category == 'history' and self.temporal != 'historical':
             raise ValueError('history must remain historical')
         if self.category == 'progress' and self.temporal == 'current' and self.certainty != 'unknown' and (not self.observedOn or not self.validUntil):

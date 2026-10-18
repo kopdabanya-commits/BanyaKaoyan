@@ -44,7 +44,7 @@ jobs:
           ssh_opts=(-p 22 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=12)
           remote="$BANYA_SSH_USER@124.70.128.201"
           sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-stage'
-          tar -C server/banya-sync -cf - app.py agent_api.py deepseek_ai.py learning_memory.py context_engine.py capabilities.py private_plan.py agent-openapi.json backup_db.py requirements.txt install-ecs.sh deploy-ecs.sh nginx-ip.conf | \
+          tar -C server/banya-sync -cf - app.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json backup_db.py requirements.txt install-ecs.sh deploy-ecs.sh nginx-ip.conf | \
             sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-stage -xf -'
           digest="$(printf '%s' "$BANYA_SYNC_TOKEN" | sha256sum | cut -d' ' -f1)"
           sshpass -e ssh "${ssh_opts[@]}" "$remote" "BANYA_SYNC_TOKEN_SHA256=$digest bash /root/banya-stage/deploy-ecs.sh"

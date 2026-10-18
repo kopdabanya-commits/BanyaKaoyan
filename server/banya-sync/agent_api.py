@@ -253,7 +253,8 @@ def install_routes(app, db, connect, owner_authorize, enabled, template_dir, clo
             row, document, template, template_hash = snapshot(con, subject)
             if row["revision"] != payload.expectedRevision or template["meta"]["planVersion"] != payload.templateVersion:
                 fail("revision_or_template_conflict", 409)
-            _, changes = apply_patch(template, document, subject, patch, grant["date_start"], grant["date_end"])
+            from learning_policy import owner_policy
+            _, changes = apply_patch(template, document, subject, patch, grant["date_start"], grant["date_end"],policy=owner_policy(con,subject))
             if len(json.dumps(changes, ensure_ascii=False).encode()) > 90000:
                 fail("preview_response_too_large_use_smaller_batch", 413)
             if con.execute("SELECT count(*) FROM agent_changes WHERE grant_id=? AND applied_revision IS NULL AND expires_at>?", (grant["id"], int(clock()))).fetchone()[0] >= 50:
@@ -305,7 +306,8 @@ def install_routes(app, db, connect, owner_authorize, enabled, template_dir, clo
             row, document, template, template_hash = snapshot(con, change["subject"])
             if row["revision"] != change["base_revision"] or template_hash != change["template_hash"]:
                 fail("revision_or_template_conflict", 409)
-            updated_document, _ = apply_patch(template, document, change["subject"], json.loads(change["patch_json"]), grant["date_start"], grant["date_end"])
+            from learning_policy import owner_policy
+            updated_document, _ = apply_patch(template, document, change["subject"], json.loads(change["patch_json"]), grant["date_start"], grant["date_end"],policy=owner_policy(con,change["subject"]))
             encoded = json.dumps(updated_document, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
             if len(encoded.encode()) > 524_288:
                 fail("snapshot_too_large", 413)

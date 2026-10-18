@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../study-assistant.js',import.meta.url),'utf8');
-function harness({ready=true,session=new Map(),failChat=false}={}){
+function harness({ready=true,session=new Map(),failChat=false,previewOnly=false}={}){
  const handlers={},elements={},calls=[],prepares=[],network={onLine:true};let revision=1,count=0,syncs=0;
  const el=id=>elements[id]??={id,value:'',checked:false,disabled:false,hidden:false,innerHTML:'',textContent:'',classList:{add(){},remove(){}}};
- const proposal={status:'prepared',requestId:'synthetic-request',baseRevision:1,reply:'Model claims 已同步 <script>alert(1)</script>',changes:[{before:{title:'Synthetic original',date:'2026-10-20',minutes:20,detail:''},after:{title:'Synthetic <img> plan',date:'2026-10-21',minutes:25,detail:'Synthetic change'}}]};
+ const proposal={...(previewOnly?{previewOnly:true,analysis:{findings:[{text:'Synthetic finding'}],recommendations:['Synthetic advice'],uncertainties:['Synthetic unknown'],reasons:[],evidence:[]}}:{}),status:'prepared',requestId:'synthetic-request',baseRevision:1,reply:'Model claims 已同步 <script>alert(1)</script>',changes:[{before:{title:'Synthetic original',date:'2026-10-20',minutes:20,detail:''},after:{title:'Synthetic <img> plan',date:'2026-10-21',minutes:25,detail:'Synthetic change'}}]};
  const cloud={isConnected:()=>true,prepareAssistant:async subject=>{prepares.push(subject);return {revision};},syncAll:async()=>{syncs++;return true;},assistantRequest:async(path,method='GET',body)=>{
   calls.push({path,method,body});
   if(path==='status')return {ready,monthlyCalls:0,monthlyCallLimit:100,monthlyBudgetUsd:1};
@@ -77,4 +77,12 @@ test('closing during phone preparation cancels the unsent paid request even when
  await h.backdrop();await h.click('open','politics');assert(h.el('ai-send').disabled);
  finish({revision:1});await h.settle();
  assert.equal(h.calls.filter(c=>c.path==='chat').length,0);assert.equal(h.el('ai-subject').value,'politics');assert(!h.el('ai-consent').checked);
+});
+
+
+test('M7.2 structured advice renders safely without offering or allowing commit',async()=>{
+ const h=harness({previewOnly:true});await h.click('open');h.el('ai-mode').value='day';h.el('ai-target').value='2026-10-20';h.el('ai-available').value='25';h.el('ai-consent').checked=true;h.el('ai-prompt').value='Synthetic daily planning';await h.send();
+ const sent=h.calls.find(c=>c.path==='chat');assert.equal(sent.body.planningMode,'day');assert.equal(sent.body.availableMinutes,25);
+ assert(!h.el('ai-preview').innerHTML.includes('data-ai-action="commit"'));assert(h.el('ai-preview').innerHTML.includes('Synthetic finding'));assert.equal(h.session.size,0,'finished read-only preview must not block opening another subject');
+ await h.click('commit');assert.equal(h.calls.filter(c=>c.path.endsWith('/commit')).length,0);
 });

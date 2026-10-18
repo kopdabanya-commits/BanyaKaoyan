@@ -181,6 +181,7 @@ def test_capability_allowlist_contract_and_revocation(memory,monkeypatch):
     assert all(x['access']=='read_only' and x['permissions']==['owner:read'] for x in listed['capabilities'])
     for spec in listed['capabilities']:
         args={'subject':'english'}
+        if spec['id']=='learning.planning.prepare':args.update(mode='diagnosis',targetDate='2026-10-20')
         result=c.post('/v1/ai/read',headers=OWNER_AUTH,json={'capability':spec['id'],'version':spec['version'],'profileSchema':1,'contextVersion':'learning-context-v1','arguments':args})
         assert result.status_code==200
         assert set(spec['outputSchema']['required'])<=set(result.json()['result'])

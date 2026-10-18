@@ -9,6 +9,7 @@ from pydantic import Field, model_validator
 
 from agent_api import StrictModel, fail
 from learning_memory import profile
+from learning_policy import resolve_policy
 from private_plan import effective_tasks, load_template, public_task, valid_date
 
 CONTEXT_VERSION='learning-context-v1'
@@ -159,7 +160,8 @@ def build_context(con,templates,request: ContextRequest,as_of=None):
         recent=performance(doc['record'],all_tasks,recent_start,recent_end,request.shareReview)
         snapshot_source={'revision':row['revision'],'updatedAt':row['updated_at'],'templateVersion':doc['templateVersion'],'templateHash':digest,
                          'source':'authenticated_cloud_snapshot','phoneOfflineChanges':'unknown'}
-        budget=min(135,max(130,doc['record'].get('settings',{}).get('budget',130)))-doc['record'].get('settings',{}).get('vocab',35) if request.subject=='english' else 135
+        # Legacy template/default budgets are not confirmed personal availability.
+        budget=None
     topic_words={'reading':('阅读',),'writing':('作文','写作'),'translation':('翻译',),'cloze':('完形',),'new_type':('新题型','七选五'),
                  'course':('课程','看课'),'questions':('刷题','选择题'),'recitation':('背诵',)}
     latest=request.messages[-1].content if request.messages else ''
@@ -175,18 +177,14 @@ def build_context(con,templates,request: ContextRequest,as_of=None):
         relevant.append(entry)
         if historical:history_count+=1
     background=relevant
-    active_budgets=[e for e in background if e['category']=='budget' and e['temporal']=='current'
-                    and e['effectiveState'] in ('confirmed','reported') and e['value'].get('minutes') is not None]
-    active_budgets.sort(key=lambda e:(-e['entryRevision'],e['key']))
-    budget_source='legacy_sync_settings' if budget is not None else 'unknown'
-    if active_budgets:
-        budget=active_budgets[0]['value']['minutes'];budget_source=active_budgets[0]['sourceRef']
+    policy=resolve_policy(owner,request.subject,today,include_review=request.shareReview)
+    budget=policy['advisoryMinutes'];budget_source=policy['sourceRefs'][0] if budget is not None else 'unknown'
     result={'capabilities':[{'id':c.id,'version':c.version,'access':'read_only','description':c.description} for c in enabled],
             'contextVersion':CONTEXT_VERSION,'subject':request.subject,'purpose':request.purpose,'asOf':today.isoformat(),'start':start,'end':end,
             'selection':{'focusTags':sorted(focus),'historicalLimit':history_limit,'omittedBackgroundEntries':omitted},
             'priorityOrder':['serverSafety','confirmedHardRules','currentGoalsAndBackground','latestCloudRecord','recentPerformanceAndTasks','conversation'],
             'serverSafety':SAFETY,'hardRules':hard,'background':background,'tasks':tasks,'recentPerformance':recent,
-            'dailyNonVocabularyBudgetMinutes':budget,'timeBudgetSource':budget_source,
+            'dailyNonVocabularyBudgetMinutes':budget,'learningPolicy':policy,'timeBudgetSource':budget_source,
             'sources':{'profile':{'schemaVersion':owner['schemaVersion'],'revision':owner['revision'],'updatedAt':owner['updatedAt']},'snapshot':snapshot_source},
             'crossSubjectSummaries':[], 'conversation':[m.model_dump() for m in request.messages],
             'conversationSummary':{'schemaVersion':1,'state':'not_generated','sourceRefs':[]},

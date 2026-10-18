@@ -20,6 +20,8 @@ from starlette.concurrency import run_in_threadpool
 
 from context_engine import ContextRequest, build_context
 from learning_memory import profile as read_profile
+from learning_policy import resolve_policy
+from learning_planner import PlanningRequest,PlanningSuggestion,prepare,validate_suggestion,PLANNING_SYSTEM
 from agent_api import Commit, StrictModel, TaskChange, fail, read_model
 from private_plan import PlanError, apply_patch, load_template, valid_date
 
@@ -84,6 +86,9 @@ class Chat(StrictModel):
     messages: list[Message] = Field(min_length=1, max_length=6)
     shareReview: bool = False
     consent: bool
+    planningMode: Literal['day','week','diagnosis'] | None = None
+    targetDate: str | None = None
+    availableMinutes: int | None = Field(default=None,ge=0,le=600)
 
 
 class Suggestion(StrictModel):
@@ -164,6 +169,16 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                 except PlanError:
                     status = 'conflict'
         stored = json.loads(row['result_json']) if row['result_json'] else {}
+        if stored.get('previewOnly') and status in ('prepared','discussion','rejected'):
+            current=con.execute('SELECT revision FROM snapshots WHERE subject=?',(row['subject'],)).fetchone()
+            if row['expires_at']<=int(clock()):status='expired'
+            elif (not current or current['revision']!=row['base_revision']
+                  or read_profile(con,row['subject'])['revision']!=stored.get('profileRevision',0)
+                  or stored.get('sources',{}).get('asOf')!=datetime.now(timezone.utc).date().isoformat()):status='conflict'
+            else:
+                try:
+                    if load_template(template_dir,row['subject'])[1]!=row['template_hash']:status='conflict'
+                except PlanError:status='conflict'
         if status == 'prepared' and read_profile(con,row['subject'])['revision'] != stored.get('profileRevision',0):
             status = 'conflict'
         return {**stored, 'requestId': row['id'], 'subject': row['subject'], 'status': status,
@@ -219,12 +234,22 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                 fail('revision_conflict', 409)
             if not template['meta']['start'] <= body.start <= body.end <= template['meta']['end']:
                 fail('ai_date_outside_template')
-            memory_context = build_context(con, template_dir, ContextRequest(
-                subject=body.subject,start=body.start,end=body.end,expectedRevision=body.expectedRevision,
-                shareReview=body.shareReview,messages=[m.model_dump() for m in body.messages]))
+            prepared=None
+            if body.planningMode:
+                try:
+                    planning_args=PlanningRequest(subject=body.subject,mode=body.planningMode,targetDate=body.targetDate,
+                        expectedRevision=body.expectedRevision,availableMinutes=body.availableMinutes,shareReview=body.shareReview,
+                        messages=[m.model_dump() for m in body.messages])
+                except ValidationError:fail('invalid_planning_request')
+                prepared=prepare(con,template_dir,planning_args)
+                memory_context=prepared['context']
+                if body.planningMode!='diagnosis' and memory_context['learningPolicy']['advisoryMinutes'] is None and body.availableMinutes is None:
+                    fail('planning_budget_unknown',409)
+            else:
+                memory_context=build_context(con,template_dir,ContextRequest(subject=body.subject,start=body.start,end=body.end,expectedRevision=body.expectedRevision,shareReview=body.shareReview,messages=[m.model_dump() for m in body.messages]))
             provider_payload = {'model':'deepseek-flash', 'thinking':{'type':'enabled'}, 'reasoning_effort':'high', 'stream':False,
                 'response_format':{'type':'json_object'}, 'max_tokens':MAX_OUTPUT_TOKENS,
-                'messages':[{'role':'system','content':SYSTEM}, {'role':'user','content':json.dumps(memory_context,ensure_ascii=False)}]}
+                'messages':[{'role':'system','content':PLANNING_SYSTEM if prepared else SYSTEM}, {'role':'user','content':json.dumps(memory_context,ensure_ascii=False)}]}
             encoded = json.dumps(provider_payload, ensure_ascii=False).encode()
             if len(encoded) > MAX_INPUT_BYTES:
                 fail('ai_context_too_large_narrow_dates', 413)
@@ -248,7 +273,8 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             content = choice['message']['content']
             if not isinstance(content,str) or len(content.encode()) > 24000:
                 raise ValueError()
-            suggestion = Suggestion.model_validate(json.loads(content))
+            structured=PlanningSuggestion.model_validate(json.loads(content)) if prepared else None
+            suggestion=Suggestion(reply=structured.summary,changes=structured.proposedChanges) if structured else Suggestion.model_validate(json.loads(content))
             if SECRET_PATTERN.search(content) or config.api_key in content:
                 raise ValueError()
             patch = [change.model_dump(exclude_unset=True) for change in suggestion.changes]
@@ -259,6 +285,9 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             if any('title' in change and not change['title'].strip() for change in patch):
                 raise ValueError()
             answer = {'profileRevision':memory_context['sources']['profile']['revision'],'reply':suggestion.reply, 'changes':[], 'note':'建议尚未执行，请核对后确认。'}
+            if prepared:
+                answer.update(previewOnly=True,planningMode=body.planningMode,analysis=structured.model_dump(exclude={'proposedChanges'}),
+                              sources=prepared['sources'],analysisFingerprint=prepared['fingerprint'])
             status_value = 'discussion'
             with closing(connect(db)) as con:
                 con.execute('BEGIN IMMEDIATE')
@@ -267,9 +296,16 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                         or read_profile(con,body.subject)['revision'] != memory_context['sources']['profile']['revision']):
                     answer['validationCode'] = 'revision_or_template_conflict'
                     status_value = 'conflict'
+                elif prepared:
+                    try:
+                        changes=validate_suggestion(con,template_dir,planning_args,prepared,structured)
+                        answer['changes']=changes
+                        status_value='prepared' if changes else 'discussion'
+                    except PlanError as error:
+                        status_value='rejected';answer['validationCode']=error.code
                 elif patch:
                     try:
-                        _, changes = apply_patch(live_template, live_document, body.subject, patch, body.start, body.end)
+                        _, changes = apply_patch(live_template, live_document, body.subject, patch, body.start, body.end,policy=resolve_policy(read_profile(con,body.subject),body.subject),require_budget=True)
                         if len(json.dumps(changes,ensure_ascii=False).encode()) > 48000:
                             raise PlanError('ai_preview_too_large')
                         answer['changes'] = changes
@@ -297,6 +333,8 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             draft = con.execute('SELECT * FROM ai_requests WHERE id=?', (request_id,)).fetchone()
             if not draft:
                 fail('ai_request_not_found',404)
+            if json.loads(draft['result_json'] or '{}').get('previewOnly'):
+                fail('planning_preview_only',409)
             if payload.expectedRevision != draft['base_revision']:
                 fail('revision_conflict',409)
             if draft['status']=='applied':
@@ -306,7 +344,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             row, document, template, digest = snapshot(con,draft['subject'])
             if row['revision'] != draft['base_revision'] or digest != draft['template_hash']:
                 fail('revision_or_template_conflict',409)
-            updated, _ = apply_patch(template,document,draft['subject'],json.loads(draft['patch_json']),draft['date_start'],draft['date_end'])
+            updated, _ = apply_patch(template,document,draft['subject'],json.loads(draft['patch_json']),draft['date_start'],draft['date_end'],policy=resolve_policy(read_profile(con,draft['subject']),draft['subject']),require_budget=True)
             encoded = json.dumps(updated,ensure_ascii=False,separators=(',',':'),allow_nan=False)
             if len(encoded.encode()) > 524288:
                 fail('snapshot_too_large',413)
