@@ -49,3 +49,11 @@ def test_unlimited_monthly_calls_still_enforces_cny_budget_and_preserves_records
         with sqlite3.connect(db) as con:con.execute('UPDATE ai_requests SET cost_nano=50000000000 WHERE id=?',('synthetic-0',))
         assert chat(c,requestId='synthetic-over-budget').status_code==429 and len(calls)==1
         assert snap(c)==old
+
+
+def test_old_client_cannot_enable_cny_using_a_dollar_confirmation(tmp_path):
+    config=replace(SETTINGS,currency='CNY',owner_approval_required=True,approval_stamp='synthetic-cny',monthly_calls=None)
+    with TestClient(create_app(db_path=tmp_path/'db',token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),ai_config=config)) as c:
+        body={'expectedRevision':0,'enabled':True,'confirmation':'set_ai_activation'}
+        assert c.post('/v1/ai/activation',headers=OWNER_AUTH,json=body).status_code==409
+        assert c.post('/v1/ai/activation',headers=OWNER_AUTH,json={**body,'currency':'CNY'}).status_code==200

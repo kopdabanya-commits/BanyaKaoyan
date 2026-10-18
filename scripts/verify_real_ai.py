@@ -43,7 +43,7 @@ def verify(api, expected_budget=50, expected_currency="CNY", expected_limit=None
     if not available:
         raise RuntimeError('Phone first sync required; no synthetic production snapshot will be created')
     api('activation', 'POST', {'expectedRevision': status['activation']['revision'],
-                             'enabled': True, 'confirmation': 'set_ai_activation'})
+                             'enabled': True, 'currency': status['currency'], 'confirmation': 'set_ai_activation'})
     receipts = []
     try:
         # Two independent real calls: ordinary discussion and structured diagnosis.

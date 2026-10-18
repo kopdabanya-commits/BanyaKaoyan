@@ -153,6 +153,7 @@ def provider_receipt(upstream,config):
 
 
 class Activation(StrictModel):
+    currency: Literal['USD','CNY'] | None = None
     expectedRevision: int=Field(ge=0)
     enabled: bool
     confirmation: Literal['set_ai_activation']
@@ -261,6 +262,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
     async def set_activation(request: Request,authorization: str|None=Header(default=None)):
         owner_authorize(authorization);body=await read_model(request,Activation)
         if body.enabled and not config.ready:fail('ai_not_configured',503)
+        if body.enabled and config.currency!='USD' and body.currency!=config.currency:fail('ai_currency_confirmation_required_update_app',409)
         with closing(connect(db)) as con:
             con.execute('BEGIN IMMEDIATE');old=activation(con)
             if old['revision']!=body.expectedRevision:fail('ai_activation_conflict',409)
