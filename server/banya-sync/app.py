@@ -20,7 +20,7 @@ from agent_api import initialize_agent, install_routes
 from learning_memory import initialize_memory, install_memory_routes
 from capabilities import install_capability_routes
 from private_plan import PROTOCOL
-from deepseek_ai import from_environment, initialize_ai, install_ai_routes
+from deepseek_ai import from_environment, initialize_ai, initialize_activation, install_ai_routes
 from autonomous import initialize_auto,AutoService,install_auto_routes,enqueue_sync
 
 SUBJECTS = {"english", "politics"}
@@ -87,12 +87,13 @@ def create_app(*, db_path: str | Path | None = None,
         initialize(db)
         initialize_memory(db)
         initialize_auto(db)
+        initialize_activation(db)
         if agent_on or ai_settings.enabled or auto_on:
             initialize_agent(db)
         if ai_settings.enabled:
             initialize_ai(db)
         automation.recover()
-        worker=asyncio.create_task(automation.loop()) if auto_worker and automation.ready() else None
+        worker=asyncio.create_task(automation.loop()) if auto_worker and auto_on else None
         try:yield
         finally:
             if worker:

@@ -53,7 +53,7 @@ from app import initialize
 from agent_api import initialize_agent
 from autonomous import initialize_auto
 from learning_memory import initialize_memory
-from deepseek_ai import from_environment, initialize_ai
+from deepseek_ai import from_environment, initialize_ai, initialize_activation
 from private_plan import load_template
 for subject in ("english", "politics"):
     load_template(Path("/var/www/banya-pwa/current"), subject)
@@ -64,6 +64,7 @@ initialize_memory(db)
 initialize_auto(db)
 if from_environment().enabled:
     initialize_ai(db)
+initialize_activation(db)
 PYINIT
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - verify "$backup_path" < "$source_dir/upgrade_guard.py"
 systemctl start banya-sync.service

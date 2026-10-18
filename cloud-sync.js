@@ -108,7 +108,7 @@ async function prepareAssistant(subject) {
  return {revision:cloud.revision,templateVersion:cloud.state.templateVersion};
 }
 function assistantRequest(path,method='GET',body) {
- if(!/^(auto\/(status|control|enqueue|grants\/(english|politics)|runs\/[A-Za-z0-9_-]{8,80}\/undo)|status|chat|context|analysis|planning\/prepare|capabilities|read|profiles\/(english|politics)(\/history)?|requests\/[A-Za-z0-9_-]{8,80}|proposals\/[A-Za-z0-9_-]{8,80}\/commit)$/.test(path))throw Error('不支持的学习助手接口');
+ if(!/^(auto\/(status|control|enqueue|grants\/(english|politics)|runs\/[A-Za-z0-9_-]{8,80}\/undo)|activation|status|chat|context|analysis|planning\/prepare|capabilities|read|profiles\/(english|politics)(\/history)?|requests\/[A-Za-z0-9_-]{8,80}|proposals\/[A-Za-z0-9_-]{8,80}\/commit)$/.test(path))throw Error('不支持的学习助手接口');
  return ownerApi(path,method,body,'ai');
 }
 async function showAgentAccess() {

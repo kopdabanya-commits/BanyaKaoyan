@@ -21,7 +21,12 @@ with tempfile.TemporaryDirectory() as directory:
     return {'ok':r.status_code<300,'body':r.json()}
    page.expose_binding('syntheticApi',request)
    page.goto(os.environ.get('BANYA_SMOKE_URL','http://127.0.0.1:8765/'))
-   page.evaluate('''() => {BanyaCloudSync.assistantRequest=async(path,method='GET',body)=>{const r=await syntheticApi(path,method,body??null);if(!r.ok)throw Error('模拟接口安全拒绝');return r.body;};BanyaCloudSync.prepareAssistant=async(subject)=>({revision:(await syntheticApi('read?subject='+subject,'GET',null)).body.revision});BanyaCloudSync.syncAll=async()=>true;}''')
+   page.evaluate('''() => {BanyaCloudSync.assistantRequest=async(path,method='GET',body)=>{const r=await syntheticApi(path,method,body??null);if(!r.ok)throw Error('模拟接口安全拒绝');return r.body;};BanyaCloudSync.prepareAssistant=async()=>{throw Error('Synthetic revision must be supplied before undo');};BanyaCloudSync.syncAll=async()=>true;}''')
+   page.locator('[data-view="assistant"]').click()
+   page.locator('[data-activation-action="open"]').click();page.wait_for_selector('#activation-save:not([disabled])')
+   page.locator('#activation-save').click();page.wait_for_function("document.getElementById('activation-state').textContent==='开关已保存，本次没有调用模型。'")
+   assert not calls
+   page.go_back();page.wait_for_selector('#modal.hidden',state='attached')
    for subject in ('english','politics'):
     page.locator('[data-action="switch-subject"][data-subject="'+subject+'"]').click()
     page.locator('[data-view="assistant"]').click();page.locator('[data-auto-action="open"]').click();page.wait_for_selector('#auto-enabled')
