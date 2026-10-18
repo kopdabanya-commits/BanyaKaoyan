@@ -4,6 +4,7 @@
 
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)：最新技术状态与未验收事项。
 - [SINGLE_APP_CONTRACT.md](SINGLE_APP_CONTRACT.md)：单一 PWA、双科数据隔离和兼容约束。
+- [ECS_RELEASE.md](ECS_RELEASE.md)：唯一日常 ECS 发布、备份回滚及历史 Cloudflare 边界。
 - [WORKFLOW.md](WORKFLOW.md)：PR、测试、发布与隐私检查。
 - [AI_AGENT_WORKFLOW.md](AI_AGENT_WORKFLOW.md)：用 GPT 正常提需求、额度不足时交给受限 API agent 开 PR 的流程和可复制提示词。
 - [M7_1_MEMORY.md](M7_1_MEMORY.md)：私人学习档案、有限上下文、只读能力清单和本阶段验收边界。

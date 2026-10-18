@@ -1,0 +1,50 @@
+name: Reviewed ECS PWA release
+# No PR or push deploy. A reviewed main release is explicitly dispatched.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: banya-ecs-production
+  cancel-in-progress: false
+jobs:
+  verify:
+    uses: ./.github/workflows/validate.yml
+  release:
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload only allowlisted PWA assets and verified Nginx config
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BANYA_SSH_PASSWORD"
+          test -s server/banya-sync/known_hosts
+          bash -n server/banya-sync/install-pwa-fallback.sh
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          python3 scripts/ecs_package.py build /tmp/banya-site.tgz
+          export SSHPASS="$BANYA_SSH_PASSWORD"
+          sshpass -e ssh -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" 'mkdir -p /root/banya-pwa-stage && chmod 700 /root/banya-pwa-stage'
+          sshpass -e scp -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 \
+            /tmp/banya-site.tgz server/banya-sync/nginx-ip.conf \
+            server/banya-sync/install-pwa-fallback.sh scripts/ecs_package.py scripts/verify_ecs.py \
+            "$BANYA_SSH_USER@124.70.128.201:/root/banya-pwa-stage/"
+          sshpass -e ssh -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" \
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 \
+            "$BANYA_SSH_USER@124.70.128.201" \
+            "mv /root/banya-pwa-stage/banya-site.tgz /root/banya-pwa-stage/site.tgz && bash /root/banya-pwa-stage/install-pwa-fallback.sh $GITHUB_SHA"
