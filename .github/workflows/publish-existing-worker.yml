@@ -58,7 +58,7 @@ jobs:
       - name: Run server regression tests (without access to production database)
         run: |
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py
       - name: Verify intended existing Worker identity and public allowlist
         run: |
           set -euo pipefail
@@ -172,7 +172,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, pathlib, urllib.request, urllib.error
           base='https://124.70.128.201'
-          for path in ('index.html','update.html','refresh.html','refresh.js','sw.js','app.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
+          for path in ('index.html','update.html','refresh.html','refresh.js','sw.js','app.js','cloud-sync.js','politics-core.js','politics-ui.js','planner-core.js','study-ui.js','origin-transfer.js','icons/icon-192.png','manifest.webmanifest'):
               with urllib.request.urlopen(base+'/'+path, timeout=20) as response:
                   assert response.status==200,(path,response.status)
                   remote=response.read()

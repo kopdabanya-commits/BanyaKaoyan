@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install -r server/banya-sync/requirements.txt pytest==9.0.2 httpx==0.28.1
-          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py
+          python -m pytest -q server/banya-sync/test_app.py server/banya-sync/test_backup_db.py server/banya-sync/test_agent_api.py server/banya-sync/test_upgrade_guard.py
           bash -n server/banya-sync/upgrade-private-plan.sh
           test -n "$BANYA_SSH_PASSWORD"
           test -s server/banya-sync/known_hosts
@@ -35,7 +35,7 @@ jobs:
           ssh_opts=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15)
           remote="$BANYA_SSH_USER@124.70.128.201"
           sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-agent-stage'
-          tar -C server/banya-sync -cf - app.py agent_api.py private_plan.py agent-openapi.json upgrade-private-plan.sh |
+          tar -C server/banya-sync -cf - app.py agent_api.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
             sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-agent-stage -xf -'
           sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA"
       - name: Verify public schema and denied unauthenticated access without reading snapshots
@@ -47,10 +47,22 @@ jobs:
               schema = json.load(response)
           assert len(schema['paths']) == 5
           assert schema['paths']['/v1/agent/changes/{change_id}/commit']['post']['x-openai-isConsequential']
-          for path in ('/v1/agent/capabilities', '/v1/agent/grants', '/v1/snapshot/english'):
+          for path in ('/v1/agent/capabilities', '/v1/agent/grants', '/v1/agent/plans/english?start=2026-10-16&end=2026-10-16', '/v1/agent/changes/unauthorized-probe', '/v1/snapshot/english', '/v1/snapshot/politics'):
               try:
                   urllib.request.urlopen(base + path, timeout=20)
                   raise AssertionError('Unauthorized access unexpectedly succeeded')
+              except urllib.error.HTTPError as error:
+                  assert error.code == 401
+          probes = {
+              '/v1/agent/grants': {},
+              '/v1/agent/plans/english/preview': {'expectedRevision': 1, 'templateVersion': 'unauthorized-probe', 'requestId': 'unauthorized-probe', 'tasks': [{'operation': 'update', 'taskId': 'unauthorized-probe', 'minutes': 1}]},
+              '/v1/agent/changes/unauthorized-probe/commit': {'expectedRevision': 1, 'confirmation': 'sync'},
+          }
+          for path, payload in probes.items():
+              request = urllib.request.Request(base + path, data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json'}, method='POST')
+              try:
+                  urllib.request.urlopen(request, timeout=20)
+                  raise AssertionError('Unauthorized write unexpectedly succeeded')
               except urllib.error.HTTPError as error:
                   assert error.code == 401
           print('TLS, public schema and unauthorized 401 verified. No private record was requested with credentials.')
