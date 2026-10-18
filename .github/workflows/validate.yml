@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check planner-core.js
+      - run: node --check plan-import.js
       - run: node --check app.js
       - run: node --check study-intelligence.js
       - run: node --check plan-data.js
@@ -29,7 +30,7 @@ jobs:
       - run: node scripts/sync-plan-mirrors.mjs --check
       - run: node scripts/privacy-check.mjs
 
-      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs
+      - run: node --test scripts/test.mjs scripts/sw-test.mjs scripts/access-test.mjs scripts/intelligence-test.mjs scripts/daily-feel-test.mjs scripts/politics-test.mjs scripts/integration-contract-test.mjs scripts/cloud-sync-test.mjs scripts/origin-transfer-test.mjs scripts/plan-import-test.mjs
       - run: node --check cloud-sync.js
       - run: bash -n server/banya-sync/install-ecs.sh
       - run: bash -n server/banya-sync/install-pwa-fallback.sh
