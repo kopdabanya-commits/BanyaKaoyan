@@ -1,0 +1,26 @@
+name: One-time owner-authorized DeepSeek startup verification
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/once-ai-enable.yml]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  request-protected-config:
+    if: github.repository == 'kopdabanya-commits/BanyaKaoyan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Request existing protected setup and limited live preview verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Spending cannot exceed 5 CNY of app-reserved monthly usage.
+          # Unlimited call count remains bounded by this nonzero budget, duration,
+          # per-request quota, and all original authorization checks.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/deepseek-configure.yml/dispatches" --input - <<'JSON'
+          {"ref":"main","inputs":{"operation":"prepare-enabled","monthly_budget":"5","monthly_calls":"unlimited","currency":"CNY","verify_real":true}}
+          JSON
+          echo "Requested protected AI configuration and preview-only verification. No automatic plan edits."
