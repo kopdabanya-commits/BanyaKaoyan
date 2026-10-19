@@ -142,18 +142,53 @@ function taskCard(t,day,featured=false,justDone=false){
  <button class="task-more" data-action="detail" data-id="${esc(t.id)}" data-day="${esc(day)}" aria-label="记录、复盘或调整：${esc(t.title)}">···</button>
  </article>`;
 }
+function guardStats(){
+ const end=data.meta.end;
+ let remaining=0,count=0;
+ for(let d=today;d<=end;d=plus(d,1)){for(const t of specialTasks(d)){if(!state.done[t.id]&&!state.notDone[t.id]){remaining+=t.minutes;count++;}}}
+ const daysLeft=Math.max(1,Math.round((dateFrom(end)-dateFrom(today))/86400000)+1);
+ let actual=0;
+ for(let i=0;i<7;i++){const d=plus(today,-i);for(const t of specialTasks(d)){if(state.done[t.id])actual+=Number(state.actualMinutes?.[t.id])||t.minutes;}}
+ const required=Math.ceil(remaining/daysLeft),actualDaily=Math.round(actual/7);
+ return {remaining,count,daysLeft,required,actualDaily,behind:actualDaily<required*0.8};
+}
+function guardStrip(){
+ const g=guardStats();
+ return '<section class="guard-strip"><div class="guard-count">距考试 <b>'+remainingDays()+'</b> 天<span>还剩 '+g.count+' 项 · '+g.remaining+' 分钟 · 每天应做 '+g.required+' 分钟</span></div>'
+  +'<p class="guard-line'+(g.behind?' warn':'')+'">'+(g.behind?'落后了：最近 7 天平均 '+g.actualDaily+' 分钟，低于需要的 '+g.required+' 分钟。下面说一句，我来重排。':'最近 7 天平均 '+g.actualDaily+' 分钟，节奏正常。')+'</p></section>';
+}
+function commandBar(){
+ return '<form class="plan-command" id="plan-command"><input id="plan-command-input" maxlength="200" enterkeyhint="send" placeholder="说一句：明天没空 / 今天只有 90 分钟 / 这周英语多给点"><button class="cta" type="submit">改</button></form>';
+}
 function renderToday(justDone=''){
  const UI=window.BanyaStudyUI,date=selectedDate,progress=dateProgress(date),tasks=specialTasks(date);
  const pending=tasks.filter(t=>!state.done[t.id]&&!state.notDone[t.id]),notDone=tasks.filter(t=>state.notDone[t.id]).length,remaining=pending.reduce((sum,t)=>sum+t.minutes,0);
  const head=UI.dayHeading({date,today,start:data.meta.start,end:data.meta.end,done:progress.done,notDone,total:progress.total,remaining,remainingCount:pending.length,countdown:remainingDays(),prev:'day',next:'day',jump:'jump-today'});
  const list=tasks.map(t=>UI.task({item:t,day:date,done:!!state.done[t.id],notDone:!!state.notDone[t.id],wrong:state.wrong[t.id],hasNote:!!state.notes[t.id],next:t.id===pending[0]?.id})).join('');
- return '<div class="student-page student-english" data-day-swipe="true">'+head
+ return '<div class="student-page student-english" data-day-swipe="true">'+(date===today?guardStrip():'')+head
  +'<div class="student-section-heading"><h2>今日任务</h2><span>共 '+tasks.length+' 项</span></div>'
  +'<div class="student-task-list">'+(list||'<div class="empty">这一天没有计划任务</div>')+'</div>'
  +(progress.skipped?'<p class="student-quiet">这一天标记为休息，任务仍保留。</p>':'')
  +'<div class="student-day-tools"><button class="student-action-link" data-action="add" data-day="'+date+'">＋ 添加任务</button>'
- +'<button class="student-action-link" data-action="toggle-skip" data-date="'+date+'">'+(progress.skipped?'取消休息标记':'标记休息')+'</button></div></div>';
+ +'<button class="student-action-link" data-action="toggle-skip" data-date="'+date+'">'+(progress.skipped?'取消休息标记':'标记休息')+'</button></div>'+commandBar()+'</div>';
 }
+document.addEventListener('submit',async e=>{
+ if(!e.target||e.target.id!=='plan-command')return;
+ e.preventDefault();
+ const input=document.getElementById('plan-command-input'),button=e.target.querySelector('button');
+ const text=(input?.value||'').trim();
+ if(!text)return;
+ if(!window.BanyaStudyAssistant?.quick){toast('学习助手尚未就绪');return;}
+ if(button)button.disabled=true;
+ toast('正在按你的要求重排…');
+ try{
+  const receipt=await window.BanyaStudyAssistant.quick(text,subject);
+  if(receipt&&receipt.status==='applied'){if(input)input.value='';toast('已调整 '+(receipt.changes?.length||0)+' 项，可在学习助手撤回');render(true);}
+  else if(receipt&&receipt.status==='prepared'){toast('已生成建议，打开学习助手确认');}
+  else toast((receipt&&receipt.reply)||'这次没有需要改的地方');
+ }catch(error){toast((error&&error.message)||'调整失败，计划未改');}
+ finally{if(button)button.disabled=false;}
+});
 function renderCalendar(){
  const UI=window.BanyaStudyUI,[year,month]=calendarMonth.split('-').map(Number);
  const first=new Date(year,month-1,1,12),offset=(first.getDay()+6)%7,count=new Date(year,month,0).getDate();

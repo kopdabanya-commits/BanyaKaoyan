@@ -655,3 +655,14 @@ button:disabled{cursor:default}input,textarea,select{font-family:inherit}summary
 .setup-refresh{border:0;background:transparent;color:var(--study-accent);font-size:12px;min-height:44px;width:100%;margin:8px 0}#auto-form>.cta.ghost,#auto-form>.cta.secondary{width:100%;min-height:44px;margin-top:8px}#auto-save:disabled{background:var(--line);color:var(--muted);opacity:1}
 /* Cost details stay inside scrollable conversation; they never cover its composer. */
 .ai-workspace>.ai-cost{margin:10px 0;border:1px solid var(--line);border-radius:11px;padding:0 12px;font-size:12px;color:var(--muted)}.ai-workspace .ai-cost-body{position:static;width:auto;max-height:none;overflow:visible;padding:0 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none}.ai-workspace .ai-cost-body p{font-size:12px;line-height:1.8}.ai-fee-toggle{flex:1;min-width:0;min-height:44px;padding:8px 0;background:transparent;border:0;text-align:left;color:var(--muted);font-size:11px}.ai-recovery{border:1px solid var(--line);border-radius:12px;background:var(--ui-background);padding:14px;margin:14px 0}.ai-recovery h3{font-size:14px;margin:0 0 8px}.ai-recovery p{font-size:13px;line-height:1.8;margin:0 0 8px}.ai-recovery small{font-size:11px;line-height:1.8;color:var(--muted)}
+
+/* 今日工作台：进度条与一句话命令栏 */
+.guard-strip{background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 17px;margin:0 0 15px}
+.guard-count{font-size:12px;color:var(--muted);line-height:1.6}
+.guard-count b{font-size:26px;font-weight:900;color:var(--text);margin:0 2px}
+.guard-count span{display:block;margin-top:3px}
+.guard-line{margin:7px 0 0;font-size:12px;line-height:1.6;color:#5d6b7c}
+.guard-line.warn{color:#b42318;font-weight:700}
+.plan-command{position:sticky;bottom:84px;display:flex;gap:8px;align-items:center;margin:18px 0 4px;padding:7px;background:var(--paper);border:1px solid #e8e9f2;border-radius:16px;box-shadow:var(--shadow)}
+.plan-command input{flex:1;min-width:0;border:0;background:transparent;font-size:14px;padding:10px 8px;color:var(--text)}
+.plan-command button{flex:0 0 auto;padding:10px 20px;border-radius:12px}
