@@ -29,6 +29,8 @@ GitHub 工作流 `Reviewed DeepSeek configuration (no model call)` 仅 main 手�
 
 ## 未来真实启用步骤（必须另获发布与费用授权）
 
+正式启用服务器自动管理时使用独立的 `auto-management-gate.yml`，只允许 main 和受保护的 `banya-ai-production` 环境。`enable-ready` 先私有备份、停止服务，再只读校验总开关和已有科目授权均关闭且没有进行中的 AI 请求；仅修改 `BANYA_AUTO_ENABLED`，不更换密钥、费用、配置批准版本或私人计划。健康失败恢复原配置。HTTPS 所有者状态必须验证 serverReady；随后仍需本人在 App 保存科目范围和有效时间预算，并单独打开自动管理总开关。缺少时间档案时现有执行器安全拒绝规划，不能自动采用历史聊天中的预算。`disable` 为服务器紧急停用入口，不删除授权或历史。
+
 1. 审阅并按依赖顺序合并这些 PR；经授权用现有 ECS 流程部署匹配的 PWA 和后端，先验证备份、HTTPS、版本和未授权拒绝。当前尚未执行。
 2. 手机浏览器进入仓库 Settings → Environments → New environment，名称 `banya-ai-production`；配置审批人（平台可用时），在 Environment secrets 添加 `DEEPSEEK_API_KEY`。只在 DeepSeek 官方开放平台创建密钥，不发聊天。既有 SSH Secret 继续复用。
 3. Actions → `Reviewed DeepSeek configuration (no model call)` → Run workflow → main，先选择 `install-disabled`，保留 0/0。密钥已安装仍不能调用。

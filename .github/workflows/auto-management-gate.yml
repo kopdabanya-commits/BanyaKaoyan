@@ -1,0 +1,76 @@
+name: Reviewed automatic-management server gate
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [enable-ready, disable]
+        default: disable
+        description: Server availability only; owner must separately grant subject and time limits in App
+permissions:
+  contents: read
+concurrency:
+  group: banya-ecs-production
+  cancel-in-progress: false
+jobs:
+  gate:
+    if: github.ref == 'refs/heads/main'
+    environment: banya-ai-production
+    runs-on: ubuntu-latest
+    env:
+      SSHPASS: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+      SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+      OPERATION: ${{ inputs.operation }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back up and change only the server gate with rollback
+        run: |
+          set -euo pipefail
+          [[ "$OPERATION" == enable-ready || "$OPERATION" == disable ]]
+          [[ "$SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          test -n "$SSHPASS"
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          opts=(-o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15)
+          remote="$SSH_USER@124.70.128.201"
+          sshpass -e ssh "${opts[@]}" "$remote" 'install -d -m 0700 /root/banya-auto-stage'
+          sshpass -e scp "${opts[@]}" server/banya-sync/auto_gate.py "$remote:/root/banya-auto-stage/auto_gate.py"
+          sshpass -e ssh "${opts[@]}" "$remote" "bash -s -- '$OPERATION'" <<'REMOTE'
+          set -Eeuo pipefail
+          umask 077
+          test -f /opt/banya-sync/autonomous.py
+          systemctl is-active --quiet banya-sync.service
+          systemctl start banya-sync-backup.service
+          saved=$(mktemp -d /root/banya-auto-gate.XXXXXX)
+          cp -p /etc/banya-sync.env "$saved/environment"
+          rollback(){ cp -p "$saved/environment" /etc/banya-sync.env; systemctl restart banya-sync.service || true; echo 'Previous gate restored; database never replaced.' >&2; }
+          trap rollback ERR
+          systemctl stop banya-sync.service
+          python3 /root/banya-auto-stage/auto_gate.py "$1"
+          systemctl start banya-sync.service
+          ready=false
+          for attempt in {1..15}; do
+            if curl --fail --silent --max-time 3 http://127.0.0.1:8765/health >/dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          [[ "$ready" == true ]]
+          [[ $(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 http://127.0.0.1:8765/v1/ai/auto/status) == 401 ]]
+          trap - ERR
+          REMOTE
+      - name: Verify HTTPS owner readiness without model calls or permission writes
+        env:
+          BANYA_OWNER_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs): return None
+          request=urllib.request.Request('https://124.70.128.201/v1/ai/auto/status', headers={'Authorization':'Bearer '+os.environ['BANYA_OWNER_TOKEN']})
+          with urllib.request.build_opener(NoRedirect()).open(request, timeout=20) as response:
+              status=json.load(response)
+          if os.environ['OPERATION']=='enable-ready':
+              assert status['serverReady'], 'AI approval/configuration still required'
+              assert not status['control']['enabled'] and not any(g['enabled'] for g in status['grants']), 'Owner permissions changed; inspect App'
+          else: assert not status['serverReady']
+          print('HTTPS owner status verified; serverReady:',status['serverReady'],'; no provider request or plan write.')
+          PY
