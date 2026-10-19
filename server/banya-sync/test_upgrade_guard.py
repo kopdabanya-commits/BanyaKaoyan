@@ -82,8 +82,31 @@ def test_reviewed_release_installs_backup_and_preserves_fail_closed_controls():
     workflow=Path(__file__).parents[2]/'.github/workflows/private-plan-release.yml'
     assert 'app.py backup_db.py autonomous.py' in workflow.read_text()
     assert script.count('app.py backup_db.py autonomous.py') == 5
+    from upgrade_guard import environment_for_upgrade
     for setting in ('BANYA_AI_ENABLED=0','BANYA_AUTO_ENABLED=0','DEEPSEEK_MONTHLY_BUDGET_USD=0','DEEPSEEK_MONTHLY_CALLS=0'):
-        assert setting in script
+        assert setting in environment_for_upgrade('', 'disable')
+    assert 'ai_policy="${2:-disable}"' in script
+    assert 'cmp "$previous/environment" /etc/banya-sync.env' in script
     assert script.index('verify "$backup_path"') < script.index('systemctl start banya-sync.service')
     assert script.index('cmp "$source_dir/$file"') < script.index('> /opt/banya-sync/RELEASE_SHA')
     assert '"$previous/RELEASE_SHA"' in script
+
+
+def test_explicit_maintenance_preserves_approved_configuration_exactly():
+    from upgrade_guard import environment_for_upgrade
+    text='# synthetic protected configuration\nDEEPSEEK_API_KEY=configured\nBANYA_AI_CONFIG_REVISION=synthetic\nBANYA_AI_ENABLED=1\nBANYA_AUTO_ENABLED=1\nDEEPSEEK_BILLING_CURRENCY=CNY\nDEEPSEEK_MONTHLY_BUDGET_CNY=23\nDEEPSEEK_MONTHLY_CALLS=unlimited\n'
+    assert environment_for_upgrade(text,'preserve-approved')==text
+    assert 'BANYA_AI_ENABLED=0' in environment_for_upgrade(text,'disable')
+    with pytest.raises(ValueError):environment_for_upgrade(text,'arbitrary')
+
+
+@pytest.mark.parametrize('table',['ai_requests','auto_runs'])
+def test_preserving_upgrade_refuses_pending_ai_requests_without_writing(tmp_path,table):
+    from upgrade_guard import assert_quiescent
+    db=tmp_path/'synthetic.sqlite3'
+    with sqlite3.connect(db) as con:
+        con.executescript('CREATE TABLE ai_requests(status); CREATE TABLE auto_runs(status);')
+        con.execute(f"INSERT INTO {table} VALUES('pending')")
+    before=db.read_bytes()
+    with pytest.raises(RuntimeError,match='pending'):assert_quiescent(db)
+    assert db.read_bytes()==before

@@ -8,6 +8,8 @@ import re
 import sqlite3
 import time
 import urllib.request
+import urllib.error
+import socket
 from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -160,8 +162,23 @@ class Activation(StrictModel):
     confirmation: Literal['set_ai_activation']
 
 
+FAILURE_MESSAGES = {
+    'provider_auth_failed': 'DeepSeek 未接受服务器上的密钥，请由维护端核对配置。',
+    'provider_balance_low': 'DeepSeek 账户余额不足，请到官方平台充值后再发送。App 月预算不是账户余额。',
+    'provider_rate_limited': 'DeepSeek 暂时限制了请求频率，请稍后再发送。',
+    'provider_request_rejected': 'DeepSeek 拒绝了本次请求，需要维护端检查接口兼容性。',
+    'provider_timeout': '等待 DeepSeek 回复超时，本次未拿到结果。',
+    'provider_unavailable': 'DeepSeek 暂时不可用，本次未拿到结果。',
+    'provider_invalid_response': 'DeepSeek 的回复格式未通过校验，本次没有修改计划。',
+    'provider_output_limit': '本次思考或回复达到长度上限，请缩小问题范围后再发送。',
+    'ai_activation_changed': '请求期间 AI 授权发生变化，本次没有修改计划。',
+}
+
+
 class ProviderFailure(Exception):
-    pass
+    def __init__(self, code='provider_unavailable'):
+        self.code = code if code in FAILURE_MESSAGES else 'provider_unavailable'
+        super().__init__(self.code)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -180,6 +197,16 @@ def call_deepseek(config, payload):
         if len(raw) > MAX_REPLY_BYTES:
             raise ValueError()
         return json.loads(raw)
+    except urllib.error.HTTPError as error:
+        code = {401:'provider_auth_failed',402:'provider_balance_low',429:'provider_rate_limited'}.get(error.code)
+        if not code: code = 'provider_request_rejected' if 400 <= error.code < 500 else 'provider_unavailable'
+        raise ProviderFailure(code) from None
+    except (TimeoutError, socket.timeout):
+        raise ProviderFailure('provider_timeout') from None
+    except urllib.error.URLError as error:
+        raise ProviderFailure('provider_timeout' if isinstance(error.reason, (TimeoutError, socket.timeout)) else 'provider_unavailable') from None
+    except (ValueError, UnicodeDecodeError):
+        raise ProviderFailure('provider_invalid_response') from None
     except Exception:
         # Do not expose upstream response bodies, credentials, request text or URLs.
         raise ProviderFailure() from None
@@ -236,7 +263,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                 except PlanError:status='conflict'
         if status == 'prepared' and read_profile(con,row['subject'])['revision'] != stored.get('profileRevision',0):
             status = 'conflict'
-        return {**stored, 'requestId': row['id'], 'subject': row['subject'], 'status': status,
+        return {**stored, 'terminal': row['status'] != 'pending', 'requestId': row['id'], 'subject': row['subject'], 'status': status,
                 'baseRevision': row['base_revision'], 'revision': row['applied_revision'],
                 'backupId': row['backup_id'], 'expiresAt': row['expires_at'],
                 'mobileDelivery': 'awaiting_phone_sync' if status == 'applied' else 'not_sent'}
@@ -342,7 +369,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             upstream = await run_in_threadpool(provider, config, provider_payload)
             choice = upstream['choices'][0]
             if choice.get('finish_reason') != 'stop':
-                raise ValueError()
+                raise ProviderFailure('provider_output_limit' if choice.get('finish_reason') == 'length' else 'provider_invalid_response')
             content = choice['message']['content']
             if not isinstance(content,str) or len(content.encode()) > 24000:
                 raise ValueError()
@@ -364,7 +391,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             status_value = 'discussion'
             with closing(connect(db)) as con:
                 con.execute('BEGIN IMMEDIATE')
-                if config.owner_approval_required and (not ai_allowed(config,con) or activation(con)['revision']!=approval_revision):raise ValueError('activation changed')
+                if config.owner_approval_required and (not ai_allowed(config,con) or activation(con)['revision']!=approval_revision):raise ProviderFailure('ai_activation_changed')
                 live, live_document, live_template, live_digest = snapshot(con, body.subject)
                 if (live['revision'] != body.expectedRevision or live_digest != digest
                         or read_profile(con,body.subject)['revision'] != memory_context['sources']['profile']['revision']):
@@ -391,10 +418,14 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                     (status_value,json.dumps(patch,ensure_ascii=False),json.dumps(answer,ensure_ascii=False),body.requestId))
                 con.execute('COMMIT')
                 return result(con,con.execute('SELECT * FROM ai_requests WHERE id=?',(body.requestId,)).fetchone())
-        except (ProviderFailure, ValueError, KeyError, TypeError, IndexError, ValidationError):
+        except (ProviderFailure, ValueError, KeyError, TypeError, IndexError, ValidationError) as error:
             with closing(connect(db)) as con:
                 # Keep the reservation: a timeout/invalid response may still have incurred charges.
-                con.execute("UPDATE ai_requests SET status='unknown',result_json=? WHERE id=?", (json.dumps({'reply':'本次响应未能确认，未修改计划。请查询结果，不要连续重复发送。'}),body.requestId))
+                code = error.code if isinstance(error, ProviderFailure) else 'provider_invalid_response'
+                failure = {'reply':FAILURE_MESSAGES[code], 'errorCode':code, 'terminal':True,
+                           'note':'请求已结束，不会自动重发；可能已计费。重新发送是一次新的请求。'}
+                if isinstance(locals().get('upstream'),dict):failure.update(provider_receipt(upstream,config))
+                con.execute("UPDATE ai_requests SET status='unknown',result_json=? WHERE id=?", (json.dumps(failure,ensure_ascii=False),body.requestId))
                 return result(con,con.execute('SELECT * FROM ai_requests WHERE id=?',(body.requestId,)).fetchone())
 
     @app.post('/v1/ai/proposals/{request_id}/commit')
