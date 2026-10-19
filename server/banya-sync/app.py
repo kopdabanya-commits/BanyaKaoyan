@@ -9,7 +9,7 @@ import json
 import os
 import sqlite3
 from contextlib import asynccontextmanager, closing
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -17,9 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from agent_api import initialize_agent, install_routes
-from learning_memory import initialize_memory, install_memory_routes
+from learning_memory import initialize_memory, install_memory_routes, profile as read_profile
 from capabilities import install_capability_routes
-from private_plan import PROTOCOL
+from private_plan import PROTOCOL, apply_patch, load_template, valid_date
+from realloc import plan_reallocation
+from learning_policy import resolve_policy
 from deepseek_ai import from_environment, initialize_ai, initialize_activation, install_ai_routes
 from autonomous import initialize_auto,AutoService,install_auto_routes,enqueue_sync
 
@@ -222,6 +224,90 @@ def create_app(*, db_path: str | Path | None = None,
                 raise
         return JSONResponse({"subject": subject, "revision": updated, "updatedAt": now},
                             headers={"X-Cloud-Revision": str(updated)})
+
+    @app.post("/v1/plan/reallocate")
+    async def reallocate(request: Request, authorization: str | None = Header(default=None)):
+        """Module reallocation: the caller supplies constraints, the server decides the layout."""
+        authorize(authorization)
+        if request.headers.get("content-type", "").split(";")[0].strip().lower() != "application/json":
+            raise HTTPException(status_code=415, detail="JSON required")
+        buffer = bytearray()
+        async for chunk in request.stream():
+            buffer.extend(chunk)
+            if len(buffer) > MAX_BODY_BYTES:
+                raise HTTPException(status_code=413, detail="Snapshot too large")
+        try:
+            payload = json.loads(buffer)
+        except (UnicodeDecodeError, ValueError):
+            raise HTTPException(status_code=400, detail="Malformed JSON")
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Expected JSON object")
+        subject = payload.get("subject")
+        if subject not in SUBJECTS:
+            raise HTTPException(status_code=404, detail="Unknown subject")
+        start, end = payload.get("start"), payload.get("end")
+        if not (isinstance(start, str) and isinstance(end, str) and valid_date(start) and valid_date(end)
+                and start <= end and (date.fromisoformat(end) - date.fromisoformat(start)).days <= 31):
+            raise HTTPException(status_code=422, detail="Invalid window")
+        expected = payload.get("expectedRevision")
+        if type(expected) is not int or expected < 1:
+            raise HTTPException(status_code=422, detail="Invalid revision")
+        daily = payload.get("dailyMax")
+        if daily is not None and (type(daily) is not int or not 5 <= daily <= 300):
+            raise HTTPException(status_code=422, detail="Invalid daily budget")
+        skip = payload.get("skipDates") or []
+        if not isinstance(skip, list) or len(skip) > 31 or any(not (isinstance(day, str) and valid_date(day)) for day in skip):
+            raise HTTPException(status_code=422, detail="Invalid skip dates")
+        apply_now = payload.get("apply") is True
+        if apply_now and payload.get("confirmation") != "reallocate_plan":
+            raise HTTPException(status_code=422, detail="Explicit confirmation required")
+        with closing(open_db(db)) as con:
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                row = con.execute("SELECT revision,state_json FROM snapshots WHERE subject=?", (subject,)).fetchone()
+                if row is None:
+                    raise HTTPException(status_code=409, detail="phone_first_sync_required")
+                if row["revision"] != expected:
+                    raise HTTPException(status_code=409, detail="revision_conflict")
+                document = json.loads(row["state_json"])
+                template, digest = load_template(templates, subject)
+                if document.get("templateVersion") != template["meta"]["planVersion"]:
+                    raise HTTPException(status_code=409, detail="phone_template_sync_required")
+                operations, report = plan_reallocation(template, document, subject, start, end,
+                                                       daily_max=daily, skip_dates=skip)
+                updated, changes = apply_patch(template, document, subject, operations, start, end,
+                                               policy=resolve_policy(read_profile(con, subject), subject),
+                                               require_budget=False)
+                if not apply_now:
+                    con.execute("ROLLBACK")
+                    return JSONResponse({"status": "preview", "subject": subject, "revision": row["revision"],
+                                         "report": report, "changes": changes})
+                encoded = json.dumps(updated, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+                if len(encoded.encode()) > MAX_BODY_BYTES:
+                    raise HTTPException(status_code=413, detail="Snapshot too large")
+                now = utc_now()
+                change_id = "realloc-" + hashlib.sha256((subject + start + end + str(expected)).encode()).hexdigest()[:16]
+                con.execute("INSERT INTO history(subject,revision,state_json,updated_at) VALUES(?,?,?,?)",
+                            (subject, row["revision"], row["state_json"], now))
+                con.execute("""INSERT INTO snapshots(subject,revision,state_json,updated_at)
+                               VALUES(?,?,?,?)
+                               ON CONFLICT(subject) DO UPDATE SET
+                               revision=excluded.revision,state_json=excluded.state_json,
+                               updated_at=excluded.updated_at""", (subject, row["revision"] + 1, encoded, now))
+                con.execute("""DELETE FROM history WHERE subject=? AND id NOT IN
+                               (SELECT id FROM history WHERE subject=? ORDER BY id DESC LIMIT ?)""",
+                            (subject, subject, HISTORY_KEEP))
+                if auto_on:
+                    enqueue_sync(con, subject, row["revision"] + 1,
+                                 document.get("record"), updated.get("record"))
+                con.execute("COMMIT")
+            except Exception:
+                if con.in_transaction:
+                    con.execute("ROLLBACK")
+                raise
+        return JSONResponse({"status": "applied", "subject": subject, "revision": row["revision"] + 1,
+                             "changeId": change_id, "report": report, "changes": changes},
+                            headers={"X-Cloud-Revision": str(row["revision"] + 1)})
 
     install_routes(app, db, open_db, authorize, agent_on, templates)
     install_ai_routes(app, db, open_db, authorize, ai_settings, templates, ai_provider)
