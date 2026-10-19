@@ -129,6 +129,8 @@ def run(output,executable):
                     # Actual record editor retains totals and split times without changing plan.
                     tab('today');page.locator('.student-task-body').first.click();assert page.locator('#task-actual-minutes' if subject=='english' else '#p-actual-minutes').input_value()=='32';dismiss()
                     tab('stats');shot('stats');tab('assistant');page.wait_for_function("document.getElementById('ai-home-status').textContent.includes('未启用')");assert not calls;shot('assistant')
+                    nav_top=page.locator('.bottom-nav,nav').last.bounding_box()['y']
+                    assert page.locator('.assistant-shortcuts').bounding_box()['y']+page.locator('.assistant-shortcuts').bounding_box()['height']<=nav_top
                     # Owner activation itself does not invoke the fake or real model.
                     assert client.post('/v1/ai/activation',headers=OWNER_AUTH,json={'expectedRevision':0,'enabled':True,'confirmation':'set_ai_activation'}).status_code==200
                     page.locator('[data-ai-action="plan"][data-ai-mode="week"]').click();page.wait_for_selector('#ai-send:not([disabled])');shot('ai-conversation')
@@ -142,19 +144,41 @@ def run(output,executable):
                     page.locator('[data-auto-action="open"][data-history="true"]').click();page.wait_for_selector('[data-auto-action="undo"]');assert '调整前' in page.locator('#auto-runs').inner_text() and '调整后' in page.locator('#auto-runs').inner_text();shot('auto-history')
                     page.locator('[data-auto-action="undo"]').first.click();page.wait_for_function("document.getElementById('auto-state').textContent==='已撤销并同步，自动管理已暂停。'");assert not page.locator('#auto-enabled').is_checked();dismiss()
                     page.locator('[data-memory-action="open"]').click();page.wait_for_selector('#memory-list .ai-proposal');shot('learning-profile');dismiss()
+                    # Assistant UX: input-only shortcuts, isolated in-memory drafts and compact-height layout.
+                    tab('assistant');page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
+                    assert not page.locator('#ai-query').is_visible()
+                    page.locator('[data-ai-action="suggest"]').first.click();draft=page.locator('#ai-prompt').input_value();assert draft
+                    assert len(calls)==2;page.go_back();page.wait_for_selector('#modal.hidden',state='attached');assert page.locator('.nav-tab[aria-current="page"]').get_attribute('data-view')=='assistant';page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
+                    assert page.locator('#ai-prompt').input_value()==draft and not page.locator('#ai-consent').is_checked()
+                    other='politics' if subject=='english' else 'english';page.locator('#ai-options summary').click();page.locator('#ai-subject').select_option(other);assert page.locator('#ai-prompt').input_value()==''
+                    page.locator('#ai-prompt').fill('另一科的合成草稿');page.locator('#ai-subject').select_option(subject);assert page.locator('#ai-prompt').input_value()==draft
+                    page.locator('[data-ai-action="mode"][data-ai-mode="day"]').click();assert page.locator('#ai-options').evaluate('e=>e.open')
+                    assert '日计划' in page.locator('#ai-scope-label').inner_text();page.locator('#ai-available').fill('42')
+                    page.locator('[data-ai-action="mode"][data-ai-mode="discussion"]').click()
+                    page.set_viewport_size({'width':width,'height':480});page.locator('#ai-prompt').focus()
+                    send_box=page.locator('#ai-send').bounding_box();assert send_box['y']>=0 and send_box['y']+send_box['height']<=480
+                    page.set_viewport_size({'width':width,'height':height})
+                    # Display-only CNY fixture; failures/receipt lookup never reach a paid provider.
+                    page.evaluate("""()=>{const previous=BanyaCloudSync.assistantRequest;BanyaCloudSync.assistantRequest=async(path,method='GET',body)=>{if(path==='status')return {...await previous(path,method,body),currency:'CNY',monthlyBudget:50,monthlyCallLimit:null,estimatedReserved:0.1};if(path==='chat')return {status:'unknown',requestId:body.requestId,changes:[]};if(path.startsWith('requests/'))return {status:'discussion',previewOnly:true,reply:'合成结果已核对，没有修改计划。',changes:[]};return previous(path,method,body);};}""")
+                    dismiss();page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])');page.locator('.ai-cost summary').click()
+                    assert '¥50' in page.locator('#ai-budget').inner_text() and '不设月调用次数上限' in page.locator('#ai-budget').inner_text();shot('assistant-fees');page.locator('#ai-prompt').focus();assert not page.locator('.ai-cost').evaluate('e=>e.open')
+                    page.locator('#ai-consent').check();page.locator('#ai-send').click();page.wait_for_selector('#ai-query:not([hidden])');assert page.locator('#ai-send').is_disabled();shot('assistant-unconfirmed')
+                    page.locator('#ai-query').click();page.wait_for_selector('#ai-send:not([disabled])');assert not page.locator('#ai-query').is_visible();assert len(calls)==2
+                    page.emulate_media(reduced_motion='reduce');assert page.locator('.ai-workspace').evaluate('e=>getComputedStyle(e).scrollBehavior')=='auto';page.emulate_media(reduced_motion='no-preference');dismiss()
                     tab('settings');shot('settings')
                     # Offline cache is checked with actual Service Worker, not intercepted app assets.
                     page.evaluate('Promise.race([navigator.serviceWorker.ready,new Promise((_,r)=>setTimeout(()=>r(Error("SW timeout")),8000))])');page.reload();page.wait_for_selector('.setting-section');context.set_offline(True);page.reload();page.wait_for_selector('.setting-section');context.set_offline(False)
                     assert not errors,errors
-                    cases.append(f'{width}x{height} {subject}: navigation, modal reopen, planning preview, scoped auto apply/undo, offline PASS; injected calls=2, real paid calls=0')
+                    cases.append(f'{width}x{height} {subject}: navigation, modal reopen, planning preview, scoped auto apply/undo, drafts/modes/CNY/480px/unknown-recovery/reduced-motion, offline PASS; injected calls=2, real paid calls=0')
                     context.close()
         browser.close()
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    scenario_count=len(cases)
     cases.insert(0,'Source revision: '+revision+'; all data synthetic; no paid requests')
     rows=''.join(f'<section><h2>{w}×{h} · {s} · {name}</h2><a href="{path}"><img loading="lazy" src="{path}" width="{w}" alt="{s} {name}"></a></section>' for w,h,s,name,path in shots)
-    report='<!doctype html><meta charset="utf-8"><title>板牙考研 M7.4 合成视觉验收</title><style>body{font:14px system-ui;background:#f4f5f7;color:#263348;margin:24px}main{display:flex;flex-wrap:wrap;gap:24px}section{max-width:420px}h2{font-size:15px}img{max-width:100%;border:1px solid #ddd}</style><h1>M7.4 合成数据截图</h1><p>浏览器模拟；不是 Android 真机或生产验收。所有记录和模型响应均为合成，不包含用户资料或密钥。</p><p>'+str(len(shots))+' screenshots; '+str(len(cases))+' scenarios passed; zero paid API calls.</p><main>'+rows+'</main>'
+    report='<!doctype html><meta charset="utf-8"><title>板牙考研 M7.4 合成视觉验收</title><style>body{font:14px system-ui;background:#f4f5f7;color:#263348;margin:24px}main{display:flex;flex-wrap:wrap;gap:24px}section{max-width:420px}h2{font-size:15px}img{max-width:100%;border:1px solid #ddd}</style><h1>M7.4 合成数据截图</h1><p>浏览器模拟；不是 Android 真机或生产验收。所有记录和模型响应均为合成，不包含用户资料或密钥。</p><p>'+str(len(shots))+' screenshots; '+str(scenario_count)+' scenarios passed; zero paid API calls.</p><main>'+rows+'</main>'
     (output/'index.html').write_text(report);(output/'report.txt').write_text('\n'.join(cases)+'\n')
-    print(f'PASS {len(shots)} screenshots, {len(cases)} dual-subject/viewport scenarios, zero paid API calls')
+    print(f'PASS {len(shots)} screenshots, {scenario_count} dual-subject/viewport scenarios, zero paid API calls')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/banya-m74-visual'));parser.add_argument('--chromium',default=os.environ.get('BANYA_CHROMIUM'));args=parser.parse_args();run(args.output,args.chromium)

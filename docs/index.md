@@ -24,3 +24,4 @@
 - [M7.3 API 安全接入准备与未来启用步骤](M7_3_API_READINESS.md)
 - [M7.4 移动端精修与截图验收](M7_4_VISUAL.md)
 - [M7.4 跨阶段集成与上线前演练](M7_4_ACCEPTANCE.md)
+- [学习助手页面与对话体验](ASSISTANT_EXPERIENCE.md)：首屏、输入、草稿、结果恢复与合成手机截图。
