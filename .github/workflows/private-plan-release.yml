@@ -1,6 +1,11 @@
 name: Reviewed private-plan channel upgrade
 on:
   workflow_dispatch:
+    inputs:
+      preserve_ai_config:
+        type: boolean
+        default: false
+        description: Explicit maintenance of already approved AI settings; rejects in-flight calls
 permissions:
   contents: read
 concurrency:
@@ -9,10 +14,12 @@ concurrency:
 jobs:
   upgrade:
     if: github.ref == 'refs/heads/main'
+    environment: banya-ai-production
     runs-on: ubuntu-latest
     env:
       BANYA_SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
       BANYA_SSH_USER: ${{ vars.BANYA_ECS_SSH_USER || 'root' }}
+      PRESERVE_AI_CONFIG: ${{ inputs.preserve_ai_config }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,7 +44,9 @@ jobs:
           sshpass -e ssh "${ssh_opts[@]}" "$remote" 'install -d -m 0700 /root/banya-agent-stage'
           tar -C server/banya-sync -cf - app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py upgrade-private-plan.sh |
             sshpass -e ssh "${ssh_opts[@]}" "$remote" 'tar -C /root/banya-agent-stage -xf -'
-          sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA"
+          ai_policy=disable
+          if [[ "$PRESERVE_AI_CONFIG" == true ]]; then ai_policy=preserve-approved; fi
+          sshpass -e ssh "${ssh_opts[@]}" "$remote" "bash /root/banya-agent-stage/upgrade-private-plan.sh $GITHUB_SHA $ai_policy"
       - name: Verify public schema and denied unauthenticated access without reading snapshots
         run: |
           python3 - <<'PY'

@@ -4,6 +4,8 @@ set -Eeuo pipefail
 umask 077
 [[ $(id -u) -eq 0 ]] || { echo 'root required' >&2; exit 1; }
 release="${1:?reviewed release SHA required}"
+ai_policy="${2:-disable}"
+[[ "$ai_policy" == disable || "$ai_policy" == preserve-approved ]] || exit 1
 [[ "$release" =~ ^[0-9a-f]{40}$ ]] || { echo 'invalid release' >&2; exit 1; }
 source_dir="$(cd "$(dirname "$0")" && pwd)"
 test -s /etc/banya-sync.env
@@ -49,16 +51,25 @@ rollback(){
 trap rollback ERR
 # Freeze phone writes only for the backup/additive initialization window.
 systemctl is-active --quiet banya-sync.service
+if [[ "$ai_policy" == preserve-approved ]]; then
+  runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - quiescent < "$source_dir/upgrade_guard.py"
+fi
 systemctl stop banya-sync.service
+if [[ "$ai_policy" == preserve-approved ]]; then
+  runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - quiescent < "$source_dir/upgrade_guard.py"
+fi
 backup_path="$(runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - backup < "$source_dir/upgrade_guard.py")"
 test -s "$backup_path"
 echo 'Private pre-upgrade backup integrity verified; no study data printed.'
 for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$source_dir/$file" "/opt/banya-sync/$file"; done
-python3 - <<'PY'
+python3 - "$source_dir" "$ai_policy" <<'PY'
 from pathlib import Path
+import sys
+sys.path.insert(0,sys.argv[1])
+from upgrade_guard import environment_for_upgrade
 p = Path('/etc/banya-sync.env')
-lines = [line for line in p.read_text().splitlines() if not line.startswith(('BANYA_AGENT_ENABLED=', 'BANYA_TEMPLATE_DIR=', 'BANYA_AI_ENABLED=', 'BANYA_AUTO_ENABLED=', 'DEEPSEEK_MONTHLY_BUDGET_USD=', 'DEEPSEEK_MONTHLY_CALLS='))]
-p.write_text('\n'.join(lines + ['BANYA_AGENT_ENABLED=1', 'BANYA_TEMPLATE_DIR=/var/www/banya-pwa/current', 'BANYA_AI_ENABLED=0', 'BANYA_AUTO_ENABLED=0', 'DEEPSEEK_MONTHLY_BUDGET_USD=0', 'DEEPSEEK_MONTHLY_CALLS=0']) + '\n')
+old=p.read_text();new=environment_for_upgrade(old,sys.argv[2])
+if new!=old:p.write_text(new)
 p.chmod(0o600)
 PY
 # Initialize only additive tables while external writes remain stopped, then prove
@@ -83,6 +94,7 @@ if from_environment().enabled:
 initialize_activation(db)
 PYINIT
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - verify "$backup_path" < "$source_dir/upgrade_guard.py"
+if [[ "$ai_policy" == preserve-approved ]]; then cmp "$previous/environment" /etc/banya-sync.env; fi
 # Exercise deployed profile/diagnostic code read-only, without exposing its output.
 runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - <<'READONLY'
 import sqlite3

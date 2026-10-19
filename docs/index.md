@@ -26,3 +26,4 @@
 - [M7.4 跨阶段集成与上线前演练](M7_4_ACCEPTANCE.md)
 - [学习助手页面与对话体验](ASSISTANT_EXPERIENCE.md)：首屏、输入、草稿、结果恢复与合成手机截图。
 - [学习助手设置流程](ASSISTANT_SETUP.md)：学习时间、选填背景、一次确认自动安排及滚动问题修复。
+- [AI 失败恢复](AI_FAILURE_RECOVERY.md)：结束与待确认收据、只读账户诊断及保留配置的维护升级。

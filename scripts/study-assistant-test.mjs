@@ -143,3 +143,24 @@ test('a slower home response from the previous subject cannot replace the curren
  resolveEnglish({windows:{7:{recordedTasks:101,completed:100}},issues:[]});await first;
  assert(h.el('ai-home-brief').innerHTML.includes('<b>9</b>'));assert(!h.el('ai-home-brief').innerHTML.includes('101'));
 });
+
+test('completed provider failure unlocks editing, preserves the question and requires fresh paid consent',async()=>{
+ const h=harness();const base=h.cloud.assistantRequest;let providerCalls=0;
+ h.cloud.assistantRequest=async(path,method,body)=>{if(path==='chat'){providerCalls++;h.calls.push({path,method,body});if(providerCalls===1)return {requestId:body.requestId,status:'unknown',terminal:true,errorCode:'provider_balance_low',reply:'Old generic failure text'};}return base(path,method,body);};
+ await h.click('open');h.el('ai-prompt').value='Synthetic original question';h.el('ai-consent').checked=true;await h.send();
+ assert.equal(providerCalls,1);assert(!h.el('ai-send').disabled);assert(h.el('ai-query').hidden);assert.equal(h.el('ai-prompt').value,'Synthetic original question');assert(!h.el('ai-consent').checked);assert.equal(h.session.size,0);
+ assert(h.el('ai-preview').innerHTML.includes('账户余额不足'));assert(!h.el('ai-messages').innerHTML.includes('Old generic failure text'));assert(h.el('ai-messages').innerHTML.includes('上次未获回复'));
+ await h.send();assert.equal(providerCalls,1);h.el('ai-prompt').value='Synthetic edited question';h.el('ai-consent').checked=true;await h.send();assert.equal(providerCalls,2);
+ const posts=h.calls.filter(c=>c.path==='chat');assert.notEqual(posts[0].body.requestId,posts[1].body.requestId);assert.equal(posts[1].body.messages.filter(m=>m.role==='user').length,1);
+});
+
+test('querying an old terminal failure releases the pending lock without claiming its cause or charging again',async()=>{
+ const h=harness({failChat:true});await h.click('open');h.el('ai-prompt').value='Synthetic question';h.el('ai-consent').checked=true;await h.send();const previous=h.cloud.assistantRequest;
+ h.cloud.assistantRequest=async(path,...args)=>path.startsWith('requests/')?{requestId:path.slice(9),status:'unknown',reply:'本次响应未能确认，未修改计划。请查询结果，不要连续重复发送。'}:previous(path,...args);
+ await h.click('query');assert(!h.el('ai-send').disabled);assert(h.el('ai-query').hidden);assert(h.el('ai-preview').innerHTML.includes('旧版本没有记录具体失败原因'));assert.equal(h.calls.filter(c=>c.path==='chat').length,1);
+});
+
+test('fee information lives in the conversation workspace and has an explicit close action',async()=>{
+ const h=harness();await h.click('open');const markup=h.el('modal').innerHTML;assert(markup.indexOf('id="ai-fees"')<markup.indexOf('id="ai-chat-form"'));
+ await h.click('fees');assert(h.el('ai-fees').open);assert(!h.el('ai-fees').hidden);await h.click('fees-close');assert(!h.el('ai-fees').open);assert(h.el('ai-fees').hidden);assert.equal(h.calls.filter(c=>c.path==='chat').length,0);
+});

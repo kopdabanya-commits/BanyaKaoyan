@@ -4,7 +4,7 @@ on:
     inputs:
       operation:
         type: choice
-        options: [install-disabled, prepare-enabled]
+        options: [install-disabled, prepare-enabled, diagnose-readonly]
         default: install-disabled
         description: Install disabled, or prepare limits for separate App approval
       monthly_budget:
@@ -20,6 +20,10 @@ on:
         options: [CNY, USD]
         default: CNY
         description: Native account billing currency
+      verify_chat:
+        type: boolean
+        default: false
+        description: Separately authorized single paid read-only chat check; keeps existing configuration and grants
       verify_real:
         type: boolean
         default: false
@@ -47,15 +51,16 @@ jobs:
       - name: Validate non-secret parameters and protected configuration scripts
         run: |
           set -euo pipefail
-          [[ "$OPERATION" == install-disabled || "$OPERATION" == prepare-enabled ]]
+          [[ "$OPERATION" == install-disabled || "$OPERATION" == prepare-enabled || "$OPERATION" == diagnose-readonly ]]
           [[ "$BUDGET" =~ ^[0-9]{1,3}(\.[0-9]{1,2})?$ && ( "$CALLS" =~ ^[0-9]{1,4}$ || "$CALLS" == unlimited ) ]]
           [[ "$CURRENCY" == CNY || "$CURRENCY" == USD ]]
           [[ "$SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           test -n "$SSHPASS"
-          test -n "$DEEPSEEK_API_KEY"
+          if [[ "$OPERATION" != diagnose-readonly ]]; then test -n "$DEEPSEEK_API_KEY"; fi
           bash -n server/banya-sync/configure-ai.sh
           python3 -m py_compile server/banya-sync/configure_ai.py
       - name: Install reviewed configuration over pinned SSH without model requests
+        if: inputs.operation != 'diagnose-readonly'
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -74,3 +79,21 @@ jobs:
         run: |
           test -n "$BANYA_OWNER_TOKEN"
           python3 scripts/verify_real_ai.py
+      - name: Read-only runtime and official account diagnostics
+        if: inputs.operation == 'diagnose-readonly'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sshpass
+          sshpass -e ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$GITHUB_WORKSPACE/server/banya-sync/known_hosts" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o ConnectTimeout=15 "$SSH_USER@124.70.128.201" 'python3 -' < scripts/ai_runtime_diagnostics.py | tee /tmp/banya-ai-diagnostics.json
+      - name: Explicitly authorized single real chat check without configuration changes
+        if: inputs.operation == 'diagnose-readonly' && inputs.verify_chat
+        env:
+          BANYA_OWNER_TOKEN: ${{ secrets.BANYA_SYNC_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json
+          with open('/tmp/banya-ai-diagnostics.json') as f: report=json.load(f)
+          assert report.get('balanceHttpStatus')==200 and report.get('accountAvailable') and report.get('positiveBalance'), 'Official account not ready; no paid request made'
+          PY
+          python3 scripts/verify_one_chat.py
