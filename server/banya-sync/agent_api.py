@@ -33,7 +33,7 @@ class Grant(StrictModel):
 
 
 class TaskChange(StrictModel):
-    operation: Literal["update", "add"]
+    operation: Literal["update", "add", "delete"]
     taskId: str = Field(min_length=1, max_length=150, pattern=r"^[A-Za-z0-9_-]+$")
     date: str | None = None
     title: str | None = Field(default=None, min_length=1, max_length=200)

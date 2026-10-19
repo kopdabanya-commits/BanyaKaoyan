@@ -314,3 +314,79 @@ def test_owner_credential_in_conversation_is_never_sent_to_provider(ai):
     client,_,calls,_=ai
     assert chat(client,messages=[{'role':'user','content':OWNER}]).status_code==422
     assert not calls
+
+
+def delete_provider(changes):
+    def provider(config, payload):
+        return {'choices':[{'finish_reason':'stop','message':{'content':json.dumps(
+            {'reply':'Synthetic deletion advice.','changes':changes})}}]}
+    return provider
+
+
+def test_delete_change_removes_task_and_undo_restores_previous_plan(tmp_path):
+    (tmp_path/'plan.json').write_text(json.dumps(template('english')))
+    provider=delete_provider([{'operation':'delete','taskId':'task-a'}])
+    with TestClient(create_app(db_path=tmp_path/'db',token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),
+                               template_dir=tmp_path,ai_config=SETTINGS,ai_provider=provider)) as client:
+        client.put('/v1/snapshot/english',headers=OWNER_AUTH,json={'expectedRevision':0,'state':document()})
+        from test_learning_memory import save,entry
+        save(client,[entry('daily-budget','budget',value={'text':'Synthetic explicitly available time','minutes':92})])
+        proposal=chat(client,requestId='delete-request-123').json()
+        assert proposal['status']=='prepared' and proposal['changes'][0]['after'] is None, proposal
+        assert snap(client)['state']['record'].get('removed',{})=={}
+        applied=client.post('/v1/ai/proposals/delete-request-123/commit',headers=OWNER_AUTH,
+                            json={'expectedRevision':1,'confirmation':'sync'}).json()
+        assert applied['status']=='applied' and applied['revision']==2
+        after=snap(client)
+        assert after['state']['record']['removed']['task-a'] is True
+        # Learning records are untouched by a plan deletion.
+        assert after['state']['record']['done']=={'protected-done':True}
+        assert after['state']['record']['notDone']=={'protected-skip':True}
+        undone=client.post('/v1/ai/proposals/delete-request-123/undo',headers=OWNER_AUTH,
+                           json={'expectedRevision':2,'confirmation':'undo_ai_change'}).json()
+        assert undone['status']=='undone' and undone['revision']==3 and undone['undoRevision']==3
+        restored=snap(client)
+        assert restored['revision']==3 and 'task-a' not in restored['state']['record'].get('removed',{})
+        assert client.post('/v1/ai/proposals/delete-request-123/undo',headers=OWNER_AUTH,
+                           json={'expectedRevision':3,'confirmation':'undo_ai_change'}).json()['status']=='undone'
+
+
+def test_delete_refuses_protected_and_past_tasks(tmp_path):
+    plan=template('english')
+    plan['days'].insert(0,{'date':'2026-10-01','items':[{'id':'task-past','title':'Old practice','minutes':10,
+                                                         'type':'阅读','detail':'Synthetic guidance'}]})
+    (tmp_path/'plan.json').write_text(json.dumps(plan))
+    for task_id, reason in (('protected-done','completed_or_not_doing_task_is_protected'),
+                            ('protected-skip','completed_or_not_doing_task_is_protected'),
+                            ('task-past','past_task_cannot_be_deleted')):
+        provider=delete_provider([{'operation':'delete','taskId':task_id}])
+        with TestClient(create_app(db_path=tmp_path/('db-'+task_id),token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),
+                                   template_dir=tmp_path,ai_config=SETTINGS,ai_provider=provider)) as client:
+            client.put('/v1/snapshot/english',headers=OWNER_AUTH,json={'expectedRevision':0,'state':document()})
+            from test_learning_memory import save,entry
+            save(client,[entry('daily-budget','budget',value={'text':'Synthetic explicitly available time','minutes':92})])
+            before=snap(client)
+            proposal=chat(client,requestId='delete-'+task_id).json()
+            assert proposal['status']=='rejected' and proposal['validationCode']==reason
+            assert snap(client)==before
+
+
+def test_undo_refuses_when_new_phone_records_arrived(tmp_path):
+    (tmp_path/'plan.json').write_text(json.dumps(template('english')))
+    provider=delete_provider([{'operation':'delete','taskId':'task-a'}])
+    with TestClient(create_app(db_path=tmp_path/'db',token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),
+                               template_dir=tmp_path,ai_config=SETTINGS,ai_provider=provider)) as client:
+        client.put('/v1/snapshot/english',headers=OWNER_AUTH,json={'expectedRevision':0,'state':document()})
+        from test_learning_memory import save,entry
+        save(client,[entry('daily-budget','budget',value={'text':'Synthetic explicitly available time','minutes':92})])
+        chat(client,requestId='delete-request-123')
+        client.post('/v1/ai/proposals/delete-request-123/commit',headers=OWNER_AUTH,
+                    json={'expectedRevision':1,'confirmation':'sync'})
+        document_next=snap(client)['state']
+        assert client.put('/v1/snapshot/english',headers=PROTO,
+                          json={'expectedRevision':2,'state':document_next}).status_code==200
+        before=snap(client)
+        response=client.post('/v1/ai/proposals/delete-request-123/undo',headers=OWNER_AUTH,
+                             json={'expectedRevision':2,'confirmation':'undo_ai_change'})
+        assert response.status_code==409 and response.json()['detail']['code']=='ai_undo_conflict'
+        assert snap(client)==before

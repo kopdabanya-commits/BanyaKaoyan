@@ -92,7 +92,7 @@ async function ownerApi(path,method='GET',body,namespace='agent') {
   if(!response.ok){
    if(namespace==='ai'){
     let code='ai_request_failed';try{code=(await response.json()).detail?.code||code;}catch{}
-    const error=Error(response.status===401?'请先连接云同步':response.status===404||response.status===503?'学习助手尚未启用，当前不会调用 DeepSeek':response.status===429?'本月调用或预算额度已用完':'操作未完成，请检查同步版本或缩小日期范围');error.code=code;throw error;
+    const error=Error(response.status===401?'请先连接云同步':response.status===404||response.status===503?'学习助手尚未启用，当前不会调用 DeepSeek':response.status===429?'本月调用或预算额度已用完':'操作未完成，请检查同步版本或缩小日期范围');error.code=code;error.status=response.status;throw error;
    }
    throw Error((response.status===503||response.status===404)?'服务器尚未启用私人 GPT 接入':response.status===401?'请先检查云同步连接':'授权操作未完成，请稍后重试');
   }
@@ -101,7 +101,7 @@ async function ownerApi(path,method='GET',body,namespace='agent') {
 }
 async function prepareAssistant(subject) {
  if(!SUBJECTS.includes(subject)||!config)throw Error('请先连接云同步并选择科目');
- if(!await syncAll(true))throw Error('请先完成同步并处理冲突，再请 AI 分析');
+ if(!await syncAll(false))throw Error('请先完成同步并处理冲突，再请 AI 分析');
  const cloud=await api(subject,'GET'),meta=metaFor(subject),raw=localStorage.getItem(KEYS[subject]);
  if(!meta||!raw||cloud.revision!==meta.revision||await fingerprint(raw)!==meta.hash)throw Error('本机记录仍在变化，请保存并同步后再试');
  if(!cloud.state?.templateVersion)throw Error('请先更新应用并同步当前计划版本');
