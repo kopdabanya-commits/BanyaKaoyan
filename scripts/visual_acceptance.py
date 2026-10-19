@@ -67,7 +67,7 @@ def fixture():
             else:result={'reply':'可以先保留主要训练，只小幅调整未来一项。以下是示例建议，尚未执行。','changes':patch}
             return {'id':'synthetic-visual-request','usage':{'total_tokens':90},'choices':[{'finish_reason':'stop','message':{'content':json.dumps(result),'reasoning_content':'SYNTHETIC_NOT_FOR_STORAGE'}}]}
         app=create_app(db_path=folder/'sync.sqlite3',token_sha256=hashlib.sha256(OWNER.encode()).hexdigest(),template_dir=folder,
-          ai_config=AIConfig(enabled=True,api_key='synthetic-provider-'+'x'*32,monthly_budget_nano=2_000_000_000,monthly_calls=40,owner_approval_required=True,approval_stamp='synthetic-visual'),ai_provider=provider,auto_enabled=True,auto_worker=False)
+          ai_config=AIConfig(enabled=True,api_key='synthetic-provider-'+'x'*32,monthly_budget_nano=19_000_000_000,monthly_calls=None,currency='CNY',input_nano_per_token=2000,output_nano_per_token=8000,owner_approval_required=True,approval_stamp='synthetic-visual'),ai_provider=provider,auto_enabled=True,auto_worker=False)
         with TestClient(app) as client:
             for subject in plans:
                 assert client.put('/v1/snapshot/'+subject,headers=OWNER_AUTH,json={'expectedRevision':0,'state':{'schema':'banya.sync.v1','subject':subject,'templateVersion':'synthetic-ui-v1','record':raw[subject]}}).status_code==200
@@ -132,18 +132,28 @@ def run(output,executable):
                     nav_top=page.locator('.bottom-nav,nav').last.bounding_box()['y']
                     assert page.locator('.assistant-shortcuts').bounding_box()['y']+page.locator('.assistant-shortcuts').bounding_box()['height']<=nav_top
                     # Owner activation itself does not invoke the fake or real model.
-                    assert client.post('/v1/ai/activation',headers=OWNER_AUTH,json={'expectedRevision':0,'enabled':True,'confirmation':'set_ai_activation'}).status_code==200
+                    assert client.post('/v1/ai/activation',headers=OWNER_AUTH,json={'expectedRevision':0,'enabled':True,'currency':'CNY','confirmation':'set_ai_activation'}).status_code==200
                     page.locator('[data-ai-action="plan"][data-ai-mode="week"]').click();page.wait_for_selector('#ai-send:not([disabled])');shot('ai-conversation')
                     page.locator('#ai-prompt').fill('请结合示例记录，局部调整下周安排。');page.locator('#ai-consent').check();page.locator('#ai-send').click();page.wait_for_selector('.ai-change');assert len(calls)==1;assert not page.locator('#ai-commit').count();shot('planning-preview');dismiss()
-                    page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-enabled');assert not page.locator('#auto-enabled').is_checked();shot('auto-permission')
-                    page.locator('#modal').dispatch_event('click');page.wait_for_timeout(100);page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-enabled')
-                    page.locator('#auto-form details summary').click();page.locator('#auto-type-0').check();page.locator('#auto-budget').fill('1');page.locator('#auto-enabled').check();page.locator('#auto-consent').check();page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent==='本学科授权已保存。'")
-                    page.locator('#auto-master').click();page.wait_for_function("document.getElementById('auto-state').textContent==='总开关已更新。'")
-                    assert client.post('/v1/ai/auto/enqueue',headers=OWNER_AUTH,json={'subject':subject,'expectedRevision':1}).status_code==200
+                    # Start with unknown time in a real isolated profile; never infer a private budget.
+                    prof=client.get('/v1/ai/profiles/'+subject,headers=OWNER_AUTH).json()
+                    old=next(e for e in prof['entries'] if e['category']=='budget');deactivated={k:v for k,v in old.items() if k not in ('confirmedAt','entryRevision')};deactivated['active']=False
+                    assert client.post('/v1/ai/profiles/'+subject,headers=OWNER_AUTH,json={'schemaVersion':1,'requestId':'synthetic-deactivate-budget','expectedRevision':prof['revision'],'entries':[deactivated],'confirmation':'save_profile'}).status_code==200
+                    snapshots_before={s:client.get('/v1/snapshot/'+s,headers=PROTO).json() for s in ('english','politics')}
+                    page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-save');assert page.locator('#auto-save').is_disabled();shot('setup-missing-time')
+                    assert not client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled']
+                    page.locator('[data-auto-action="time"]').click();page.wait_for_selector('#memory-daily');assert page.locator('#memory-daily').input_value()==''
+                    page.locator('#memory-daily').fill('88' if subject=='english' else '68');assert page.locator('#memory-next').is_disabled();page.locator('#memory-time-save').click();page.wait_for_function("document.getElementById('memory-state').textContent.includes('已保存')");assert len(calls)==1
+                    assert snapshots_before=={s:client.get('/v1/snapshot/'+s,headers=PROTO).json() for s in ('english','politics')}
+                    shot('setup-time-saved');page.locator('#memory-next').click();page.wait_for_selector('#auto-save');assert not page.locator('#auto-consent').is_checked();shot('auto-permission')
+                    page.locator('#modal').dispatch_event('click');page.wait_for_timeout(100);page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-save')
+                    page.locator('#auto-form details summary').click();page.locator('#auto-budget').fill('1');page.locator('#auto-consent').check();page.locator('#auto-max').fill('2');assert not page.locator('#auto-consent').is_checked();assert page.locator('#auto-save').is_disabled();assert '最多 2 项' in page.locator('#auto-scope').inner_text();page.locator('#auto-consent').check();page.locator('#auto-save').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已开启。新的学习记录')")
+                    assert client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled'];assert len(calls)==1
+                    page.locator('[data-auto-action="check"]').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已提交检查')")
                     assert app.state.autonomy.process_one()=='applied';assert len(calls)==2;dismiss()
                     page.locator('[data-auto-action="open"][data-history="true"]').click();page.wait_for_selector('[data-auto-action="undo"]');assert '调整前' in page.locator('#auto-runs').inner_text() and '调整后' in page.locator('#auto-runs').inner_text();shot('auto-history')
-                    page.locator('[data-auto-action="undo"]').first.click();page.wait_for_function("document.getElementById('auto-state').textContent==='已撤销并同步，自动管理已暂停。'");assert not page.locator('#auto-enabled').is_checked();dismiss()
-                    page.locator('[data-memory-action="open"]').click();page.wait_for_selector('#memory-list .ai-proposal');shot('learning-profile');dismiss()
+                    page.locator('[data-auto-action="undo"]').first.click();page.wait_for_function("document.getElementById('auto-state').textContent==='已撤销并同步，自动管理已暂停。'");assert not next(g for g in client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['grants'] if g['subject']==subject)['enabled'];dismiss()
+                    page.locator('[data-memory-action="open"]').click();page.wait_for_selector('#memory-daily');shot('learning-profile');assert page.locator('#memory-time-save').is_visible();assert page.locator('.setup-sheet').evaluate("e=>getComputedStyle(e).overflowY==='auto'");page.locator('#memory-more summary').first.click();page.locator('#memory-new').click();page.locator('#memory-save').scroll_into_view_if_needed();assert page.locator('#memory-save').is_visible();shot('profile-optional');assert page.locator('.setup-sheet').evaluate('e=>e.scrollTop>0');dismiss();page.locator('[data-diagnosis-action="open"]').click();page.wait_for_selector('#diagnosis-output');shot('free-diagnosis');page.locator('#diagnosis-discuss').locator('..').evaluate('e=>e.open=true');page.locator('#diagnosis-discuss').scroll_into_view_if_needed();assert page.locator('#diagnosis-discuss').is_visible();dismiss()
                     # Assistant UX: input-only shortcuts, isolated in-memory drafts and compact-height layout.
                     tab('assistant');page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
                     assert not page.locator('#ai-query').is_visible()
@@ -169,7 +179,7 @@ def run(output,executable):
                     # Offline cache is checked with actual Service Worker, not intercepted app assets.
                     page.evaluate('Promise.race([navigator.serviceWorker.ready,new Promise((_,r)=>setTimeout(()=>r(Error("SW timeout")),8000))])');page.reload();page.wait_for_selector('.setting-section');context.set_offline(True);page.reload();page.wait_for_selector('.setting-section');context.set_offline(False)
                     assert not errors,errors
-                    cases.append(f'{width}x{height} {subject}: navigation, modal reopen, planning preview, scoped auto apply/undo, drafts/modes/CNY/480px/unknown-recovery/reduced-motion, offline PASS; injected calls=2, real paid calls=0')
+                    cases.append(f'{width}x{height} {subject}: navigation, modal reopen, planning preview, guided time/one-confirmation auto/check/undo, scrollable profile/diagnosis, drafts/modes/CNY/480px/unknown-recovery/reduced-motion, offline PASS; injected calls=2, real paid calls=0')
                     context.close()
         browser.close()
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()

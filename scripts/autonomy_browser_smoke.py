@@ -6,6 +6,7 @@ import sys,tempfile,json,os
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'server/banya-sync'))
 from test_autonomous import auto,enqueue
+from test_agent_api import OWNER_AUTH
 from playwright.sync_api import sync_playwright
 
 with tempfile.TemporaryDirectory() as directory:
@@ -29,13 +30,12 @@ with tempfile.TemporaryDirectory() as directory:
    page.go_back();page.wait_for_selector('#modal.hidden',state='attached')
    for subject in ('english','politics'):
     page.locator('[data-action="switch-subject"][data-subject="'+subject+'"]').click()
-    page.locator('[data-view="assistant"]').click();page.locator('[data-auto-action="open"]').click();page.wait_for_selector('#auto-enabled')
-    assert not page.locator('#auto-enabled').is_checked()
-    page.locator('#auto-enabled').check();page.locator('#auto-budget').fill('1')
-    page.locator('#auto-form details summary').click();page.locator('#auto-type-0').check();page.locator('#auto-consent').check()
-    page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent==='本学科授权已保存。'")
-    if subject=='english':
-     page.locator('#auto-master').click();page.wait_for_function("document.getElementById('auto-state').textContent==='总开关已更新。'")
+    page.locator('[data-view="assistant"]').click();page.locator('[data-auto-action="open"]').click();page.wait_for_selector('#auto-save')
+    assert not next((g['enabled'] for g in client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['grants'] if g['subject']==subject),False)
+    page.locator('#auto-form details summary').click();page.locator('#auto-budget').fill('1')
+    page.locator('#auto-type-0').check();page.locator('#auto-consent').check()
+    page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已开启。新的学习记录')")
+    assert client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled']
     assert enqueue(client,subject).status_code==200
     assert service.process_one()=='applied'
     page.locator('[data-auto-action="close"]').click();page.wait_for_timeout(100)
@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory() as directory:
     rev=client.get('/v1/snapshot/'+subject,headers=PROTO).json()['revision']
     page.evaluate('(revision)=>BanyaCloudSync.prepareAssistant=async()=>({revision})',rev)
     page.locator('[data-auto-action="undo"]').first.click();page.wait_for_function("document.getElementById('auto-state').textContent==='已撤销并同步，自动管理已暂停。'")
-    assert not page.locator('#auto-enabled').is_checked()
+    assert not next((g['enabled'] for g in client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['grants'] if g['subject']==subject),False)
     page.locator('[data-auto-action="close"]').click();page.wait_for_timeout(100)
    assert len(calls)==2
    assert not errors,errors
