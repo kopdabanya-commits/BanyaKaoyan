@@ -6,7 +6,7 @@ on:
         type: choice
         options: [install-disabled, prepare-enabled, diagnose-readonly]
         default: install-disabled
-        description: Install disabled, or prepare limits for separate App approval
+        description: Install/prepare settings, or diagnose the existing server without changing configuration
       monthly_budget:
         type: string
         default: '0'

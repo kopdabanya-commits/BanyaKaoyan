@@ -263,7 +263,7 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
                 except PlanError:status='conflict'
         if status == 'prepared' and read_profile(con,row['subject'])['revision'] != stored.get('profileRevision',0):
             status = 'conflict'
-        return {**stored, 'terminal': row['status'] == 'unknown', 'requestId': row['id'], 'subject': row['subject'], 'status': status,
+        return {**stored, 'terminal': row['status'] != 'pending', 'requestId': row['id'], 'subject': row['subject'], 'status': status,
                 'baseRevision': row['base_revision'], 'revision': row['applied_revision'],
                 'backupId': row['backup_id'], 'expiresAt': row['expires_at'],
                 'mobileDelivery': 'awaiting_phone_sync' if status == 'applied' else 'not_sent'}
