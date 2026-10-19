@@ -173,11 +173,12 @@ def run(output,executable):
                     context.close()
         browser.close()
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    scenario_count=len(cases)
     cases.insert(0,'Source revision: '+revision+'; all data synthetic; no paid requests')
     rows=''.join(f'<section><h2>{w}×{h} · {s} · {name}</h2><a href="{path}"><img loading="lazy" src="{path}" width="{w}" alt="{s} {name}"></a></section>' for w,h,s,name,path in shots)
-    report='<!doctype html><meta charset="utf-8"><title>板牙考研 M7.4 合成视觉验收</title><style>body{font:14px system-ui;background:#f4f5f7;color:#263348;margin:24px}main{display:flex;flex-wrap:wrap;gap:24px}section{max-width:420px}h2{font-size:15px}img{max-width:100%;border:1px solid #ddd}</style><h1>M7.4 合成数据截图</h1><p>浏览器模拟；不是 Android 真机或生产验收。所有记录和模型响应均为合成，不包含用户资料或密钥。</p><p>'+str(len(shots))+' screenshots; '+str(len(cases))+' scenarios passed; zero paid API calls.</p><main>'+rows+'</main>'
+    report='<!doctype html><meta charset="utf-8"><title>板牙考研 M7.4 合成视觉验收</title><style>body{font:14px system-ui;background:#f4f5f7;color:#263348;margin:24px}main{display:flex;flex-wrap:wrap;gap:24px}section{max-width:420px}h2{font-size:15px}img{max-width:100%;border:1px solid #ddd}</style><h1>M7.4 合成数据截图</h1><p>浏览器模拟；不是 Android 真机或生产验收。所有记录和模型响应均为合成，不包含用户资料或密钥。</p><p>'+str(len(shots))+' screenshots; '+str(scenario_count)+' scenarios passed; zero paid API calls.</p><main>'+rows+'</main>'
     (output/'index.html').write_text(report);(output/'report.txt').write_text('\n'.join(cases)+'\n')
-    print(f'PASS {len(shots)} screenshots, {len(cases)} dual-subject/viewport scenarios, zero paid API calls')
+    print(f'PASS {len(shots)} screenshots, {scenario_count} dual-subject/viewport scenarios, zero paid API calls')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/banya-m74-visual'));parser.add_argument('--chromium',default=os.environ.get('BANYA_CHROMIUM'));args=parser.parse_args();run(args.output,args.chromium)
