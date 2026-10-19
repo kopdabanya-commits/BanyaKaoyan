@@ -30,19 +30,19 @@ PREFLIGHT
 grep -Fq "private-plan-v1" /var/www/banya-pwa/current/cloud-sync.js
 grep -Fq 'access_log off;' /etc/nginx/sites-available/banya-sync
 nginx -t
-for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json upgrade_guard.py; do test -s "$source_dir/$file"; done
-/opt/banya-sync/.venv/bin/python -m py_compile "$source_dir/app.py" "$source_dir/autonomous.py" "$source_dir/agent_api.py" "$source_dir/deepseek_ai.py" "$source_dir/learning_memory.py" "$source_dir/learning_policy.py" "$source_dir/learning_analysis.py" "$source_dir/learning_planner.py" "$source_dir/context_engine.py" "$source_dir/capabilities.py" "$source_dir/private_plan.py"
+for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py realloc.py agent-openapi.json upgrade_guard.py; do test -s "$source_dir/$file"; done
+/opt/banya-sync/.venv/bin/python -m py_compile "$source_dir/app.py" "$source_dir/autonomous.py" "$source_dir/agent_api.py" "$source_dir/deepseek_ai.py" "$source_dir/learning_memory.py" "$source_dir/learning_policy.py" "$source_dir/learning_analysis.py" "$source_dir/learning_planner.py" "$source_dir/context_engine.py" "$source_dir/capabilities.py" "$source_dir/private_plan.py" "$source_dir/realloc.py"
 previous="$(mktemp -d /root/banya-plan-upgrade.XXXXXX)"
 cp -p /etc/banya-sync.env "$previous/environment"
 if [[ -f /opt/banya-sync/RELEASE_SHA ]]; then cp -p /opt/banya-sync/RELEASE_SHA "$previous/RELEASE_SHA"; fi
-for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
+for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py realloc.py agent-openapi.json; do
   if [[ -f "/opt/banya-sync/$file" ]]; then cp -p "/opt/banya-sync/$file" "$previous/$file"; fi
 done
 cd /opt/banya-sync
 rollback(){
   cp -p "$previous/environment" /etc/banya-sync.env
   if [[ -f "$previous/RELEASE_SHA" ]]; then cp -p "$previous/RELEASE_SHA" /opt/banya-sync/RELEASE_SHA; else rm -f /opt/banya-sync/RELEASE_SHA; fi
-  for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do
+  for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py realloc.py agent-openapi.json; do
     if [[ -f "$previous/$file" ]]; then cp -p "$previous/$file" "/opt/banya-sync/$file"; else rm -f "/opt/banya-sync/$file"; fi
   done
   systemctl restart banya-sync.service || true
@@ -61,7 +61,7 @@ fi
 backup_path="$(runuser -u banya-sync -- /opt/banya-sync/.venv/bin/python - backup < "$source_dir/upgrade_guard.py")"
 test -s "$backup_path"
 echo 'Private pre-upgrade backup integrity verified; no study data printed.'
-for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do install -m 0644 "$source_dir/$file" "/opt/banya-sync/$file"; done
+for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py realloc.py agent-openapi.json; do install -m 0644 "$source_dir/$file" "/opt/banya-sync/$file"; done
 python3 - "$source_dir" "$ai_policy" <<'PY'
 from pathlib import Path
 import sys
@@ -126,7 +126,7 @@ for path in capabilities grants; do
   status_code="$(curl --noproxy '*' --resolve 124.70.128.201:443:127.0.0.1 --silent --show-error --max-time 10 -o /dev/null -w '%{http_code}' "https://124.70.128.201/v1/agent/$path")"
   [[ "$status_code" == 401 ]]
 done
-for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py agent-openapi.json; do cmp "$source_dir/$file" "/opt/banya-sync/$file"; done
+for file in app.py backup_db.py autonomous.py agent_api.py deepseek_ai.py learning_memory.py learning_policy.py learning_analysis.py learning_planner.py context_engine.py capabilities.py private_plan.py realloc.py agent-openapi.json; do cmp "$source_dir/$file" "/opt/banya-sync/$file"; done
 printf '%s\n' "$release" > /opt/banya-sync/RELEASE_SHA
 trap - ERR
 echo 'Capability channel deployed. No grant created, private plan changed, or ChatGPT connection established by deployment.'
