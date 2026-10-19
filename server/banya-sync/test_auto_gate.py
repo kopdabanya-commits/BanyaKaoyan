@@ -4,7 +4,7 @@ from auto_gate import render, assert_inactive
 
 
 def test_gate_preserves_credentials_budget_and_activation_stamp():
-    before = 'DEEPSEEK_API_KEY=synthetic\nBANYA_AI_CONFIG_REVISION=synthetic\nDEEPSEEK_MONTHLY_BUDGET_CNY=17\nBANYA_AUTO_ENABLED=0\nBANYA_DB_PATH=synthetic\n'
+    before = 'DEEPSEEK_API_KEY=configured\nBANYA_AI_CONFIG_REVISION=synthetic\nDEEPSEEK_MONTHLY_BUDGET_CNY=17\nBANYA_AUTO_ENABLED=0\nBANYA_DB_PATH=synthetic\n'
     after = render(before, True)
     assert after == before.replace('BANYA_AUTO_ENABLED=0\n', '') + 'BANYA_AUTO_ENABLED=1\n'
     assert render(after, False).endswith('BANYA_AUTO_ENABLED=0\n')
