@@ -49,9 +49,9 @@ def run(executable=None):
                 page.wait_for_function("document.getElementById('ai-home-status').textContent.includes('未启用')");assert not calls
                 page.locator('[data-activation-action="open"]').click();page.wait_for_selector('#activation-save:not([disabled])');page.locator('#activation-save').click();page.wait_for_function("document.getElementById('activation-state').textContent.includes('开关已保存')");page.keyboard.press('Escape');page.wait_for_timeout(100)
                 assert not calls
-                page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-enabled')
-                page.locator('#auto-enabled').check();page.locator('#auto-budget').fill('1');page.locator('#auto-form details summary').click();page.locator('#auto-type-0').check();page.locator('#auto-consent').check();page.locator('#auto-form button[type="submit"]').click();page.wait_for_function("document.getElementById('auto-state').textContent==='本学科授权已保存。'")
-                page.locator('#auto-master').click();page.wait_for_function("document.getElementById('auto-state').textContent==='总开关已更新。'");page.keyboard.press('Escape');page.wait_for_timeout(100)
+                page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-save')
+                page.locator('#auto-form details summary').click();page.locator('#auto-budget').fill('1');page.locator('#auto-consent').check();page.locator('#auto-save').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已开启。新的学习记录')")
+                assert client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled'];page.keyboard.press('Escape');page.wait_for_timeout(100)
                 page.locator('[data-view="today"]').click()
                 def note(text):
                     page.locator('.student-task-body').first.click()
@@ -72,8 +72,9 @@ def run(executable=None):
                 assert page.evaluate('(key)=>JSON.parse(localStorage.getItem(key))',KEYS[subject])['edits'][task]['minutes']==19
                 page.locator('[data-view="assistant"]').click();page.locator('[data-auto-action="open"][data-history="true"]').click();page.wait_for_selector('[data-auto-action="undo"]')
                 page.wait_for_function('!BanyaCloudSync.isSyncing()')
-                page.locator('[data-auto-action="undo"]').click()
-                page.wait_for_function('(key)=>JSON.parse(localStorage.getItem(key)).revision===4',arg='banya_cloud_sync_meta_v1_'+subject)
+                with page.expect_response(lambda r:'/v1/ai/auto/runs/' in r.url and r.url.endswith('/undo') and r.status==200):page.locator('[data-auto-action="undo"]').click()
+                undo_revision=snapshot()['revision']
+                page.wait_for_function('(x)=>JSON.parse(localStorage.getItem(x.key)).revision===x.revision',arg={'key':'banya_cloud_sync_meta_v1_'+subject,'revision':undo_revision})
                 page.wait_for_selector('[data-ai-home-subject]');page.wait_for_selector('#modal.hidden',state='attached')
                 local=page.evaluate('(key)=>JSON.parse(localStorage.getItem(key))',KEYS[subject]);assert task not in local['edits']
                 assert local['notes']==before['record']['notes'];assert not client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['grants'][0]['enabled']

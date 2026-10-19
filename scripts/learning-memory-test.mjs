@@ -13,7 +13,7 @@ function harness(){
  const fire=async(type,target,extra={})=>{for(const fn of handlers[type]||[])await fn({target,preventDefault(){},...extra});for(let i=0;i<4;i++)await new Promise(setImmediate);};
  const click=(action,key)=>fire('click',{closest:selector=>selector==='[data-memory-action]'?{dataset:{memoryAction:action,memoryKey:key,memorySubject:'english'}}:null});
  const form=()=>fire('submit',{id:'memory-editor'});
- return {root,el,calls,click,form,timeForm:()=>fire('submit',{id:'memory-time-form'}),setFail:value=>fail=value,escape:()=>fire('keydown',{}, {key:'Escape'})};
+ return {root,el,calls,click,form,timeForm:()=>fire('submit',{id:'memory-time-form'}),input:id=>fire('input',{id}),setFail:value=>fail=value,escape:()=>fire('keydown',{}, {key:'Escape'})};
 }
 
 test('memory is accessible without paid readiness and all external text is escaped',async()=>{
@@ -73,4 +73,9 @@ test('politics course limit is structured and checked against total time, never 
  const h=harness();const entries=h.root.BanyaStudySetup.timeEntries({subject:'politics',entries:[]},'politics',73,24);
  assert.equal(entries[0].value.scope,'total');assert.equal(entries[1].category,'constraint');assert.equal(entries[1].value.rule,'course_limit');assert.equal(entries[1].value.minutes,24);
  assert.throws(()=>h.root.BanyaStudySetup.timeEntries({},'politics',20,21));
+});
+
+
+test('unsaved daily time cannot be mistaken for the saved planning policy',async()=>{
+ const h=harness();await h.click('open');h.el('memory-daily').value='44';await h.input('memory-daily');assert(h.el('memory-next').disabled);assert(h.el('memory-state').textContent.includes('先点'));assert.equal(h.calls.filter(c=>c.method==='POST').length,0);
 });

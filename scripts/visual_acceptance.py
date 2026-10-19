@@ -143,11 +143,11 @@ def run(output,executable):
                     page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-save');assert page.locator('#auto-save').is_disabled();shot('setup-missing-time')
                     assert not client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled']
                     page.locator('[data-auto-action="time"]').click();page.wait_for_selector('#memory-daily');assert page.locator('#memory-daily').input_value()==''
-                    page.locator('#memory-daily').fill('88' if subject=='english' else '68');page.locator('#memory-time-save').click();page.wait_for_function("document.getElementById('memory-state').textContent.includes('已保存')");assert len(calls)==1
+                    page.locator('#memory-daily').fill('88' if subject=='english' else '68');assert page.locator('#memory-next').is_disabled();page.locator('#memory-time-save').click();page.wait_for_function("document.getElementById('memory-state').textContent.includes('已保存')");assert len(calls)==1
                     assert snapshots_before=={s:client.get('/v1/snapshot/'+s,headers=PROTO).json() for s in ('english','politics')}
                     shot('setup-time-saved');page.locator('#memory-next').click();page.wait_for_selector('#auto-save');assert not page.locator('#auto-consent').is_checked();shot('auto-permission')
                     page.locator('#modal').dispatch_event('click');page.wait_for_timeout(100);page.locator('[data-auto-action="open"]').first.click();page.wait_for_selector('#auto-save')
-                    page.locator('#auto-form details summary').click();page.locator('#auto-budget').fill('1');page.locator('#auto-consent').check();page.locator('#auto-save').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已开启。新的学习记录')")
+                    page.locator('#auto-form details summary').click();page.locator('#auto-budget').fill('1');page.locator('#auto-consent').check();page.locator('#auto-max').fill('2');assert not page.locator('#auto-consent').is_checked();assert page.locator('#auto-save').is_disabled();assert '最多 2 项' in page.locator('#auto-scope').inner_text();page.locator('#auto-consent').check();page.locator('#auto-save').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已开启。新的学习记录')")
                     assert client.get('/v1/ai/auto/status',headers=OWNER_AUTH).json()['control']['enabled'];assert len(calls)==1
                     page.locator('[data-auto-action="check"]').click();page.wait_for_function("document.getElementById('auto-state').textContent.includes('已提交检查')")
                     assert app.state.autonomy.process_one()=='applied';assert len(calls)==2;dismiss()

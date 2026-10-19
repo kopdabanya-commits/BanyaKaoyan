@@ -11,7 +11,7 @@ function setup({known=true,profileFailure=false,enabled=false}={}){
  const config={start:'2026-10-20',end:'2026-10-26',fields:['date','minutes'],types:['阅读'],monthlyBudgetCents:200,dailyCalls:1,weeklyCalls:3,monthlyCalls:10,cooldownHours:12,maxChanges:1,allowAdd:false,periodic:false,shareReview:false,dataConsent:true};
  const status={serverReady:true,currency:'CNY',control:{revision:0,enabled},grants:enabled?[{subject:'english',revision:1,enabled:true,config}]:[],runs:[]};
  const cloud={isConnected:()=>true,prepareAssistant:async s=>{prepares.push(s);if(hold)await hold;return {revision:1};},assistantRequest:async(path,method='GET',body)=>{
-  calls.push({path,method,body});if(path==='status')return {ready:true,currency:'CNY',monthlyBudget:19};if(path.startsWith('profiles/')){if(profileFailure)throw Error('Synthetic profile fetch failure');return structuredClone(profile);}
+  calls.push({path,method,body});if(path==='status')return {ready:true,configuredReady:true,activation:{enabled:true,revision:1},currency:'CNY',monthlyBudget:19};if(path.startsWith('profiles/')){if(profileFailure)throw Error('Synthetic profile fetch failure');return structuredClone(profile);}
   if(path==='auto/status')return structuredClone(status);
   if(path==='auto/control'){status.control={revision:1,enabled:body.enabled};return status.control;}
   if(path.startsWith('auto/grants/')){status.grants=[{subject:'english',revision:2,enabled:body.enabled,config:body}];return {revision:2};}
@@ -23,7 +23,7 @@ function setup({known=true,profileFailure=false,enabled=false}={}){
  const fire=async(t,target)=>{for(const fn of handlers[t]||[])await fn({target,preventDefault(){}});await settle();};
  const click=action=>fire('click',{closest:s=>s==='[data-auto-action]'?{dataset:{autoAction:action,subject:'english'}}:null});
  const fill=()=>{for(const [id,value] of Object.entries({start:'2026-10-20',end:'2026-10-26',max:1,daily:1,weekly:3,monthly:10,cooldown:12,budget:2}))el('auto-'+id).value=String(value);el('auto-type-0').checked=true;el('auto-field-date').checked=true;el('auto-field-minutes').checked=true;el('auto-consent').checked=true;};
- return {el,calls,prepares,cloud,status,click,fill,settle,submit:()=>fire('submit',{id:'auto-form'}),hold:()=>new Promise(r=>{hold=new Promise(resolve=>r(resolve));})};
+ return {el,calls,prepares,cloud,status,click,fill,settle,activationClick:action=>fire('click',{closest:s=>s==='[data-activation-action]'?{dataset:{activationAction:action}}:null}),submit:()=>fire('submit',{id:'auto-form'}),input:id=>fire('input',{id}),hold:()=>new Promise(r=>{hold=new Promise(resolve=>r(resolve));})};
 }
 
 test('opening automatic setup is read-only, displays shared CNY budget and blocks missing study time',async()=>{
@@ -43,4 +43,14 @@ test('closing while phone preflight is pending cancels unsent authorization',asy
 
 test('profile lookup failure cannot prevent pausing an already authorized subject',async()=>{
  const h=setup({profileFailure:true,enabled:true});await h.click('open');assert(h.el('auto-save').disabled);await h.click('pause');const writes=h.calls.filter(c=>c.method==='POST');assert.equal(writes.length,1);assert.equal(writes[0].path,'auto/grants/english');assert.equal(writes[0].body.enabled,false);assert(h.status.control.enabled,'other subject control is preserved');
+});
+
+
+test('editing an adjustment scope updates its summary and invalidates previous consent',async()=>{
+ const h=setup();await h.click('open');h.fill();h.el('auto-max').value='2';await h.input('auto-max');assert(!h.el('auto-consent').checked);assert(h.el('auto-save').disabled);assert(h.el('auto-scope').innerHTML.includes('最多 2 项'));assert(h.el('auto-scope').innerHTML.includes('2026-10-20'));assert.equal(h.calls.filter(c=>c.method==='POST').length,0);
+});
+
+
+test('AI fee sheet closes and reopens independently from profile and automatic setup state',async()=>{
+ const h=setup();await h.activationClick('open');await h.activationClick('close');await h.activationClick('open');await h.activationClick('close');assert.equal(h.calls.filter(c=>c.path==='status').length,2);assert.equal(h.calls.filter(c=>c.method==='POST').length,0);
 });
