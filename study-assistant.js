@@ -193,6 +193,21 @@ async function undo(){
   else{uncertain=true;say('撤回结果需要查询确认；没有自动重试写入。');}
  }finally{pendingOperation=false;if(ticket===epoch)busy=false;controls();}
 }
+async function quick(text,subject){
+ const cloud=root.BanyaCloudSync;
+ if(!cloud?.isConnected())throw Error('请先连接云同步');
+ if(navigator.onLine===false)throw Error('现在离线，联网后再试');
+ const subj=SUBJECTS[subject]?subject:'english';
+ const meta=(subj==='politics'?root.POLITICS_PLAN:root.STUDY_PLAN)?.meta;
+ const start=[meta.start,day(-3),meta.end].sort()[1],end=[meta.start,day(10),meta.end].sort()[1];
+ const baseline=await cloud.prepareAssistant(subj);
+ const requestId='qc-'+crypto.randomUUID();
+ const result=await cloud.assistantRequest('chat','POST',{requestId,subject:subj,start,end,expectedRevision:baseline.revision,messages:[{role:'user',content:String(text).slice(0,1800)}],shareReview:false,consent:true});
+ if(result.status!=='prepared'||result.previewOnly)return result;
+ const receipt=await cloud.assistantRequest('proposals/'+result.requestId+'/commit','POST',{expectedRevision:result.baseRevision,confirmation:'sync'});
+ if(receipt.status==='applied'){try{await cloud.syncAll(false);}catch{}}
+ return receipt;
+}
 function reset(keepReview=false){const share=keepReview&&opened&&$('ai-review').checked;messages=[];draft=null;requestId='';uncertain=false;forget();if(opened){$('ai-consent').checked=false;$('ai-review').checked=!!share;renderMessages();preview({status:'discussion'});say('新对话已开始，尚未发送任何内容。');controls();}}
 document.addEventListener('input',e=>{if(opened&&e.target.id==='ai-prompt')stashDraft();});
 document.addEventListener('focusin',e=>{if(opened&&e.target.id==='ai-prompt'&&$('ai-fees')){$('ai-fees').open=false;$('ai-fees').hidden=true;}});
@@ -218,7 +233,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('keydown',e=>{if(opened&&e.key==='Escape')close();});
 document.addEventListener('banya-modal-dismiss',()=>{if(opened)close();});
-root.BanyaStudyAssistant={panel,refreshHome,openPlanning:async(subject,mode,target,available)=>{await open(subject);if(opened&&!requestId){$('ai-mode').value=mode;$('ai-target').value=target;$('ai-available').value=available??'';scopeLabel();if($('ai-options'))$('ai-options').open=mode==='day';say('规划只生成建议和预览，不执行修改。请主动填写问题并确认数据授权。');}}};
+root.BanyaStudyAssistant={panel,refreshHome,quick,openPlanning:async(subject,mode,target,available)=>{await open(subject);if(opened&&!requestId){$('ai-mode').value=mode;$('ai-target').value=target;$('ai-available').value=available??'';scopeLabel();if($('ai-options'))$('ai-options').open=mode==='day';say('规划只生成建议和预览，不执行修改。请主动填写问题并确认数据授权。');}}};
 })(window);
 
 /* M7.1 owner-only memory editor. No provider calls, no checkin/plan writes. */
