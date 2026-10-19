@@ -7,22 +7,29 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const $=id=>document.getElementById(id);
 let epoch=0,pendingOperation=false,opened=false,busy=false,ready=false,uncertain=false,messages=[],draft=null,requestId='';
 let homeEpoch=0;
-const homeCache=new Map();
+const homeCache=new Map(),inputDrafts=new Map();
+let activeSubject="english";
+const MODES={discussion:"聊聊",day:"日计划",week:"周计划",diagnosis:"阶段分析"};
+function icon(path){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="'+path+'" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 function panel(subject='english'){
  const sub=SUBJECTS[subject]?subject:'english';
- return '<section class="assistant-home" data-ai-home-subject="'+sub+'"><header class="student-page-head"><h1>学习助手</h1><p>看看近况，把接下来的事安排好。</p></header><section class="assistant-status" aria-live="polite"><span class="status-dot"></span><span id="ai-home-status">'+(root.BanyaCloudSync?.isConnected()?'正在核对云端状态…':'尚未连接云端，学习记录仍留在本机')+'</span><button type="button" data-activation-action="open">AI 设置</button></section><section class="assistant-brief"><h2>最近的学习</h2><div id="ai-home-brief"><p class="setting-note">连接后可查看真实记录。没有记录的部分保持未知。</p></div></section>'
- +'<section class="assistant-planning"><h2>接下来怎么安排</h2><button class="assistant-chat" type="button" data-ai-action="open" data-ai-subject="'+sub+'"><span><b>和 DeepSeek 聊聊</b><small>说说想法，先讨论再决定</small></span><span aria-hidden="true">↗</span></button><div class="assistant-shortcuts">'+[['day','每日规划'],['week','每周安排'],['diagnosis','阶段分析']].map(([mode,label])=>'<button type="button" data-ai-action="plan" data-ai-mode="'+mode+'" data-ai-subject="'+sub+'">'+label+'</button>').join('')+'</div><p class="setting-note">规划只给建议和预览；自动调整需单独授权。主动发送前会说明费用。</p></section>'
- +'<section class="assistant-tools"><button type="button" data-diagnosis-action="open" data-diagnosis-subject="'+sub+'"><span><b>学习诊断</b><small>记录、薄弱项与未来负荷 · 不调用模型</small></span><span>›</span></button><button type="button" data-auto-action="open" data-subject="'+sub+'"><span><b>自动管理</b><small id="ai-home-auto">默认关闭，只调整已授权的未来计划</small></span><span>›</span></button><button type="button" data-auto-action="open" data-history="true" data-subject="'+sub+'"><span><b>最近调整与撤销</b><small id="ai-home-last">连接后核对执行历史</small></span><span>›</span></button><button type="button" data-memory-action="open" data-memory-subject="'+sub+'"><span><b>学习档案与规则</b><small id="ai-home-profile">目标、基础和长期偏好</small></span><span>›</span></button></section></section>';
+ return '<section class="assistant-home" data-ai-home-subject="'+sub+'"><header class="assistant-heading"><div><h1>学习助手</h1><p>一起理清思路，按自己的节奏来。</p></div><button type="button" class="assistant-config" data-activation-action="open" aria-label="AI 设置与费用">'+icon('M4 7h16M4 17h16M8 4v6m8 4v6')+'<span>设置</span></button></header>'
+ +'<div class="assistant-status" aria-live="polite"><span class="status-dot"></span><span id="ai-home-status">'+(root.BanyaCloudSync?.isConnected()?'正在核对云端状态…':'先连接云同步，就能结合记录聊一聊')+'</span><button type="button" data-ai-action="refresh-home" data-ai-subject="'+sub+'" aria-label="刷新助手状态">刷新</button></div>'
+ +'<section class="assistant-planning"><button class="assistant-chat" type="button" data-ai-action="open" data-ai-subject="'+sub+'"><span class="assistant-chat-symbol">'+icon('M4 5h16v12H9l-5 4V5m4 5h8m-8 4h5')+'</span><span><b>想聊聊接下来的安排？</b><small>说说你的想法，或从下面选一个开始</small></span><span aria-hidden="true">↗</span></button><div class="assistant-shortcuts">'
+ +[['day','日计划','安排一天','M5 5h14v15H5V5m3-2v4m8-4v4M5 10h14m-9 4h4'],['week','周计划','调整一周','M4 5h16v15H4V5m4-2v4m8-4v4M4 10h16m-12 4h1m3 0h1m3 0h1'],['diagnosis','阶段分析','看看进展','M5 19V9m7 10V4m7 15v-7M3 21h18']].map(([mode,label,detail,path])=>'<button type="button" data-ai-action="plan" data-ai-mode="'+mode+'" data-ai-subject="'+sub+'">'+icon(path)+'<b>'+label+'</b><small>'+detail+'</small></button>').join('')+'</div><p class="assistant-assurance">主动发送才调用 AI，讨论不会直接改计划。</p></section>'
+ +'<section class="assistant-brief"><div class="assistant-section-head"><h2>最近 7 天</h2><button type="button" data-diagnosis-action="open" data-diagnosis-subject="'+sub+'">查看记录 <span aria-hidden="true">›</span></button></div><div id="ai-home-brief"><p class="setting-note">结合已同步记录查看近况，没记录的部分不猜测。</p></div></section>'
+ +'<section class="assistant-tools" aria-label="档案与计划管理"><button type="button" data-memory-action="open" data-memory-subject="'+sub+'"><span><b>学习档案与规则</b><small id="ai-home-profile">告诉助手你的目标、可用时间和习惯</small></span><span aria-hidden="true">›</span></button><div class="assistant-management"><button type="button" data-auto-action="open" data-subject="'+sub+'"><span><b>自动管理</b><small id="ai-home-auto">只在单独授权后启用</small></span><span aria-hidden="true">›</span></button><button type="button" data-auto-action="open" data-history="true" data-subject="'+sub+'"><span><b>调整历史</b><small id="ai-home-last">查看原因，必要时撤销</small></span><span aria-hidden="true">›</span></button></div></section></section>';
 }
 async function refreshHome(subject){
  const ticket=++homeEpoch,cloud=root.BanyaCloudSync;
  if(!cloud?.isConnected())return;
+ if(navigator.onLine===false){if($('ai-home-status'))$('ai-home-status').textContent='当前离线，记录仍在本机；联网后可以继续聊';return;}
  function display(results){
   if(ticket!==homeEpoch||!$('ai-home-status')||document.querySelector?.('[data-ai-home-subject]')?.dataset.aiHomeSubject!==subject)return;
   const [ai,memory,analysis,auto]=results.map(r=>r.status==='fulfilled'?r.value:null);
   $('ai-home-status').textContent=ai?(ai.ready?'AI 已启用 · 按你的授权使用':'AI 未启用 · 查看记录不收费'):'云端状态暂不可用，可继续本机学习';
-  if(memory?.entries)$('ai-home-profile').textContent=memory.entries.some(e=>e.active)?'已记住你的要求，可随时修改':'还没有学习档案，先记一条已确认的要求';
-  if(analysis?.windows?.['7']){const w=analysis.windows['7'];$('ai-home-brief').innerHTML='<div class="assistant-metrics"><span><b>'+Number(w.recordedTasks)+'</b> 项有记录</span><span><b>'+Number(w.completed)+'</b> 项已打卡</span></div><p class="setting-note">近7天任务中的记录；不推断实际完成日期。</p>'+analysis.issues.slice(0,2).map(i=>'<p class="assistant-finding">'+esc(i.recommendedAction)+'</p>').join('');}
+  if(memory?.entries)$('ai-home-profile').textContent=memory.entries.some(e=>e.active)?'已保存资料与要求，可以随时补充':'还没有学习档案，先记一条已确认的要求';
+  if(analysis?.windows?.['7']){const w=analysis.windows['7'];$('ai-home-brief').innerHTML=(Number(w.recordedTasks)>0?'<div class="assistant-metrics"><span><b>'+Number(w.recordedTasks)+'</b><small>项有记录</small></span><span><b>'+Number(w.completed)+'</b><small>项已打卡</small></span></div><p class="setting-note">按近 7 天任务统计，不代表实际完成日期。</p>':'<p class="assistant-empty-note">还没有足够的近期记录。先按自己的节奏学，之后再一起看。</p>')+(Number(w.recordedTasks)>0?analysis.issues.slice(0,1):[]).map(i=>'<p class="assistant-finding">'+esc(i.recommendedAction)+'</p>').join('');}
   else $('ai-home-brief').innerHTML='<p class="setting-note">暂时无法读取云端近况。手机未同步的记录不在分析中。</p>';
   if(auto){const g=auto.grants?.find(g=>g.subject===subject);$('ai-home-auto').textContent=auto.control?.enabled&&g?.enabled?'本学科已授权 · 可随时暂停':'本学科自动管理未启用';const r=auto.runs?.find(r=>r.subject===subject);$('ai-home-last').textContent=r?({applied:'最近已调整计划，点开查看原因',undone:'最近一次调整已撤销',no_change:'最近维持原计划',pending:'最近一次仍在处理',unknown:'最近结果待核对',stopped:'最近一次已安全停止'}[r.status]||'查看最近的调整'):'还没有自动修改记录';}
  }
@@ -37,19 +44,29 @@ function forget(){try{sessionStorage.removeItem(PENDING);}catch{}}
 function restored(){try{const r=JSON.parse(sessionStorage.getItem(PENDING));return r&&/^[A-Za-z0-9_-]{8,80}$/.test(r.id)&&SUBJECTS[r.subject]&&/^2026-\d{2}-\d{2}$/.test(r.start)&&/^2026-\d{2}-\d{2}$/.test(r.end)?r:null;}catch{return null;}}
 function scope(){return {subject:$('ai-subject').value,start:$('ai-start').value,end:$('ai-end').value};}
 function say(message){if(opened&&$('ai-state'))$('ai-state').textContent=message;}
-function controls(){if(!opened)return;const locked=busy||pendingOperation;for(const id of ['ai-subject','ai-start','ai-end','ai-mode','ai-target','ai-available','ai-review','ai-consent','ai-prompt'])if($(id))$(id).disabled=locked||uncertain||!ready;const send=$('ai-send');if(send)send.disabled=locked||uncertain||!ready;const query=$('ai-query');if(query){query.hidden=!requestId;query.disabled=locked;}const commit=$('ai-commit');if(commit)commit.disabled=locked||uncertain||!ready;}
-function renderMessages(){if(opened)$('ai-messages').innerHTML=messages.map(m=>'<div class="ai-message '+m.role+'"><small>'+(m.role==='user'?'你':'DeepSeek · 思考模式')+'</small><p>'+esc(m.content)+'</p></div>').join('');}
+function stashDraft(){if(opened&&$('ai-prompt'))inputDrafts.set(activeSubject,$('ai-prompt').value);}
+function scopeLabel(){if(!opened)return;const mode=$('ai-mode').value||'discussion',short=v=>String(v||'').slice(5).replace('-','/');const date=mode==='discussion'?short($('ai-start').value)+'–'+short($('ai-end').value):mode==='diagnosis'?'近期记录':short($('ai-target').value)+(mode==='week'?' 起':'');if($('ai-scope-label'))$('ai-scope-label').textContent=SUBJECTS[$('ai-subject').value]+' · '+(MODES[mode]||MODES.discussion)+' · '+date;document.querySelectorAll?.('[data-ai-action="mode"]').forEach(b=>{const selected=b.dataset.aiMode===mode;b.setAttribute('aria-pressed',String(selected));});}
+function defaultTarget(subject){const d=new Date();d.setDate(d.getDate()+1);const date=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),meta=(subject==='politics'?root.POLITICS_PLAN:root.STUDY_PLAN)?.meta;return meta?[meta.start,date,meta.end].sort()[1]:date;}
+
+function friendly(error){return {planning_budget_unknown:'还不知道你能学多久。日计划可在范围设置里填当天分钟数；周计划请先在学习档案确认时间预算。',ai_monthly_limit_reached:'本月可用预算或调用额度不足，可在 AI 设置里核对。',ai_not_configured_or_not_approved:'AI 还没启用，请先在助手首页的 AI 设置中核对费用与启用状态。',ai_request_in_progress:'上一条还在思考，等它完成后再发送。',revision_conflict:'学习记录有了更新，先同步，再重新讨论会更准确。'}[error.code]||error.message||'暂时连不上，文字还在，稍后再试。';}
+
+function controls(){if(!opened)return;const locked=busy||pendingOperation;for(const id of ['ai-subject','ai-start','ai-end','ai-mode','ai-target','ai-available','ai-review','ai-consent','ai-prompt'])if($(id))$(id).disabled=locked||uncertain||!ready;const send=$('ai-send');if(send)send.disabled=locked||uncertain||!ready;if(send){send.textContent=locked?'正在处理…':'发送';send.setAttribute?.('aria-busy',String(locked));}const query=$('ai-query');if(query){query.hidden=!requestId||(!uncertain&&!locked);query.disabled=locked;}document.querySelectorAll?.('[data-ai-action="mode"],[data-ai-action="suggest"]').forEach(b=>b.disabled=locked||uncertain||!ready);document.querySelectorAll?.('[data-ai-action="reset"]').forEach(b=>b.disabled=locked);const commit=$('ai-commit');if(commit)commit.disabled=locked||uncertain||!ready;}
+function renderMessages(){if(opened){if($('ai-empty'))$('ai-empty').hidden=messages.length>0;$('ai-messages').innerHTML=messages.map(m=>'<div class="ai-message '+m.role+'"><small>'+(m.role==='user'?'你':'DeepSeek · 思考模式')+'</small><p>'+esc(m.content)+'</p></div>').join('');$('ai-messages').lastElementChild?.scrollIntoView?.({block:'start'});}}
+function changeCard(c){
+ const before=c.before?'<span>'+esc(c.before.date)+'</span><b>预计 '+esc(c.before.minutes)+' 分钟</b>':'<span>新增任务</span>';
+ return '<div class="ai-change"><b>'+esc(c.after.title)+'</b><div class="ai-change-compare"><div><small>原安排</small>'+before+'</div><span aria-hidden="true">→</span><div><small>建议安排</small><span>'+esc(c.after.date)+'</span><b>预计 '+esc(c.after.minutes)+' 分钟</b></div></div>'+(c.before&&c.before.title!==c.after.title?'<p>原标题：'+esc(c.before.title)+'</p>':'')+(c.before?.detail!==c.after.detail?'<p>'+esc(c.after.detail)+'</p>':'')+'</div>';
+}
 function preview(result){
  if(!opened)return;
  const box=$('ai-preview');box.innerHTML='';
  if(result.status==='prepared'){
-  box.innerHTML='<section class="ai-proposal"><h3>建议改动 · 尚未执行</h3>'+result.changes.map(c=>'<div class="ai-change"><b>'+esc(c.after.title)+'</b><p>'+(c.before?esc(c.before.date)+' · 预计 '+c.before.minutes+' 分钟 → ':'新增 → ')+esc(c.after.date)+' · 预计 '+c.after.minutes+' 分钟</p>'+(c.before&&c.before.title!==c.after.title?'<p>原标题：'+esc(c.before.title)+'</p>':'')+(c.before?.detail!==c.after.detail?'<p>'+esc(c.after.detail)+'</p>':'')+'</div>').join('')+(result.previewOnly?'<p class="setting-note">这份规划仅供预览，尚未修改计划。</p>':'<button type="button" id="ai-commit" class="cta" data-ai-action="commit">确认同步这 '+result.changes.length+' 项</button>')+'<p class="setting-note">'+(result.previewOnly?'已有计划、打卡和全部学习记录保持原样。':'只改所示计划，已有完成、不做和全部学习记录保留。新记录或版本冲突会停止写入。')+'</p></section>';
+  box.innerHTML='<section class="ai-proposal"><h3>建议改动 · 尚未执行</h3>'+result.changes.map(changeCard).join('')+(result.previewOnly?'<p class="setting-note">这份规划仅供预览，尚未修改计划。</p>':'<button type="button" id="ai-commit" class="cta" data-ai-action="commit">确认同步这 '+result.changes.length+' 项</button>')+'<p class="setting-note">'+(result.previewOnly?'已有计划、打卡和全部学习记录保持原样。':'只改所示计划，已有完成、不做和全部学习记录保留。新记录或版本冲突会停止写入。')+'</p></section>';
  }else if(result.status==='applied'){
   box.innerHTML='<section class="ai-proposal"><h3>云端计划已更新</h3><p>手机是否已收取仍需同步确认。</p><button type="button" class="cta secondary" data-ai-action="receive">接收云端更新</button></section>';
  }
 }
 function showResult(result){
- draft=result;uncertain=['pending','unknown'].includes(result.status);
+ draft=result;uncertain=['pending','unknown'].includes(result.status);if(opened&&MODES[result.planningMode]){$('ai-mode').value=result.planningMode;scopeLabel();}
  if(result.previewOnly&&!uncertain)forget();
  if(result.reply){const prior=messages.find(m=>m.role==='assistant'&&m.requestId===result.requestId);if(prior)prior.content=result.reply;else messages.push({role:'assistant',content:result.reply,requestId:result.requestId});}
  messages=messages.slice(-12);renderMessages();preview(result);
@@ -67,19 +84,19 @@ function boundDates(subject){
  for(const id of ['ai-start','ai-end']){$(id).min=meta.start;$(id).max=meta.end;}
  $('ai-start').value=[meta.start,shift(-3),meta.end].sort()[1];$('ai-end').value=[meta.start,shift(10),meta.end].sort()[1];
 }
-function close(){epoch++;opened=false;messages=[];draft=null;$('modal').classList.add('hidden');$('modal').innerHTML='';document.body.classList.remove('modal-open');}
+function close(){stashDraft();epoch++;opened=false;messages=[];draft=null;$('modal').classList.add('hidden');$('modal').innerHTML='';document.body.classList.remove('modal-open');}
 async function open(initialSubject='english'){
  const cloud=root.BanyaCloudSync;if(!cloud?.isConnected()){root.alert('请先在设置连接云同步，学习助手才有权读取你的记录。');return;}
  const ticket=++epoch;opened=true;busy=true;ready=false;messages=[];draft=null;requestId='';uncertain=false;
- const box=$('modal');box.innerHTML='<div class="modal-card ai-sheet"><div class="modal-head"><h2>一起安排下一步</h2><button type="button" class="close" data-ai-action="close" aria-label="关闭学习助手">×</button></div><p class="setting-note">DeepSeek 思考模式 · 只有主动发送才会调用。每次只读取选定科目与日期范围，密钥留在服务器。</p><details class="ai-options"><summary>科目、日期与讨论方式</summary><div class="ai-scope"><label class="form-line"><span>科目</span><select id="ai-subject"><option value="english">英语二</option><option value="politics">政治</option></select></label><label class="form-line"><span>开始日期</span><input type="date" id="ai-start"></label><label class="form-line"><span>结束日期</span><input type="date" id="ai-end"></label></div><label class="form-line"><span>讨论方式</span><select id="ai-mode"><option value="discussion">普通讨论</option><option value="day">每日规划</option><option value="week">每周规划</option><option value="diagnosis">阶段分析</option></select></label><div class="ai-scope"><label class="form-line"><span>规划日期／周起始日</span><input type="date" id="ai-target"></label><label class="form-line"><span>当天可用分钟（仅每日，可选）</span><input type="number" id="ai-available" min="0" max="600" inputmode="numeric" placeholder="留空使用已确认档案"></label></div><label class="ai-check"><input type="checkbox" id="ai-review">附带错题数、题号与复盘内容（可选）</label></details><p class="setting-note" id="ai-budget"></p><div id="ai-messages" class="ai-messages" aria-live="polite"></div><div id="ai-preview"></div><form id="ai-chat-form"><label class="form-line"><span>你想怎样调整或分析</span><textarea id="ai-prompt" maxlength="2000" rows="3" placeholder="例如：结合我最近做题的实际用时，看看下周安排是否太满。不要改已完成的任务。"></textarea></label><label class="ai-check"><input type="checkbox" id="ai-consent">同意将所选科目的学习资料和本次对话交给 DeepSeek 分析，并按用量计费。未勾选的错题与笔记不发送。</label><div class="button-row"><button type="submit" id="ai-send" class="cta">发送并思考</button><button type="button" id="ai-query" class="cta ghost" data-ai-action="query" hidden>查询本次结果</button><button type="button" class="cta ghost" data-ai-action="reset">开始新对话</button></div></form><p class="setting-note" id="ai-state" role="status">正在检查连接，不会调用模型…</p><p class="setting-note">只携带最近几轮讨论。切换科目、日期或分享范围会清空当前对话；关闭页面不取消已提交请求，可重新进入后查询。不要粘贴任何密钥。</p></div>';
+ const box=$('modal');box.innerHTML='<div class="modal-card ai-sheet" role="dialog" aria-modal="true" aria-labelledby="ai-chat-title"><header class="modal-head ai-chat-head"><div><h2 id="ai-chat-title">学习对话</h2><p>DeepSeek · 思考模式</p></div><div class="ai-head-actions"><button type="button" data-ai-action="reset">新对话</button><button type="button" class="close" data-ai-action="close" aria-label="关闭学习助手">×</button></div></header><div class="ai-mode-tabs" aria-label="选择讨论方式">'+Object.entries(MODES).map(([mode,label])=>'<button type="button" data-ai-action="mode" data-ai-mode="'+mode+'" aria-pressed="'+(mode==='discussion')+'">'+label+'</button>').join('')+'</div><div class="ai-workspace"><details class="ai-options" id="ai-options"><summary id="ai-scope-label">范围与分享</summary><div class="ai-scope"><label class="form-line"><span>科目</span><select id="ai-subject"><option value="english">英语二</option><option value="politics">政治</option></select></label><label class="form-line"><span>开始日期</span><input type="date" id="ai-start"></label><label class="form-line"><span>结束日期</span><input type="date" id="ai-end"></label></div><label class="form-line"><span>讨论方式</span><select id="ai-mode"><option value="discussion">聊聊</option><option value="day">日计划</option><option value="week">周计划</option><option value="diagnosis">阶段分析</option></select></label><div class="ai-scope"><label class="form-line"><span>规划日期／周起始日</span><input type="date" id="ai-target"></label><label class="form-line"><span>当天可用分钟（仅日计划）</span><input type="number" id="ai-available" min="0" max="600" inputmode="numeric" placeholder="留空使用学习档案"></label></div><label class="ai-check"><input type="checkbox" id="ai-review">同时分享错题、题号与复盘（可选）</label><p class="setting-note">切换范围会开启新的讨论。关闭不会取消已经发出的请求。</p></details><div class="ai-empty" id="ai-empty"><span class="ai-empty-symbol">'+icon('M4 5h16v12H9l-5 4V5m4 5h8m-8 4h5')+'</span><h3>从你现在最在意的事聊起</h3><p>可以讨论安排，也可以先理清问题。<br>有记录就参考，没把握的地方会说明。</p><div class="ai-starters">'+['最近的安排是不是太满了？','帮我看看哪些地方值得多练一点。'].map(text=>'<button type="button" data-ai-action="suggest" data-ai-text="'+esc(text)+'">'+esc(text)+' <span aria-hidden="true">↗</span></button>').join('')+'</div></div><div id="ai-messages" class="ai-messages" aria-live="polite"></div><div id="ai-preview"></div></div><form id="ai-chat-form" class="ai-composer"><p id="ai-state" class="ai-chat-state" role="status">正在检查连接，不会调用模型…</p><label for="ai-prompt" class="ai-input-label">你想怎样安排或分析</label><textarea id="ai-prompt" maxlength="2000" rows="2" placeholder="说说你的想法…"></textarea><label class="ai-check"><input type="checkbox" id="ai-consent"><span>同意本次向 DeepSeek 分享所选资料，并按用量计费。错题与笔记默认不分享。</span></label><div class="ai-composer-actions"><details class="ai-cost"><summary>费用与数据说明</summary><div class="ai-cost-body"><p id="ai-budget" class="setting-note"></p><p class="setting-note">只携带选定科目与范围及最近几轮讨论。密钥留在服务器，别把密钥写进对话。</p></div></details><button type="button" id="ai-query" class="cta ghost" data-ai-action="query" hidden>查询结果</button><button type="submit" id="ai-send" class="cta">发送</button></div></form></div>';
  box.classList.remove('hidden');document.body.classList.add('modal-open');$('ai-subject').value=SUBJECTS[initialSubject]?initialSubject:'english';boundDates($('ai-subject').value);
- $('ai-review').checked=false;$('ai-consent').checked=false;$('ai-prompt').value='';$('ai-mode').value='discussion';$('ai-target').value=$('ai-start').value;$('ai-available').value='';
+ activeSubject=$('ai-subject').value;$('ai-review').checked=false;$('ai-consent').checked=false;$('ai-prompt').value=inputDrafts.get(activeSubject)||'';$('ai-mode').value='discussion';$('ai-target').value=defaultTarget(activeSubject);$('ai-available').value='';
  const previous=restored();if(previous){requestId=previous.id;$('ai-subject').value=previous.subject;boundDates(previous.subject);$('ai-start').value=previous.start;$('ai-end').value=previous.end;uncertain=true;}
- controls();
+ activeSubject=$('ai-subject').value;$('ai-prompt').value=inputDrafts.get(activeSubject)||'';scopeLabel();renderMessages();controls();
  try{
   const status=await cloud.assistantRequest('status');if(ticket!==epoch)return;ready=!!status.ready;
   if(opened)$('ai-budget').textContent=ready?'思考模式 · '+root.BanyaAIBilling.format(status)+'（账单以服务商为准）':'服务器尚未启用。安全配置密钥与费用上限后才能发送；现在不会产生 API 费用。';
-  say(ready?(previous?'有上次请求可查询，先查看结果，避免重复调用。':'先选范围，再说你的想法。建议需要单独确认才会保存。'):'付费调用尚未启用。');
+  say(ready?(previous?'有上次请求可查询，先查看结果，避免重复调用。':'说说你的想法。本次先讨论，不直接改计划。'):'付费调用尚未启用。');
  }catch(error){if(ticket===epoch)say(error.message||'暂时无法检查学习助手。');}
  finally{if(ticket===epoch)busy=false;controls();}
 }
@@ -100,12 +117,12 @@ async function send(){
   messages.push({role:'user',content:text});renderMessages();say('正在结合记录思考，可能需要一些时间。请不要重复发送…');
   submitted=true;
   const result=await root.BanyaCloudSync.assistantRequest('chat','POST',{requestId,...selected,expectedRevision:baseline.revision,messages:conversation,shareReview:review,consent:true,...(mode!=='discussion'?{planningMode:mode,targetDate:target,...(mode==='day'&&available!==''?{availableMinutes:Number(available)}:{})}:{})});
-  if(ticket===epoch){if(opened)$('ai-prompt').value='';showResult(result);}
+  if(ticket===epoch){if(opened)$('ai-prompt').value='';inputDrafts.delete(selected.subject);showResult(result);}
  }catch(error){
   if(ticket!==epoch)return;
   const rejected=['ai_consent_required','ai_monthly_limit_reached','ai_context_too_large_narrow_dates','ai_remove_credentials_from_message','ai_request_in_progress','ai_invalid_conversation','ai_date_range_at_most_31_days','ai_date_outside_template','revision_conflict','ai_not_configured_or_not_approved','context_required_data_exceeds_budget','profile_schema_incompatible','capability_unavailable','planning_budget_unknown','invalid_planning_request'].includes(error.code);
   if(submitted&&!rejected){uncertain=true;say('请求结果未确认，先查询本次结果，避免重复付费。');}
-  else {if(submitted){requestId='';forget();}say(error.message||'尚未发送，请先处理同步问题。');}
+  else {if(submitted){requestId='';forget();}say(friendly(error));}
  }finally{pendingOperation=false;if(ticket===epoch)busy=false;controls();}
 }
 async function query(){if(busy||pendingOperation||!requestId)return;const ticket=epoch,id=requestId;busy=true;pendingOperation=true;controls();try{const receipt=await root.BanyaCloudSync.assistantRequest('requests/'+id);if(ticket===epoch)showResult(receipt);}catch(error){if(ticket===epoch)say(error.message||'暂时查不到结果，请稍后再查。');}finally{pendingOperation=false;if(ticket===epoch)busy=false;controls();}}
@@ -127,23 +144,28 @@ async function commit(){
  finally{pendingOperation=false;if(ticket===epoch)busy=false;controls();}
 }
 function reset(keepReview=false){const share=keepReview&&opened&&$('ai-review').checked;messages=[];draft=null;requestId='';uncertain=false;forget();if(opened){$('ai-consent').checked=false;$('ai-review').checked=!!share;renderMessages();preview({status:'discussion'});say('新对话已开始，尚未发送任何内容。');controls();}}
+document.addEventListener('input',e=>{if(opened&&e.target.id==='ai-prompt')stashDraft();});
+document.addEventListener('focusin',e=>{if(opened&&e.target.id==='ai-prompt')$('ai-budget')?.closest?.('.ai-cost')?.removeAttribute('open');});
 document.addEventListener('submit',e=>{if(e.target.id==='ai-chat-form'){e.preventDefault();void send();}});
-document.addEventListener('change',e=>{if(opened&&!busy&&!pendingOperation&&['ai-subject','ai-start','ai-end','ai-mode','ai-target','ai-available','ai-review'].includes(e.target.id)){if(e.target.id==='ai-subject')boundDates(e.target.value);reset(e.target.id==='ai-review');}});
+document.addEventListener('change',e=>{if(opened&&!busy&&!pendingOperation&&['ai-subject','ai-start','ai-end','ai-mode','ai-target','ai-available','ai-review'].includes(e.target.id)){if(e.target.id==='ai-subject'){stashDraft();activeSubject=e.target.value;boundDates(activeSubject);$('ai-target').value=defaultTarget(activeSubject);$('ai-available').value='';$('ai-prompt').value=inputDrafts.get(activeSubject)||'';}reset(e.target.id==='ai-review');scopeLabel();}});
 document.addEventListener('click',async e=>{
  const button=e.target.closest('[data-ai-action]');if(!button){if(opened&&e.target.id==='modal')close();return;}
  const action=button.dataset.aiAction;
+ if(action==='refresh-home'){homeCache.delete(button.dataset.aiSubject);await refreshHome(button.dataset.aiSubject);return;}
  if(action==='open'){if(!opened)await open(button.dataset.aiSubject);return;}
- if(action==='plan'){const d=new Date();d.setDate(d.getDate()+1);const target=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');await root.BanyaStudyAssistant.openPlanning(button.dataset.aiSubject,button.dataset.aiMode,target);return;}
+ if(action==='plan'){await root.BanyaStudyAssistant.openPlanning(button.dataset.aiSubject,button.dataset.aiMode,defaultTarget(button.dataset.aiSubject));return;}
  if(action==='close'){close();return;}
  if(busy||pendingOperation)return;
+ if(action==='suggest'&&opened){$('ai-prompt').value=button.dataset.aiText||'';$('ai-prompt').focus?.();return;}
+ if(action==='mode'&&opened){if($('ai-mode').value!==button.dataset.aiMode){if(messages.length&&typeof root.confirm==='function'&&!root.confirm('切换方式会开始新的讨论，未发送的文字会保留。继续吗？'))return;$('ai-mode').value=button.dataset.aiMode;reset();scopeLabel();if($('ai-options'))$('ai-options').open=button.dataset.aiMode==='day';}return;}
  if(action==='query')await query();
  if(action==='commit')await commit();
- if(action==='reset')reset();
+ if(action==='reset'){if((messages.length||uncertain)&&typeof root.confirm==='function'&&!root.confirm('开始新对话？当前讨论会清空，已提交的请求不会被取消。'))return;reset();}
  if(action==='receive'){busy=true;controls();try{const ok=await root.BanyaCloudSync.syncAll(true);say(ok?'已完成本机同步核对。':'本机同步未完成，请到设置查看提示。');}finally{busy=false;controls();}}
 });
 document.addEventListener('keydown',e=>{if(opened&&e.key==='Escape')close();});
 document.addEventListener('banya-modal-dismiss',()=>{if(opened)close();});
-root.BanyaStudyAssistant={panel,refreshHome,openPlanning:async(subject,mode,target,available)=>{await open(subject);if(opened&&!requestId){$('ai-mode').value=mode;$('ai-target').value=target;$('ai-available').value=available??'';say('规划只生成建议和预览，不执行修改。请主动填写问题并确认数据授权。');}}};
+root.BanyaStudyAssistant={panel,refreshHome,openPlanning:async(subject,mode,target,available)=>{await open(subject);if(opened&&!requestId){$('ai-mode').value=mode;$('ai-target').value=target;$('ai-available').value=available??'';scopeLabel();if($('ai-options'))$('ai-options').open=mode==='day';say('规划只生成建议和预览，不执行修改。请主动填写问题并确认数据授权。');}}};
 })(window);
 
 /* M7.1 owner-only memory editor. No provider calls, no checkin/plan writes. */
