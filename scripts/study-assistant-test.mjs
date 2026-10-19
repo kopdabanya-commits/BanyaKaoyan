@@ -124,7 +124,7 @@ test('new conversation can be cancelled without dropping a displayed result',asy
 test('budget errors explain the next action and retain the unsent text without suggesting a paid retry',async()=>{
  const h=harness();const old=h.cloud.assistantRequest;h.cloud.assistantRequest=async(path,...args)=>{if(path==='chat'){const error=Error('planning_budget_unknown');error.code='planning_budget_unknown';throw error;}return old(path,...args);};
  await h.click('open');h.el('ai-prompt').value='Synthetic daily planning';h.el('ai-consent').checked=true;await h.send();
- assert(h.el('ai-state').textContent.includes('学习档案'));assert(!h.el('ai-state').textContent.includes('planning_budget_unknown'));
+ assert(h.el('ai-state').textContent.includes('学习时间与偏好'));assert(!h.el('ai-state').textContent.includes('planning_budget_unknown'));
  assert.equal(h.el('ai-prompt').value,'Synthetic daily planning');assert(!h.el('ai-send').disabled);assert(h.el('ai-query').hidden);
 });
 
