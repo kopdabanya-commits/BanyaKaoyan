@@ -40,6 +40,7 @@ SYSTEM = '''你是板牙考研的学习助手，用自然、简短的中文讨�
 保留已完成与不做任务、其他题型和科目。不要自行补排模拟卷或改变用户未提到的安排。
 输出一个 JSON 对象，例：{"reply":"建议和理由；仍需确认。","changes":[{"operation":"update","taskId":"提供的原ID","date":"YYYY-MM-DD","minutes":25}]}。
 新增用 operation:add、唯一 custom-（英语）或 p-custom-（政治）开头的 taskId，并提供 date/title/minutes/type/detail。
+删除用 operation:delete、只提供 taskId；只能删除今天或以后、未完成且未标记不做的任务。用户没有明确说删除时不要删除。
 不确定具体任务或需求时先问一个必要问题，changes 为空。单批最多12项，预计总时长1至90分钟，范围外安排请先让用户调整日期选择。'''
 
 
@@ -162,6 +163,11 @@ class Activation(StrictModel):
     confirmation: Literal['set_ai_activation']
 
 
+class Undo(StrictModel):
+    expectedRevision: int = Field(ge=1)
+    confirmation: Literal['undo_ai_change']
+
+
 FAILURE_MESSAGES = {
     'provider_auth_failed': 'DeepSeek 未接受服务器上的密钥，请由维护端核对配置。',
     'provider_balance_low': 'DeepSeek 账户余额不足，请到官方平台充值后再发送。App 月预算不是账户余额。',
@@ -264,7 +270,8 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
         if status == 'prepared' and read_profile(con,row['subject'])['revision'] != stored.get('profileRevision',0):
             status = 'conflict'
         return {**stored, 'terminal': row['status'] != 'pending', 'requestId': row['id'], 'subject': row['subject'], 'status': status,
-                'baseRevision': row['base_revision'], 'revision': row['applied_revision'],
+                'baseRevision': row['base_revision'],
+                'revision': stored.get('undoRevision') if status=='undone' else row['applied_revision'],
                 'backupId': row['backup_id'], 'expiresAt': row['expires_at'],
                 'mobileDelivery': 'awaiting_phone_sync' if status == 'applied' else 'not_sent'}
 
@@ -462,6 +469,44 @@ def install_ai_routes(app, db, connect, owner_authorize, config, template_dir, p
             con.execute('UPDATE snapshots SET revision=?,state_json=?,updated_at=? WHERE subject=?',
                 (row['revision']+1,encoded,datetime.now(timezone.utc).isoformat(timespec='seconds'),draft['subject']))
             con.execute("UPDATE ai_requests SET status='applied',applied_revision=?,backup_id=? WHERE id=?",(row['revision']+1,backup.lastrowid,request_id))
+            receipt = result(con,con.execute('SELECT * FROM ai_requests WHERE id=?',(request_id,)).fetchone())
+            con.execute('COMMIT')
+            return receipt
+
+    @app.post('/v1/ai/proposals/{request_id}/undo')
+    async def undo(request_id: str, request: Request, authorization: str | None = Header(default=None)):
+        # Undo is a data operation: it never calls the model and works even when AI is paused.
+        owner_authorize(authorization)
+        payload = await read_model(request, Undo)
+        with closing(connect(db)) as con:
+            con.execute('BEGIN IMMEDIATE')
+            draft = con.execute('SELECT * FROM ai_requests WHERE id=?',(request_id,)).fetchone()
+            if not draft:
+                fail('ai_request_not_found',404)
+            if draft['status']=='undone':
+                return result(con,draft)
+            if draft['status']!='applied' or not draft['applied_revision']:
+                fail('ai_change_not_applied',409)
+            row,_,_,_ = snapshot(con,draft['subject'])
+            # Never overwrite anything recorded after the change, and respect the caller's view.
+            if row['revision']!=draft['applied_revision'] or row['revision']!=payload.expectedRevision:
+                fail('ai_undo_conflict',409)
+            backup = con.execute('SELECT * FROM agent_backups WHERE id=?',(draft['backup_id'],)).fetchone()
+            if not backup:
+                fail('ai_backup_missing',409)
+            now = datetime.now(timezone.utc).isoformat(timespec='seconds')
+            con.execute('INSERT INTO agent_backups(change_id,subject,revision,state_json,updated_at) VALUES (?,?,?,?,?)',
+                ('ai-undo-'+request_id,draft['subject'],row['revision'],row['state_json'],row['updated_at']))
+            con.execute('INSERT INTO history(subject,revision,state_json,updated_at) VALUES (?,?,?,?)',
+                (draft['subject'],row['revision'],row['state_json'],row['updated_at']))
+            con.execute('DELETE FROM history WHERE subject=? AND id NOT IN (SELECT id FROM history WHERE subject=? ORDER BY id DESC LIMIT 30)',(draft['subject'],draft['subject']))
+            # Restore the previous content as a NEW revision so every phone sees a forward move.
+            con.execute('UPDATE snapshots SET revision=?,state_json=?,updated_at=? WHERE subject=?',
+                (row['revision']+1,backup['state_json'],now,draft['subject']))
+            stored = json.loads(draft['result_json'] or '{}')
+            stored.update(status='undone',undone=True,changes=[],undoRevision=row['revision']+1,
+                          reply='这次修改已撤销，学习计划恢复到修改前的版本；打卡和不做记录始终保留。')
+            con.execute("UPDATE ai_requests SET status='undone',result_json=? WHERE id=?",(json.dumps(stored,ensure_ascii=False),request_id))
             receipt = result(con,con.execute('SELECT * FROM ai_requests WHERE id=?',(request_id,)).fetchone())
             con.execute('COMMIT')
             return receipt

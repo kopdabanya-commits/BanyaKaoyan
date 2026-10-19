@@ -104,6 +104,24 @@ def apply_patch(template, document, subject, operations, start, end, *, policy=N
             raise PlanError("duplicate_or_invalid_task")
         seen.add(task_id)
         before = tasks.get(task_id)
+        if kind == "delete":
+            # Deleting only ever removes a plan task from the private overlay. Learning
+            # records (done, notDone, notes, times) are never touched and history is kept.
+            if before is None:
+                raise PlanError("task_not_found", 404)
+            if protected(record, task_id):
+                raise PlanError("completed_or_not_doing_task_is_protected", 409)
+            if before["date"] < date.today().isoformat():
+                raise PlanError("past_task_cannot_be_deleted", 403)
+            if not start <= before["date"] <= end:
+                raise PlanError("source_date_outside_grant", 403)
+            target.setdefault("removed", {})[task_id] = True
+            target.get("edits", {}).pop(task_id, None)
+            target.get("moved", {}).pop(task_id, None)
+            tasks.pop(task_id, None)
+            affected.add(before["date"])
+            changes.append({"taskId": task_id, "before": public_task(before, record), "after": None})
+            continue
         if kind == "update":
             if before is None:
                 raise PlanError("task_not_found", 404)
