@@ -148,7 +148,7 @@ def run(output,executable):
                     tab('assistant');page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
                     assert not page.locator('#ai-query').is_visible()
                     page.locator('[data-ai-action="suggest"]').first.click();draft=page.locator('#ai-prompt').input_value();assert draft
-                    assert len(calls)==2;dismiss();page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
+                    assert len(calls)==2;page.go_back();page.wait_for_selector('#modal.hidden',state='attached');assert page.locator('.nav-tab[aria-current="page"]').get_attribute('data-view')=='assistant';page.locator('[data-ai-action="open"]').click();page.wait_for_selector('#ai-send:not([disabled])')
                     assert page.locator('#ai-prompt').input_value()==draft and not page.locator('#ai-consent').is_checked()
                     other='politics' if subject=='english' else 'english';page.locator('#ai-options summary').click();page.locator('#ai-subject').select_option(other);assert page.locator('#ai-prompt').input_value()==''
                     page.locator('#ai-prompt').fill('另一科的合成草稿');page.locator('#ai-subject').select_option(subject);assert page.locator('#ai-prompt').input_value()==draft
