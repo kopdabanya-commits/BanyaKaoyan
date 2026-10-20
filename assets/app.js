@@ -404,10 +404,20 @@ function kindOf(t) {
   return '';
 }
 
+function isSecondPass(t) {
+  return !t.date || String(t.title).includes('二刷');
+}
+
+function englishPool() {
+  const all = live().filter((t) => t.subject === 'english');
+  const second = all.filter(isSecondPass);
+  return second.length ? second : all;
+}
+
 function englishMatrix() {
   const rows = [];
   for (let y = 2010; y <= 2023; y++) {
-    const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(String(y)));
+    const list = englishPool().filter((t) => String(t.title).includes(String(y)));
     const cells = {};
     for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: null };
     for (const t of list) {
@@ -437,7 +447,7 @@ function rateClass(rate) {
 
 function englishTypes() {
   const map = new Map();
-  for (const t of live().filter((x) => x.subject === 'english')) {
+  for (const t of englishPool()) {
     const k = kindOf(t) || t.type;
     if (!map.has(k)) map.set(k, { k, plan: 0, done: 0, scored: [] });
     const row = map.get(k);
@@ -561,13 +571,11 @@ function openYear(year, kind) {
 function matrixCell(c) {
   if (c.rec) {
     const rate = scoreRate(c.rec);
-    const show = typeof c.rec.score === 'number' ? c.rec.score : '✓';
-    return `<i class="rec ${rateClass(rate)}">${show}</i>`;
+    return `<i class="rec ${rateClass(rate)}">${typeof c.rec.score === 'number' ? c.rec.score : '✓'}</i>`;
   }
   if (!c.plan) return '<i class="none">·</i>';
   if (c.done >= c.plan) return '<i class="ok">✓</i>';
-  if (c.done) return `<i class="part">${c.done}/${c.plan}</i>`;
-  return `<i class="plan">${c.plan}</i>`;
+  return '<i class="plan"></i>';
 }
 
 function englishStats() {
@@ -580,10 +588,10 @@ function englishStats() {
   const peak = Math.max(30, ...days.map((x) => x.minutes));
   const rows = englishMatrix();
   const covered = rows.filter((r) => r.total);
-  const scored = live().filter((t) => t.subject === 'english' && scoreRate(t) != null);
+  const scored = englishPool().filter((t) => scoreRate(t) != null);
   const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
-  const total = live().filter((t) => t.subject === 'english').length;
+  const total = englishPool().length;
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
@@ -594,7 +602,7 @@ function englishStats() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
-      <h2>真题覆盖</h2>
+      <h2>二刷覆盖</h2>
       <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
