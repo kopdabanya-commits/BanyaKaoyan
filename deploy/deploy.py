@@ -47,8 +47,20 @@ for name in ["index.html", "manifest.webmanifest", "sw.js"]:
     sftp.put(os.path.join(ROOT, name), f"{dest}/{name}")
 for name in ["app.js", "style.css", "icon.svg"]:
     sftp.put(os.path.join(ROOT, "assets", name), f"{dest}/assets/{name}")
-# 交接文档同步一份到线上，手机上可直接打开复制（不含密钥）
-sftp.put(os.path.join(ROOT, "HANDOFF.md"), f"{dest}/handoff.txt")
+# 交接文档同步到线上：txt 供下载，html 供手机直接阅读复制（不含密钥）
+handoff = open(os.path.join(ROOT, "HANDOFF.md"), encoding="utf-8").read()
+with sftp.open(f"{dest}/handoff.txt", "w") as fh:
+    fh.write(handoff)
+escaped = handoff.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+page = ('<!doctype html><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>板牙考研 v2 · 交接说明</title>'
+        '<style>body{margin:0;background:#F4F2EC;color:#17181B;'
+        'font:14px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}'
+        'pre{white-space:pre-wrap;word-break:break-word;max-width:760px;margin:0 auto;padding:20px 18px 60px}'
+        '</style><pre>' + escaped + '</pre>')
+with sftp.open(f"{dest}/handoff.html", "w") as fh:
+    fh.write(page)
 run(f"ln -sfn {dest} /var/www/banya-v2/current")
 
 # 3. 服务端
