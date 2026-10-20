@@ -1,4 +1,5 @@
 """部署板牙考研 v2 到现有 ECS。幂等：可重复执行。"""
+import json
 import os
 import secrets
 import sys
@@ -45,7 +46,8 @@ dest = f"/var/www/banya-v2/releases/{stamp}"
 run(f"install -d -m 0755 {dest}/assets")
 for name in ["index.html", "manifest.webmanifest", "sw.js"]:
     sftp.put(os.path.join(ROOT, name), f"{dest}/{name}")
-for name in ["app.js", "style.css", "icon.svg"]:
+for name in ["app.js", "style.css", "icon.svg", "icon-192.png", "icon-512.png",
+             "icon-maskable.png", "apple-touch-icon.png"]:
     sftp.put(os.path.join(ROOT, "assets", name), f"{dest}/assets/{name}")
 # 交接文档同步到线上：txt 供下载，html 供手机直接阅读复制（不含密钥）
 handoff = open(os.path.join(ROOT, "HANDOFF.md"), encoding="utf-8").read()
@@ -95,17 +97,23 @@ run(f"ln -sfn {dest} /var/www/banya-v2/current")
 sftp.put(os.path.join(ROOT, "server", "main.py"), "/opt/banya-v2/main.py")
 
 token = run("test -f /etc/banya-v2.env && sed -n 's/^BANYA_V2_TOKEN=//p' /etc/banya-v2.env || true").strip()
+built = run("date -u '+%Y-%m-%d %H:%M UTC'").strip()
+
 if not token:
     token = secrets.token_urlsafe(24)
     run("umask 077; { "
         f"echo 'BANYA_V2_TOKEN={token}'; "
-        "grep -E '^DEEPSEEK_API_KEY=' /etc/banya-sync.env || true; "
-        "echo 'BANYA_V2_MODEL=deepseek-flash'; "
         "echo 'BANYA_V2_DB=/var/lib/banya-v2/v2.sqlite3'; "
         "} > /etc/banya-v2.env")
 
+if token:
+    payload = json.dumps({"token": token, "builtAt": built, "version": stamp}, ensure_ascii=False)
+    with sftp.open(f"{dest}/config.js", "w") as fh:
+        fh.write("window.BANYA_CONFIG = " + payload + ";" + chr(10))
+    print("config.js written")
+
 unit = """[Unit]
-Description=Banya v2 plan + AI proxy
+Description=Banya v2 plan storage
 After=network.target
 
 [Service]

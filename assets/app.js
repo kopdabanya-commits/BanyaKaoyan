@@ -36,14 +36,20 @@ const DAILY_CAP = 150;
 const params = new URLSearchParams(location.search);
 if (params.get('demo') === '1' && !state.tasks.length) {
   const d = today();
-  const mk = (date, title, type, minutes, done = false) => ({ id: uid(), subject: 'english', date, title, type,
-    minutes, done, notDone: false, actualMinutes: done ? minutes + 5 : null, note: '', updatedAt: Date.now() });
+  const mk = (date, title, type, minutes, done = false, score = null, subject = 'english') => ({ id: uid(), subject, date, title, type,
+    minutes, done, notDone: false, actualMinutes: done ? minutes + 5 : null, note: '', score, scoreMax: 10, updatedAt: Date.now() });
   state.tasks = [
     mk(d, '阅读真题 2021 Text 1', '阅读', 40),
     mk(d, '翻译：长难句 5 句', '翻译', 30, true),
+    mk(d, '徐涛强化课：马原 辩证法', '课程', 25, false, null, 'politics'),
     mk(shift(d, 1), '写作：小作文模板', '写作', 35),
     mk(shift(d, -1), '完形 2019', '完形', 25, false),
-    mk(shift(d, -2), '阅读真题 2020 Text 2', '阅读', 40, true)
+    mk(shift(d, -2), '阅读真题 2020 Text 2', '阅读', 40, true, 8),
+    mk(shift(d, -20), '2022 Text 1', '阅读', 40, true, 6),
+    mk(shift(d, -22), '2022 Text 2', '阅读', 40, true, 8),
+    mk(shift(d, -25), '2023 Text 1', '阅读', 40, true, 8),
+    mk(shift(d, -27), '2023 Text 2', '阅读', 40, true, null),
+    mk(shift(d, -30), '2021 Text 3', '阅读', 40, true, 4)
   ];
   state.dirty = false; save();
 }
@@ -62,7 +68,12 @@ function load() {
       lastReview: raw.lastReview || '',
       undo: Array.isArray(raw.undo) ? raw.undo : [],
       lastReview: raw.lastReview || '',
-      prefs: (() => { const merged = { ...base.prefs, ...(raw.prefs || {}) }; if (!merged.apiBase) merged.apiBase = API_BASE; return merged; })()
+      prefs: (() => {
+        const merged = { ...base.prefs, ...(raw.prefs || {}) };
+        if (!merged.apiBase) merged.apiBase = API_BASE;
+        if (!merged.token) merged.token = (window.BANYA_CONFIG || {}).token || '';
+        return merged;
+      })()
     };
   } catch { return base; }
 }
@@ -282,7 +293,7 @@ function row(t) {
     <button class="tick" data-action="toggle" data-id="${t.id}" aria-label="切换完成">${t.done ? '✓' : ''}</button>
     <button class="task-main" data-action="edit" data-id="${t.id}">
       <b>${esc(t.title)}</b>
-      <span class="meta">${esc(t.type)}${t.actualMinutes ? ' · 实际 ' + t.actualMinutes + ' 分' : ''}${t.notDone ? ' · 不做' : ''}</span>
+      <span class="meta">${esc(t.type)}${typeof t.score === 'number' ? ' · 得分 ' + t.score + '/' + (t.scoreMax || 10) : ''}${t.actualMinutes ? ' · 实际 ' + t.actualMinutes + ' 分' : ''}${t.notDone ? ' · 不做' : ''}</span>
     </button>
     <span class="mins">${t.minutes}<small>分</small></span>
   </li>`;
@@ -347,6 +358,80 @@ function weeklyReview() {
   return lines.join('\n');
 }
 
+
+/* ---------------- 统计工具 ---------------- */
+
+function rangeText(years) {
+  const out = [];
+  let start = null, prev = null;
+  for (const y of years) {
+    if (start === null) { start = prev = y; continue; }
+    if (y === prev + 1) { prev = y; continue; }
+    out.push(start === prev ? String(start) : start + '–' + prev);
+    start = prev = y;
+  }
+  if (start !== null) out.push(start === prev ? String(start) : start + '–' + prev);
+  return out.join('、');
+}
+
+function englishYears() {
+  const rows = [];
+  for (let y = 2010; y <= 2023; y++) {
+    const key = String(y);
+    const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(key));
+    const parts = [1, 2, 3, 4].map((n) => {
+      const re = new RegExp('text\\s*' + n, 'i');
+      return list.find((t) => re.test(String(t.title))) || null;
+    });
+    const scored = list.filter((t) => typeof t.score === 'number');
+    const avg = scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null;
+    rows.push({ year: y, parts, count: list.length, done: list.filter((t) => t.done).length, avg, n: scored.length });
+  }
+  return rows;
+}
+
+function typeRows(key) {
+  const map = new Map();
+  for (const t of live().filter((x) => x.subject === key)) {
+    const k = t.type || '其他';
+    if (!map.has(k)) map.set(k, { k, total: 0, done: 0, scored: [] });
+    const row = map.get(k);
+    row.total++;
+    if (t.done) row.done++;
+    if (typeof t.score === 'number') row.scored.push(t.score);
+  }
+  return [...map.values()].sort((a, b) => b.total - a.total);
+}
+
+const POL_MODULES = [
+  ['马原', /马原|唯物|辩证法|认识论|政治经济学|科学社会主义/],
+  ['毛中特', /毛中特|毛概|毛泽东|中国特色|新时代/],
+  ['史纲', /史纲|近代史|党史/],
+  ['思修', /思修|道德|法治|法律/],
+  ['时政', /时政|形势与政策|当代世界经济/]
+];
+function politicsModules() {
+  const list = live().filter((t) => t.subject === 'politics');
+  return POL_MODULES.map(([name, re]) => {
+    const hit = list.filter((t) => re.test(String(t.title)));
+    return { name, total: hit.length, done: hit.filter((t) => t.done).length };
+  }).filter((m) => m.total > 0);
+}
+
+function rowsHtml(rows) {
+  if (!rows.length) return '<p class="note">还没有任务</p>';
+  return rows.map((r) => {
+    const pct = r.total ? Math.round((r.done / r.total) * 100) : 0;
+    const avg = r.scored.length ? (r.scored.reduce((a, b) => a + b, 0) / r.scored.length).toFixed(1) : null;
+    return `<div class="type-row">
+      <span>${esc(r.k)}</span>
+      <b>${r.done}/${r.total}</b>
+      <i><u style="width:${pct}%"></u></i>
+      <em>${avg ? '均 ' + avg : pct + '%'}</em>
+    </div>`;
+  }).join('');
+}
+
 function statsView() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
@@ -359,6 +444,12 @@ function statsView() {
     return { d, minutes: s.actualMinutes };
   });
   const peak = Math.max(60, ...days.map((x) => x.minutes));
+  const years = englishYears();
+  const scoredAll = live().filter((t) => t.subject === 'english' && typeof t.score === 'number');
+  const avgAll = scoredAll.length ? (scoredAll.reduce((a, t) => a + t.score, 0) / scoredAll.length).toFixed(1) : null;
+  const enTypes = typeRows('english');
+  const poTypes = typeRows('politics');
+  const modules = politicsModules();
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${week.actualMinutes}</b><span>实际分钟</span></div>
@@ -369,23 +460,29 @@ function statsView() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
+      <h2>英语真题 · 2010–2023</h2>
+      <p class="note">${avgAll ? `二刷平均 <b>${avgAll}</b> 分 · ${scoredAll.length} 次记录` : '还没有分数记录，做完一套可以填得分'}　仅统计阅读 · 2010–2023</p>
+      <div class="years">${years.filter((r) => r.count).map((r) => `<div class="yr">
+        <b>${r.year}</b>
+        <span class="dots">${r.parts.map((t) => `<i class="${t && t.done ? 'on' : ''}"></i>`).join('')}</span>
+        <em>${r.avg != null ? '均 ' + r.avg.toFixed(1) : r.done + '/' + r.count}</em>
+      </div>`).join('') || '<p class="note">还没有真题记录，可以点下面的补录。</p>'}</div>
+      ${years.some((r) => r.count) && years.some((r) => !r.count) ? `<p class="note">未开始：${rangeText(years.filter((r) => !r.count).map((r) => r.year))}</p>` : ''}
+      <button class="ghost wide" data-action="backfill">补录以前的记录</button>
+    </section>
+    <section class="card">
+      <h2>英语题型</h2>
+      ${rowsHtml(enTypes)}
+    </section>
+    <section class="card">
+      <h2>政治</h2>
+      ${rowsHtml(poTypes)}
+      ${modules.length ? `<div class="chips" style="margin-top:10px">${modules.map((m) => `<span>${m.name} ${m.done}/${m.total}</span>`).join('')}</div>` : ''}
+    </section>
+    <section class="card">
       <h2>进度</h2>
       <p class="line">还剩 <b>${p.count}</b> 项 · <b>${p.remain}</b> 分钟，到 ${p.end.replace(/-/g, '.')} 还有 ${p.days} 天</p>
       <p class="line ${p.behind ? 'warn' : ''}">${p.behind ? '落后' : '正常'}：每天应做 <b>${p.required}</b> 分钟，近 7 天平均 <b>${p.actual}</b> 分钟</p>
-    </section>
-    <section class="card">
-      <h2>题型分布</h2>
-      <div class="chips">${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)} ${v}</span>`).join('') || '<span class="muted">暂无</span>'}</div>
-    </section>
-    <section class="card">
-      <h2>分科</h2>
-      <div class="split">${['english', 'politics'].map((k) => {
-        const all = live().filter((t) => t.subject === k);
-        const week0 = all.filter((t) => t.date >= start && t.date <= today());
-        return `<div><span>${k === 'english' ? '英语二' : '政治'}</span>
-          <b>${all.filter(openTask).length}</b>
-          <em>待做 · 近 7 天完成 ${week0.filter((t) => t.done).length}</em></div>`;
-      }).join('')}</div>
     </section>
     <section class="card">
       <h2>本周复盘</h2>
@@ -400,7 +497,7 @@ function statsView() {
         <button data-action="copy" data-scope="all">全部</button>
       </div>
       <button class="cta wide" data-action="copy" data-scope="week">复制近 7 天，让 GPT 分析</button>
-      <p class="note">只包含日期、任务、计划分钟、实际分钟和状态。</p>
+      <p class="note">包含日期、任务、类型、计划/实际分钟、状态和得分。</p>
     </section>`;
 }
 
@@ -450,7 +547,7 @@ function meView() {
       <div class="row"><span>本科目待做</span><em>${p.count} 项 · ${p.remain} 分钟</em></div>
       <div class="row"><span>每天应做</span><em>${p.required} 分钟</em></div>
     </section>
-    <p class="version">板牙考研 v2</p>`;
+    <p class="version">板牙考研 v2 · ${esc((window.BANYA_CONFIG || {}).builtAt || '本地预览')}</p>`;
 }
 
 /* ---------------- 编辑 ---------------- */
@@ -466,6 +563,10 @@ function openSheet(t) {
       <label class="field"><span>计划分钟</span><input id="f-minutes" type="number" min="5" max="300" value="${draft.minutes}"></label>
     </div>
     <label class="field"><span>类型</span><select id="f-type">${TYPES.map((x) => `<option${x === draft.type ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+    <div class="two">
+      <label class="field"><span>得分（可选）</span><input id="f-score" type="number" step="0.5" min="0" max="100" value="${typeof draft.score === 'number' ? draft.score : ''}" placeholder="如 8"></label>
+      <label class="field"><span>满分</span><input id="f-scoremax" type="number" step="1" min="1" max="100" value="${draft.scoreMax || 10}"></label>
+    </div>
     <label class="field"><span>实际用时（分钟，可选）</span><input id="f-actual" type="number" min="0" max="600" value="${draft.actualMinutes ?? ''}"></label>
     <label class="field"><span>备注（可选）</span><textarea id="f-note" rows="2">${esc(draft.note || '')}</textarea></label>
     <div class="row-btns">
@@ -717,6 +818,7 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
+  if (a === 'backfill') { openSheet({ date: shift(today(), -1), title: '', type: '阅读', minutes: 30 }); return; }
   if (a === 'close') { closeSheet(); return; }
   if (a === 'save-task') {
     const id = el.dataset.id, title = $('#f-title').value.trim(), date = $('#f-date').value;
@@ -724,7 +826,11 @@ document.addEventListener('click', async (e) => {
     const actual = $('#f-actual').value;
     if (!title) return toast('写个任务名');
     if (!date) return toast('选个日期');
+    const scoreRaw = $('#f-score') ? $('#f-score').value : '';
+    const scoreMaxRaw = $('#f-scoremax') ? Number($('#f-scoremax').value) : 10;
     const patch = { title, date, minutes: Math.max(5, Math.min(300, mins)), type: $('#f-type').value,
+      score: scoreRaw === '' ? null : Math.max(0, Math.min(100, Number(scoreRaw))),
+      scoreMax: scoreMaxRaw > 0 ? scoreMaxRaw : 10,
       actualMinutes: actual === '' ? null : Math.max(0, Math.min(600, Number(actual))), note: $('#f-note').value.trim() };
     const t = id ? findTask(id) : addTask(patch);
     if (id && t) { Object.assign(t, patch); touch(t); }
@@ -820,7 +926,20 @@ const linked = takeTokenFromLink();
 const reclassified = autoReclassify();
 render();
 if (reclassified) setTimeout(() => toast('已按内容分科 ' + reclassified + ' 项'), 400);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then((reg) => {
+    reg.update().catch(() => {});
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          toast('有新版本，点这里更新', () => location.reload());
+        }
+      });
+    });
+  }).catch(() => {});
+}
 pull().finally(() => {
   if (linked) toast('已连接云端');
   lastReport = dailyReview();

@@ -1,6 +1,6 @@
 /* 极简离线缓存：只缓存外壳，数据在 localStorage。 */
-const CACHE = 'banya-v2-7';
-const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg'];
+const CACHE = 'banya-v2-8';
+const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

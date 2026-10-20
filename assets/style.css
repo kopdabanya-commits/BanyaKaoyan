@@ -10,7 +10,7 @@
   --line:#1E222A;
   --line-strong:#2A2F39;
   --ink:#F2F3F5;
-  --ink-2:#9DA3AD;
+  --ink-2:#A7ADB7;
   --ink-3:#6B717C;
   --accent:#7C5CFF;
   --accent-ink:#EDE9FF;
@@ -23,7 +23,7 @@
   --r-sm:10px; --r-md:14px; --r-lg:18px; --r-pill:999px;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
   --pad-page:20px;
-  --fs-label:11px; --fs-meta:12.5px; --fs-body:15px; --fs-title:17px; --fs-h2:22px;
+  --fs-label:11.5px; --fs-meta:13px; --fs-body:16px; --fs-title:17px; --fs-h2:22px;
   --nav-h:64px;
   --ease:cubic-bezier(.22,1,.36,1);
 }
@@ -36,7 +36,7 @@ body{
   color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Inter","PingFang SC","HarmonyOS Sans","Source Han Sans SC","Microsoft YaHei",sans-serif;
   font-size:var(--fs-body);
-  line-height:1.55;
+  line-height:1.6;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
   font-variant-numeric:tabular-nums;
@@ -47,7 +47,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 h1,h2,h3,p{margin:0}
 ::selection{background:rgba(124,92,255,.35)}
 
-.shell{max-width:620px;margin:0 auto;padding:18px var(--pad-page) calc(96px + env(safe-area-inset-bottom))}
+.shell{max-width:620px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) var(--pad-page) calc(96px + env(safe-area-inset-bottom))}
 
 /* ---------- 顶栏 ---------- */
 .topbar{display:flex;align-items:center;justify-content:space-between;height:44px;margin-bottom:var(--sp-5)}
@@ -106,7 +106,7 @@ h1,h2,h3,p{margin:0}
 .task.done .tick{background:var(--accent);border-color:var(--accent)}
 .tick:active{transform:scale(.9)}
 .task-main{min-width:0;text-align:left;display:block;padding:0}
-.task-main b{display:block;font-size:var(--fs-body);font-weight:560;line-height:1.4;letter-spacing:-.006em;word-break:break-word}
+.task-main b{display:block;font-size:15.5px;font-weight:560;line-height:1.4;letter-spacing:-.006em;word-break:break-word}
 .task-main .meta{display:block;margin-top:3px;font-size:11.5px;color:var(--ink-3);letter-spacing:.02em}
 .mins{font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
 .mins small{font-size:10px;color:var(--ink-3);margin-left:1px}
@@ -121,7 +121,7 @@ h1,h2,h3,p{margin:0}
 .review header{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);margin-bottom:6px}
 .review header b{font-size:12.5px;font-weight:600;color:var(--accent-ink)}
 .review header button{font-size:11.5px;color:var(--accent-ink);opacity:.75;font-weight:600}
-.review p{font-size:12.5px;color:var(--accent-ink);opacity:.92;line-height:1.55;margin-top:4px}
+.review p{font-size:12.5px;color:var(--accent-ink);opacity:.92;line-height:1.6;margin-top:4px}
 .review .ghost.small{margin-top:10px;background:rgba(255,255,255,.06);color:var(--accent-ink);padding:9px;font-size:12px;border:1px solid rgba(255,255,255,.08);height:auto}
 
 /* ---------- 卡片 ---------- */
@@ -290,3 +290,23 @@ h1,h2,h3,p{margin:0}
 .split span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.06em}
 .split b{display:block;font-size:22px;font-weight:680;letter-spacing:-.03em;margin-top:4px}
 .split em{display:block;font-style:normal;font-size:11px;color:var(--ink-3);margin-top:2px}
+
+/* ---------- 真题年份 ---------- */
+.years{display:grid;gap:0;margin:10px 0 12px}
+.yr{display:grid;grid-template-columns:46px 1fr 64px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.yr:last-child{border-bottom:0}
+.yr b{font-size:13px;font-weight:650;letter-spacing:-.01em}
+.yr .dots{display:flex;gap:7px}
+.yr .dots i{width:8px;height:8px;border-radius:50%;background:var(--surface-3);border:1px solid var(--line-strong);transition:background .2s,border-color .2s}
+.yr .dots i.on{background:var(--accent);border-color:var(--accent)}
+.yr em{font-style:normal;text-align:right;font-size:11.5px;color:var(--ink-3)}
+.yr.off{opacity:.42}
+
+/* ---------- 题型进度 ---------- */
+.type-row{display:grid;grid-template-columns:56px 56px 1fr 48px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.type-row:last-child{border-bottom:0}
+.type-row span{color:var(--ink-2);white-space:nowrap}
+.type-row b{font-weight:650;font-size:12.5px}
+.type-row i{display:block;height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.type-row i u{display:block;height:100%;background:linear-gradient(90deg,#8F72FF,#6B48F5);border-radius:3px;transition:width .4s var(--ease)}
+.type-row em{font-style:normal;text-align:right;font-size:11px;color:var(--ink-3);white-space:nowrap}
