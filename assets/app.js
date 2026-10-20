@@ -378,10 +378,20 @@ function englishMatrix() {
   for (let y = 2010; y <= 2023; y++) {
     const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(String(y)));
     const cells = {};
-    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0 };
+    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: 0 };
     for (const t of list) {
       const k = kindOf(t);
-      if (cells[k]) { cells[k].plan++; if (t.done) cells[k].done++; }
+      if (!cells[k]) continue;
+      if (!t.date) { cells[k].rec = 1; continue; }
+      cells[k].plan++;
+      if (t.done) cells[k].done++;
+    }
+    // 无日期记录 = 至少做过一次
+    for (const k of Object.keys(cells)) {
+      if (cells[k].rec) {
+        cells[k].plan = Math.max(cells[k].plan, 1);
+        cells[k].done = Math.max(cells[k].done, 1);
+      }
     }
     const scored = list.filter((t) => typeof t.score === 'number');
     rows.push({ y, cells, total: list.length,
@@ -452,6 +462,51 @@ function politicsStats() {
 const KIND_NAME = { 完: '完形', 阅: '阅读', 新: '新题型', 译: '翻译', 小: '小作文', 大: '大作文' };
 const KIND_TYPE = { 完: '完形', 阅: '阅读', 新: '新题型', 译: '翻译', 小: '写作', 大: '写作' };
 
+
+/* ---------------- 历史记录（无日期） ---------------- */
+const RECORD_KINDS = ['完形', '阅读', '新题型', '翻译', '小作文', '大作文'];
+const RECORD_TYPE = { 完形: '完形', 阅读: '阅读', 新题型: '新题型', 翻译: '翻译', 小作文: '写作', 大作文: '写作' };
+
+function parseRecords(text) {
+  const out = [];
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const raw = line.trim();
+    if (!raw) continue;
+    const year = (raw.match(/\b(20\d{2})\b/) || [])[1];
+    if (!year) continue;
+    const kind = RECORD_KINDS.find((k) => raw.includes(k));
+    if (!kind) continue;
+    const rest = raw.replace(year, '').replace(kind, '');
+    const score = (rest.match(/(\d{1,2}(?:\.\d)?)/) || [])[1];
+    out.push({
+      id: uid(), subject: 'english', date: '', title: year + ' ' + kind,
+      type: RECORD_TYPE[kind], minutes: 0, done: true, notDone: false,
+      score: score === undefined ? null : Number(score), scoreMax: 10,
+      note: '补录', updatedAt: Date.now()
+    });
+  }
+  return out;
+}
+
+function recordPrompt() {
+  return [
+    '请根据我做过的英语二真题，输出下面格式的表格，只输出表格，不要任何解释：',
+    '',
+    '| 年份 | 题型 | 得分 |',
+    '| --- | --- | --- |',
+    '| 2015 | 阅读 | 8 |',
+    '| 2015 | 完形 |  |',
+    '',
+    '要求：',
+    '1. 年份范围 2010–2023。',
+    '2. 题型只能填：完形、阅读、新题型、翻译、小作文、大作文。',
+    '3. 得分填 0–10，忘了或没做就留空；整行不要出现没做过的。',
+    '4. 我写过的才列出，一行代表该年该题型做过一次。',
+    '',
+    '我的情况：（在这里补充：哪几年做过、大概得分、哪些还没做）'
+  ].join(String.fromCharCode(10));
+}
+
 function openYear(year, kind) {
   const list = live()
     .filter((t) => t.subject === 'english' && String(t.title).includes(String(year)) && (!kind || kindOf(t) === kind))
@@ -461,7 +516,7 @@ function openYear(year, kind) {
     <header><h2>${year} 年${kind ? ' · ' + KIND_NAME[kind] : ''}</h2><button data-action="close">×</button></header>
     ${list.length ? list.map((t) => `<div class="yt-row">
         <span>${esc(t.title)}</span>
-        <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : typeof t.score === 'number' ? '得分 ' + t.score : '未完成'}</em>
+        <em class="${t.done ? 'ok' : ''}">${!t.date ? '记录' : t.done ? '已完成' : '未完成'}${typeof t.score === 'number' ? ' · ' + t.score + ' 分' : ''}</em>
       </div>`).join('') : '<p class="note">这一年还没有安排</p>'}
     <button class="ghost wide" data-action="year-add" data-year="${year}" data-kind="${kind || ''}">添加${kind ? KIND_NAME[kind] : ''}任务</button>
   </div>`;
@@ -507,7 +562,10 @@ function englishStats() {
           ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k])}</button>`).join('')}
         </div>`).join('')}
       </div>
-      <button class="ghost wide" data-action="backfill">补录记录</button>
+      <div class="chips" style="margin-top:10px">
+        <button data-action="backfill">补录记录</button>
+        <button data-action="record-prompt">复制补录提示词</button>
+      </div>
     </section>
     <section class="card">
       <h2>题型合计</h2>
@@ -624,7 +682,7 @@ function openSheet(t) {
     <header><h2>${isNew ? '添加任务' : '编辑任务'}</h2><button data-action="close">×</button></header>
     <label class="field"><span>内容</span><input id="f-title" value="${esc(draft.title)}" maxlength="200"></label>
     <div class="two">
-      <label class="field"><span>日期</span><input id="f-date" type="date" value="${draft.date}"></label>
+      <label class="field"><span>日期（留空 = 历史记录）</span><input id="f-date" type="date" value="${draft.date || ''}"></label>
       <label class="field"><span>计划分钟</span><input id="f-minutes" type="number" min="5" max="300" value="${draft.minutes}"></label>
     </div>
     <label class="field"><span>类型</span><select id="f-type">${TYPES.map((x) => `<option${x === draft.type ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
@@ -718,12 +776,13 @@ function openImport() {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>导入计划</h2><button data-action="close">×</button></header>
-    <p class="note">粘贴 GPT 生成的计划：Markdown 表格、每行一条或 JSON 都能识别。</p>
+    <p class="note">粘贴计划（表格/每行一条/JSON），或补录表格（年份+题型+得分）。</p>
     <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
     <div class="modes">
       <label><input type="radio" name="import-mode" value="range" checked><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
       <label><input type="radio" name="import-mode" value="merge"><span><b>只添加</b><em>相同日期和内容的任务跳过</em></span></label>
       <label><input type="radio" name="import-mode" value="all"><span><b>全部替换</b><em>清空当前科目后导入</em></span></label>
+      <label><input type="radio" name="import-mode" value="records"><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
     </div>
     <button class="cta wide" data-action="import-run">导入</button>
   </div>`;
@@ -767,8 +826,10 @@ function gptText(scope) {
   for (const t of list) {
     const mark = t.done ? '✅' : t.notDone ? '❌' : '⭕';
     const actual = t.actualMinutes ? `（实际 ${t.actualMinutes} 分钟）` : '';
-    if (t.date !== last) { lines.push(`${t.date} ${weekday(t.date)}`); last = t.date; }
-    lines.push(`${mark} ${t.title} · ${t.type} ${t.minutes} 分钟${actual}${t.note ? ' · 备注：' + t.note : ''}`);
+    if (t.date !== last) { lines.push(t.date ? `${t.date} ${weekday(t.date)}` : '历史记录（无日期）'); last = t.date; }
+    const mins = t.minutes ? ` ${t.minutes} 分钟` : '';
+    const score = typeof t.score === 'number' ? ` · 得分 ${t.score}/${t.scoreMax || 10}` : '';
+    lines.push(`${mark} ${t.title} · ${t.type}${mins}${score}${actual}${t.note ? ' · 备注：' + t.note : ''}`);
   }
   const s = rangeStats(from || (list[0]?.date || today()), to);
   const p = progress();
@@ -883,6 +944,7 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
+  if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
     const year = el.dataset.year, kind = el.dataset.kind;
@@ -896,10 +958,10 @@ document.addEventListener('click', async (e) => {
     const mins = Number($('#f-minutes').value) || 30;
     const actual = $('#f-actual').value;
     if (!title) return toast('写个任务名');
-    if (!date) return toast('选个日期');
+    // 日期留空 = 历史记录，只进统计
     const scoreRaw = $('#f-score') ? $('#f-score').value : '';
     const scoreMaxRaw = $('#f-scoremax') ? Number($('#f-scoremax').value) : 10;
-    const patch = { title, date, minutes: Math.max(5, Math.min(300, mins)), type: $('#f-type').value,
+    const patch = { title, date: date || '', minutes: Math.max(5, Math.min(300, mins)), type: $('#f-type').value,
       score: scoreRaw === '' ? null : Math.max(0, Math.min(100, Number(scoreRaw))),
       scoreMax: scoreMaxRaw > 0 ? scoreMaxRaw : 10,
       actualMinutes: actual === '' ? null : Math.max(0, Math.min(600, Number(actual))), note: $('#f-note').value.trim() };
@@ -922,10 +984,19 @@ document.addEventListener('click', async (e) => {
     const text = $('#import-text').value;
     const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'range';
     let parsed = [];
-    try { parsed = parsePlan(text); } catch { return toast('格式无法识别'); }
-    if (!parsed.length) return toast('没有识别到任务');
+    try { parsed = mode === 'records' ? parseRecords(text) : parsePlan(text); } catch { return toast('格式无法识别'); }
+    if (!parsed.length) return toast('没有识别到内容');
     pushUndo();
     let removed = 0, kept = 0, added = 0;
+    if (mode === 'records') {
+      const seen = new Set(live().map((t) => t.title));
+      const fresh = parsed.filter((t) => !seen.has(t.title));
+      state.tasks = state.tasks.concat(fresh);
+      added = fresh.length;
+      save(); closeSheet(); render(); schedulePush();
+      toast('补录 ' + added + ' 条历史记录');
+      return;
+    }
     if (mode === 'range') {
       const dates = new Set(parsed.map((t) => t.date));
       for (const t of state.tasks) {
