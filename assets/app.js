@@ -569,10 +569,13 @@ function openYear(year, kind) {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>${year} 年${kind ? ' · ' + KIND_NAME[kind] : ''}</h2><button data-action="close">×</button></header>
-    ${list.length ? list.map((t) => `<button class="yt-row" data-action="toggle-year" data-id="${t.id}" data-year="${year}" data-kind="${kind || ''}">
-        <span>${esc(t.title)}</span>
-        <em class="${isRedo(t) ? '' : t.done ? 'ok' : ''}">${isRedo(t) ? '错题重刷 · 不计入' : (t.done ? '已完成' : '未完成') + (typeof t.score === 'number' ? ' · ' + t.score + ' 分' : '')}</em>
-      </button>`).join('') : '<p class="note">这一年还没有安排</p>'}
+    ${list.length ? list.map((t) => `<div class="yt-row">
+        <button class="yt-main" data-action="edit" data-id="${t.id}">
+          <span>${esc(t.title)}</span>
+          <em class="${isRedo(t) ? '' : t.done ? 'ok' : ''}">${isRedo(t) ? '不计入' : (t.done ? '已完成' : '未完成') + (typeof t.score === 'number' ? ' · ' + t.score + ' 分' : '')}</em>
+        </button>
+        <button class="yt-tick${t.done ? ' on' : ''}" data-action="toggle-year" data-id="${t.id}" data-year="${year}" data-kind="${kind || ''}" aria-label="切换完成">✓</button>
+      </div>`).join('') : '<p class="note">这一年还没有安排</p>'}
     <button class="ghost wide" data-action="year-add" data-year="${year}" data-kind="${kind || ''}">添加${kind ? KIND_NAME[kind] : ''}任务</button>
   </div>`;
 }
