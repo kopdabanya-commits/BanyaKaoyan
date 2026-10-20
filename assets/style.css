@@ -333,7 +333,7 @@ h1,h2,h3,p{margin:0}
 
 
 /* ---------- 年份详情 ---------- */
-.yt-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.yt-row{width:100%;background:none;border:0;display:flex;text-align:left;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
 .yt-row:last-of-type{border-bottom:0}
 .yt-row span{color:var(--ink-2);line-height:1.5;min-width:0}
 .yt-row em{font-style:normal;font-size:12px;color:var(--ink-3);white-space:nowrap;flex:0 0 auto}

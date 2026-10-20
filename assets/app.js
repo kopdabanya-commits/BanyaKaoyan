@@ -410,8 +410,12 @@ function roundOf(t) {
   return /二刷/.test(String(t.title)) ? 2 : 1;
 }
 
+function isRedo(t) {
+  return /错题|重做|重刷/.test(String(t.title));
+}
+
 function englishPool() {
-  const all = live().filter((t) => t.subject === 'english');
+  const all = live().filter((t) => t.subject === 'english' && !isRedo(t));
   return all.filter((t) => {
     const k = kindOf(t);
     const want = k === '阅' ? 2 : 1;
@@ -565,10 +569,10 @@ function openYear(year, kind) {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>${year} 年${kind ? ' · ' + KIND_NAME[kind] : ''}</h2><button data-action="close">×</button></header>
-    ${list.length ? list.map((t) => `<div class="yt-row">
+    ${list.length ? list.map((t) => `<button class="yt-row" data-action="toggle-year" data-id="${t.id}" data-year="${year}" data-kind="${kind || ''}">
         <span>${esc(t.title)}</span>
-        <em class="${t.done ? 'ok' : ''}">${!t.date ? '记录' : t.done ? '已完成' : '未完成'}${typeof t.score === 'number' ? ' · ' + t.score + ' 分' : ''}</em>
-      </div>`).join('') : '<p class="note">这一年还没有安排</p>'}
+        <em class="${isRedo(t) ? '' : t.done ? 'ok' : ''}">${isRedo(t) ? '错题重刷 · 不计入' : (t.done ? '已完成' : '未完成') + (typeof t.score === 'number' ? ' · ' + t.score + ' 分' : '')}</em>
+      </button>`).join('') : '<p class="note">这一年还没有安排</p>'}
     <button class="ghost wide" data-action="year-add" data-year="${year}" data-kind="${kind || ''}">添加${kind ? KIND_NAME[kind] : ''}任务</button>
   </div>`;
 }
@@ -1025,6 +1029,16 @@ document.addEventListener('click', async (e) => {
     toast('已清空 ' + hit.length + ' 条');
     return;
   }
+  if (a === 'toggle-year') {
+    const t = findTask(el.dataset.id);
+    if (t) {
+      t.done = !t.done;
+      if (t.done) t.notDone = false;
+      touch(t); save(); render(); push().catch(() => {});
+      openYear(Number(el.dataset.year), el.dataset.kind || '');
+    }
+    return;
+  }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
     const year = el.dataset.year, kind = el.dataset.kind;
@@ -1045,9 +1059,10 @@ document.addEventListener('click', async (e) => {
       score: scoreRaw === '' ? null : Math.max(0, Math.min(100, Number(scoreRaw))),
       scoreMax: scoreMaxRaw > 0 ? scoreMaxRaw : 10,
       actualMinutes: actual === '' ? null : Math.max(0, Math.min(600, Number(actual))), note: $('#f-note').value.trim() };
+    if (typeof patch.score === 'number') { patch.done = true; patch.notDone = false; }
     const t = id ? findTask(id) : addTask(patch);
     if (id && t) { Object.assign(t, patch); touch(t); }
-    save(); closeSheet(); render(); schedulePush(); return;
+    save(); closeSheet(); render(); push().catch(() => {}); return;
   }
   if (a === 'del') {
     const t = findTask(el.dataset.id);
