@@ -412,9 +412,11 @@ function roundOf(t) {
 
 function englishPool() {
   const all = live().filter((t) => t.subject === 'english');
-  const want = state.prefs.round === 1 ? 1 : 2;
-  const pool = all.filter((t) => roundOf(t) === want);
-  return pool.length ? pool : all.filter((t) => roundOf(t) === want);
+  return all.filter((t) => {
+    const k = kindOf(t);
+    const want = k === '阅' ? 2 : 1;
+    return roundOf(t) === want;
+  });
 }
 
 function englishMatrix() {
@@ -581,14 +583,6 @@ function matrixCell(c) {
   return '<i class="plan"></i>';
 }
 
-function roundTabs() {
-  const r = state.prefs.round === 1 ? 1 : 2;
-  return `<div class="segmented wide-seg" role="tablist">
-    <button data-round="1" class="${r === 1 ? 'on' : ''}">一刷</button>
-    <button data-round="2" class="${r === 2 ? 'on' : ''}">二刷</button>
-  </div>`;
-}
-
 function englishStats() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
@@ -603,7 +597,7 @@ function englishStats() {
   const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
   const total = englishPool().length;
-  return roundTabs() + `<section class="stat-row">
+  return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
       <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : Math.round(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
@@ -613,8 +607,8 @@ function englishStats() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
-      <h2>${state.prefs.round === 1 ? '一刷' : '二刷'}覆盖</h2>
-      <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项</p>
+      <h2>真题覆盖</h2>
+      <p class="meta-line">阅读二刷 · 其余一刷 · ${total} 项</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
         ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
@@ -1022,11 +1016,9 @@ document.addEventListener('click', async (e) => {
   if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'import-records') { openImport('records'); return; }
   if (a === 'clear-records') {
-    const want = state.prefs.round === 1 ? 1 : 2;
-    const name = want === 1 ? '一刷' : '二刷';
-    const hit = state.tasks.filter((t) => !t.deleted && !t.date && roundOf(t) === want);
-    if (!hit.length) return toast(name + '没有补录记录');
-    if (!confirm('删除 ' + name + ' 的 ' + hit.length + ' 条补录记录？')) return;
+    const hit = state.tasks.filter((t) => !t.deleted && !t.date);
+    if (!hit.length) return toast('没有补录记录');
+    if (!confirm('删除全部 ' + hit.length + ' 条补录记录？')) return;
     pushUndo();
     for (const t of hit) { t.deleted = true; touch(t); }
     state.dirty = true; save(); render(); schedulePush();
