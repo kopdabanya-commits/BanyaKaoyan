@@ -415,7 +415,7 @@ function roundOf(t) {
 }
 
 function isRedo(t) {
-  return /错题|重做|重刷|重译|复盘/.test(String(t.title));
+  return /错题|重做|重刷|重译|重写|复盘|二遍|再刷|回顾/.test(String(t.title));
 }
 
 function englishPool() {
@@ -473,23 +473,36 @@ function rateClass(rate) {
   return rate >= 0.8 ? 'good' : rate >= 0.6 ? 'mid' : 'low';
 }
 
+function yearKey(t) {
+  const y = (String(t.title).match(/20\d{2}/) || [])[0];
+  if (!y) return 'x' + t.id;
+  if (kindOf(t) === '阅') {
+    const m = String(t.title).match(/text\s*([1-4])/i);
+    return y + '-T' + (m ? m[1] : 'x');
+  }
+  return y;
+}
+
 function englishTypes() {
   const map = new Map();
   for (const t of englishPool()) {
     const k = kindOf(t);
     if (!k) continue;
-    if (!map.has(k)) map.set(k, { k, plan: 0, done: 0, scored: [] });
+    if (!map.has(k)) map.set(k, { k, plan: new Set(), done: new Set(), scored: [] });
     const row = map.get(k);
-    row.plan++;
-    if (t.done) row.done++;
+    const key = yearKey(t);
+    row.plan.add(key);
+    if (t.done) row.done.add(key);
     const r = scoreRate(t);
     if (r != null) row.scored.push({ rate: r });
   }
   const order = ['阅', '完', '新', '译', '小', '大'];
-  return [...map.values()].sort((a, b) => {
-    const ia = order.indexOf(a.k), ib = order.indexOf(b.k);
-    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-  });
+  return [...map.values()]
+    .map((r) => ({ k: r.k, plan: r.plan.size, done: r.done.size, scored: r.scored }))
+    .sort((a, b) => {
+      const ia = order.indexOf(a.k), ib = order.indexOf(b.k);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
 }
 
 function moduleOf(title) {
