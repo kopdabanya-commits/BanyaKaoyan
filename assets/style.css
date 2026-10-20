@@ -354,3 +354,13 @@ h1,h2,h3,p{margin:0}
 .stat b.good{color:var(--ok)}
 .stat b.mid{color:var(--warn)}
 .stat b.low{color:var(--danger)}
+
+/* ---------- 阅读四篇 ---------- */
+.tx{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;width:100%;height:24px;align-items:stretch}
+.tx i{display:block;border-radius:3px;background:var(--surface-3)}
+.tx i.empty{background:transparent;border:1px dashed var(--line-strong)}
+.tx i.plan{background:rgba(255,255,255,.04);border:1px solid var(--line-strong)}
+.tx i.ok{background:var(--accent)}
+.tx i.rec.good{background:var(--ok)}
+.tx i.rec.mid{background:#8A5A12}
+.tx i.rec.low{background:#7A2E2E}

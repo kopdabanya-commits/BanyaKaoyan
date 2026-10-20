@@ -440,6 +440,16 @@ function englishMatrix() {
       if (t.done) cells[k].done++;
       if (typeof t.score === 'number') cells[k].scores.push(t.score / (t.scoreMax || 10));
     }
+    // 阅读：按 Text 1–4 拆开
+    const readCell = cells['阅'];
+    const texts = [null, null, null, null];
+    for (const t of list) {
+      const m = String(t.title).match(/text\s*([1-4])/i);
+      if (!m || kindOf(t) !== '阅') continue;
+      texts[Number(m[1]) - 1] = t;
+    }
+    if (!texts.some(Boolean) && readCell && readCell.rec) texts.fill(readCell.rec);
+    if (readCell) readCell.texts = texts;
     rows.push({ y, cells, total: list.length });
   }
   return rows;
@@ -586,11 +596,19 @@ function openYear(year, kind) {
   </div>`;
 }
 
-function matrixCell(c) {
+function textClass(t) {
+  const rate = scoreRate(t);
+  if (rate != null) return 'rec ' + rateClass(rate);
+  return t.done ? 'ok' : 'plan';
+}
+
+function matrixCell(c, kind) {
+  if (kind === '阅' && c.texts) {
+    return `<span class="tx">${c.texts.map((t) => t ? `<i class="${textClass(t)}"></i>` : '<i class="empty"></i>').join('')}</span>`;
+  }
   if (c.rec) {
     const rate = scoreRate(c.rec);
-    const shown = typeof c.rec.score === 'number' ? fmt1(c.rec.score) : '✓';
-    return `<i class="rec ${rateClass(rate)}">${shown}</i>`;
+    return `<i class="rec ${rateClass(rate)}">${typeof c.rec.score === 'number' ? fmt1(c.rec.score) : '✓'}</i>`;
   }
   if (c.scores.length) {
     const rate = c.scores.reduce((a, b) => a + b, 0) / c.scores.length;
@@ -631,7 +649,7 @@ function englishStats() {
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
         ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
           <button class="myear" data-action="year" data-year="${r.y}">${r.y}</button>
-          ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k])}</button>`).join('')}
+          ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k], k)}</button>`).join('')}
         </div>`).join('')}
       </div>
       <div class="chips" style="margin-top:10px">
