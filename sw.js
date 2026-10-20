@@ -1,5 +1,5 @@
 /* 极简离线缓存：只缓存外壳，数据在 localStorage。 */
-const CACHE = 'banya-v2-6';
+const CACHE = 'banya-v2-7';
 const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

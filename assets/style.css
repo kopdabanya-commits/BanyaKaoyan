@@ -271,3 +271,22 @@ h1,h2,h3,p{margin:0}
 :root[data-theme="light"] .cta{box-shadow:0 6px 18px rgba(124,92,255,.22)}
 :root[data-theme="light"] .ring{background:conic-gradient(var(--accent) calc(var(--p) * 1%), var(--track) 0)}
 :root[data-theme="light"] .bars .col i{background:var(--surface-3)}
+
+/* ---------- 同步状态点 ---------- */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;transition:background .2s}
+.sync-dot.ok{background:var(--ok);box-shadow:0 0 0 3px rgba(61,220,151,.14)}
+.sync-dot.busy{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.sync-dot.err{background:var(--danger);box-shadow:0 0 0 3px rgba(255,107,107,.16)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- 进度标签 ---------- */
+.hint{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hint .chip{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 10px;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.hint .chip.warn{color:var(--warn);border-color:rgba(255,176,32,.32);background:rgba(255,176,32,.08)}
+
+/* ---------- 分科 ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.split>div{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px}
+.split span{display:block;font-size:11.5px;color:var(--ink-3);letter-spacing:.06em}
+.split b{display:block;font-size:22px;font-weight:680;letter-spacing:-.03em;margin-top:4px}
+.split em{display:block;font-style:normal;font-size:11px;color:var(--ink-3);margin-top:2px}

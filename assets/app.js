@@ -172,6 +172,30 @@ function dailyReview(force = false) {
 }
 
 
+
+/* ---------------- 首次连接 ---------------- */
+function takeTokenFromLink() {
+  const m = location.hash.match(/token=([^&]+)/);
+  if (!m) return false;
+  state.prefs.token = decodeURIComponent(m[1]);
+  save();
+  history.replaceState(null, '', location.pathname + location.search);
+  return true;
+}
+
+function autoReclassify() {
+  if (state.prefs.reclassified) return 0;
+  let changed = 0;
+  for (const t of state.tasks) {
+    if (t.deleted) continue;
+    const s = guessSubject(t.title);
+    if (s && s !== t.subject) { t.subject = s; touch(t); changed++; }
+  }
+  state.prefs.reclassified = true;
+  if (changed) { state.dirty = true; save(); }
+  return changed;
+}
+
 /* ---------------- 主题 ---------------- */
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 function resolveTheme() {
@@ -186,6 +210,11 @@ darkQuery.addEventListener('change', () => { if ((state.prefs.theme || 'auto') =
 
 /* ---------------- 渲染 ---------------- */
 function render() {
+  const dot = $('#sync-dot');
+  if (dot) {
+    dot.className = 'sync-dot ' + (!state.prefs.token ? 'off' : syncState === 'error' ? 'err' : syncState === 'syncing' ? 'busy' : 'ok');
+    dot.title = !state.prefs.token ? '未连接云端' : syncState === 'error' ? '同步失败' : syncState === 'syncing' ? '同步中' : '已同步';
+  }
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
   document.querySelectorAll('.segmented button[data-subject]').forEach((b) => b.classList.toggle('on', b.dataset.subject === subject));
   $('#app').innerHTML = view === 'today' ? todayView() : view === 'calendar' ? calendarView() : view === 'stats' ? statsView() : meView();
@@ -227,7 +256,7 @@ function todayView() {
     </div>
   </section>`;
   const hint = isToday && p.days >= 3
-    ? `<p class="hint${p.behind ? ' warn' : ''}">${p.days} 天后考试 · 每天应做 ${p.required} 分钟 · 近 7 天平均 ${p.actual} 分钟${p.behind ? ' · 落后' : ''}</p>`
+    ? `<p class="hint"><span class="chip">${p.days} 天后考试</span><span class="chip">每天 ${p.required} 分钟</span><span class="chip">近 7 天日均 ${p.actual}</span>${p.behind ? '<span class="chip warn">落后</span>' : ''}</p>`
     : '';
   const review = lastReport && isToday && lastReport.date === today() && lastReport.fixes.length
     ? `<section class="review">
@@ -347,6 +376,16 @@ function statsView() {
     <section class="card">
       <h2>题型分布</h2>
       <div class="chips">${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)} ${v}</span>`).join('') || '<span class="muted">暂无</span>'}</div>
+    </section>
+    <section class="card">
+      <h2>分科</h2>
+      <div class="split">${['english', 'politics'].map((k) => {
+        const all = live().filter((t) => t.subject === k);
+        const week0 = all.filter((t) => t.date >= start && t.date <= today());
+        return `<div><span>${k === 'english' ? '英语二' : '政治'}</span>
+          <b>${all.filter(openTask).length}</b>
+          <em>待做 · 近 7 天完成 ${week0.filter((t) => t.done).length}</em></div>`;
+      }).join('')}</div>
     </section>
     <section class="card">
       <h2>本周复盘</h2>
@@ -633,10 +672,13 @@ async function pull() {
   try {
     const r = await api('/plan');
     if (r.revision > state.rev) {
-      state.tasks = state.dirty ? mergeTasks(state.tasks, r.tasks) : r.tasks;
+      // 永远合并：首次连接不能把本地新建的计划冲掉
+      state.tasks = mergeTasks(state.tasks, r.tasks);
       state.rev = r.revision;
+      state.dirty = true;
       save();
-      if (state.dirty) return push();
+      render();
+      return push();
     } else if (state.dirty) { return push(); }
     syncState = 'ok';
     if (view === 'me') render();
@@ -774,9 +816,16 @@ function toast(message, action) {
 }
 
 applyTheme();
+const linked = takeTokenFromLink();
+const reclassified = autoReclassify();
 render();
+if (reclassified) setTimeout(() => toast('已按内容分科 ' + reclassified + ' 项'), 400);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
-pull().finally(() => { lastReport = dailyReview(); if (lastReport) { render(); } });
+pull().finally(() => {
+  if (linked) toast('已连接云端');
+  lastReport = dailyReview();
+  if (lastReport) render();
+});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull().catch(() => {}); });
 window.addEventListener('online', () => { if (state.dirty) push().catch(() => {}); });
 })();
