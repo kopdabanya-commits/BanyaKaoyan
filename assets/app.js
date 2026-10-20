@@ -209,6 +209,38 @@ function autoReclassify() {
   return changed;
 }
 
+
+/* ---------------- 版本 ---------------- */
+const APP_VERSION = (window.BANYA_CONFIG || {}).version || '';
+let latest = null;
+
+async function checkUpdate(manual) {
+  try {
+    const r = await fetch('./api/version?ts=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('bad');
+    const data = await r.json();
+    if (data.version && APP_VERSION && data.version !== APP_VERSION) {
+      latest = data;
+      if (manual) toast('有新版本，点这里更新', () => forceUpdate());
+      else toast('有新版本，点这里更新', () => forceUpdate());
+      return true;
+    }
+    if (manual) toast('已是最新版本');
+    return false;
+  } catch {
+    if (manual) toast('检查失败，稍后再试');
+    return false;
+  }
+}
+
+async function forceUpdate() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  } catch {}
+  location.reload();
+}
+
 /* ---------------- 主题 ---------------- */
 const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 function resolveTheme() {
@@ -269,11 +301,11 @@ function todayView() {
     </div>
   </section>`;
   const hint = isToday && p.days >= 3
-    ? `<p class="hint"><span class="chip">${p.days} 天后考试</span><span class="chip">每天 ${p.required} 分钟</span><span class="chip">近 7 天日均 ${p.actual}</span>${p.behind ? '<span class="chip warn">落后</span>' : ''}</p>`
+    ? `<p class="hint-line">距考试 ${p.days} 天 · 每天 ${p.required} 分钟${p.behind ? ' · 落后' : ''}</p>`
     : '';
   const review = lastReport && isToday && lastReport.date === today() && lastReport.fixes.length
     ? `<section class="review">
-        <header><b>今天已自动整理 ${lastReport.fixes.length} 项</b><button data-action="dismiss-review">知道了</button></header>
+        <header><b>已整理 ${lastReport.fixes.length} 项</b><button data-action="dismiss-review">知道了</button></header>
         ${lastReport.fixes.slice(0, 3).map((f) => `<p>「${esc(f.title)}」 ${f.from.slice(5)} → ${f.to.slice(5)}</p>`).join('')}
         ${lastReport.fixes.length > 3 ? `<p class="more">…等 ${lastReport.fixes.length} 项</p>` : ''}
         <button class="ghost small" data-action="undo">撤销这次整理</button>
@@ -281,8 +313,8 @@ function todayView() {
   const name = subject === 'english' ? '英语二' : '政治';
   const total0 = live().filter(mine).length;
   const empty = total0 === 0
-    ? `<section class="empty"><b>「${name}」还没有任务</b><p>在「我的」里导入这个科目的计划，或先添加一条。导入时会把政治和英语自动分开。</p><button class="cta" data-action="add">添加任务</button></section>`
-    : `<section class="empty"><b>这一天还没有任务</b><p>在「我的」里导入计划，或直接添加一条。</p><button class="cta" data-action="add">添加任务</button></section>`;
+    ? `<section class="empty"><b>「${name}」还没有任务</b><p>先导入这个科目的计划。</p><button class="cta" data-action="add">添加任务</button></section>`
+    : `<section class="empty"><b>这一天还没有任务</b><p>导入计划或添加一条。</p><button class="cta" data-action="add">添加任务</button></section>`;
   const body = list.length
     ? `<section class="group"><h2>${isToday ? '今日任务' : '当天任务'} <em>${list.length}</em></h2><ul class="tasks">${list.map(row).join('')}</ul></section>`
     : empty;
@@ -642,7 +674,7 @@ function meView() {
       <h2>云同步</h2>
       <div class="row"><span>状态</span><em>${status}</em></div>
       <label class="field"><span>同步密码</span><input id="pref-token" type="password" value="${esc(state.prefs.token)}" placeholder="部署时生成，只需填一次"></label>
-      <p class="note">这不是账号密码，是这台手机访问你自己服务器的钥匙，只需要填一次。忘了可以在服务器的 /etc/banya-v2.env 里查看。</p>
+      <p class="note">只需填一次。</p>
       <button class="cta" data-action="save-prefs">保存并同步</button>
     </section>
     <section class="card">
@@ -653,7 +685,6 @@ function meView() {
     <section class="card">
       <h2>每日整理</h2>
       <label class="check-line"><input type="checkbox" id="pref-review"${state.prefs.autoReview ? ' checked' : ''}> 每天打开时自动整理</label>
-      <p class="note">逾期任务按容量分散到今天起；每天上限 ${DAILY_CAP} 分钟；只移动未完成的任务，不改时长。</p>
       <button class="ghost wide" data-action="review-now">立即整理一次</button>
     </section>
     <section class="card">
@@ -670,7 +701,11 @@ function meView() {
       <div class="row"><span>本科目待做</span><em>${p.count} 项 · ${p.remain} 分钟</em></div>
       <div class="row"><span>每天应做</span><em>${p.required} 分钟</em></div>
     </section>
-    <p class="version">板牙考研 v2 · ${esc((window.BANYA_CONFIG || {}).builtAt || '本地预览')}</p>`;
+    <section class="card">
+      <h2>版本</h2>
+      <div class="row"><span>当前</span><em>${esc(APP_VERSION || '本地预览')}</em></div>
+      <button class="ghost wide" data-action="check-update">检查更新</button>
+    </section>`;
 }
 
 /* ---------------- 编辑 ---------------- */
@@ -776,7 +811,7 @@ function openImport() {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>导入计划</h2><button data-action="close">×</button></header>
-    <p class="note">粘贴计划（表格/每行一条/JSON），或补录表格（年份+题型+得分）。</p>
+    <p class="note">表格、每行一条或 JSON。</p>
     <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
     <div class="modes">
       <label><input type="radio" name="import-mode" value="range" checked><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
@@ -944,6 +979,7 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
+  if (a === 'check-update') { await checkUpdate(true); return; }
   if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
@@ -1086,10 +1122,16 @@ pull().finally(() => {
   if (linked) toast('已连接云端');
   lastReport = dailyReview();
   if (lastReport) render();
+  checkUpdate(false);
   const action = params.get('action');
   if (action === 'import') openImport();
   if (action === 'year') openYear(Number(params.get('year') || 2015), params.get('kind') || '');
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) pull().catch(() => {}); });
+let lastCheck = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  pull().catch(() => {});
+  if (Date.now() - lastCheck > 300000) { lastCheck = Date.now(); checkUpdate(false); }
+});
 window.addEventListener('online', () => { if (state.dirty) push().catch(() => {}); });
 })();

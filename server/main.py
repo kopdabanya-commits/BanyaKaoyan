@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 TOKEN = os.environ.get("BANYA_V2_TOKEN", "")
 DB_PATH = Path(os.environ.get("BANYA_V2_DB", "/var/lib/banya-v2/v2.sqlite3"))
+VERSION_FILE = Path(os.environ.get("BANYA_V2_VERSION", "/opt/banya-v2/version.json"))
 MAX_TASKS = 4000
 
 
@@ -127,3 +128,11 @@ async def write_plan(request: Request, authorization: str | None = Header(defaul
 @app.get("/health")
 def health():
     return {"ok": True, "storage": "sqlite"}
+
+
+@app.get("/version")
+def version():
+    try:
+        return json.loads(VERSION_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {"version": "", "builtAt": ""}

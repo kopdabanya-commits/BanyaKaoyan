@@ -194,7 +194,9 @@ task = {
 - `deploy/deploy.py` 每次发布写入 `config.js`：`{ token, builtAt, version }`。
   手机打开即自动带上同步密码，不用手输；`builtAt` 显示在「我的」底部。
 - PWA 图标：`assets/icon-192.png`、`icon-512.png`、`icon-maskable.png`、`apple-touch-icon.png`。
-- 更新提示：Service Worker 装好新版本后，页面弹出「有新版本，点这里更新」。
+- 更新检查走接口 `GET /api/version`（返回 `{version, builtAt}`，部署时写入 `/opt/banya-v2/version.json`），
+  每次启动与回到前台（间隔 >5 分钟）比对 `config.js` 里的版本；不一致就提示「有新版本」，
+  点一下 `reg.update()` 后重载。「我的 → 版本 → 检查更新」可手动触发。
 
 ## 9. 部署与回滚
 

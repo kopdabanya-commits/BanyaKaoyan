@@ -111,6 +111,8 @@ if token:
     with sftp.open(f"{dest}/config.js", "w") as fh:
         fh.write("window.BANYA_CONFIG = " + payload + ";" + chr(10))
     print("config.js written")
+    with sftp.open("/opt/banya-v2/version.json", "w") as fh:
+        fh.write(json.dumps({"version": stamp, "builtAt": built}, ensure_ascii=False))
 
 unit = """[Unit]
 Description=Banya v2 plan storage
