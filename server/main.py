@@ -35,6 +35,9 @@ class Task(BaseModel):
     note: str = ""
     subject: str = ""
     actualMinutes: int | None = None
+    score: float | None = None
+    scoreMax: float | None = None
+    round: int | None = None
     updatedAt: int | None = None
     deleted: bool | None = None
 

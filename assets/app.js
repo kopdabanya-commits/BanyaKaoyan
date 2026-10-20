@@ -417,9 +417,9 @@ function isRedo(t) {
 function englishPool() {
   const all = live().filter((t) => t.subject === 'english' && !isRedo(t));
   return all.filter((t) => {
-    const k = kindOf(t);
-    const want = k === '阅' ? 2 : 1;
-    return roundOf(t) === want;
+    if (!t.date) return true;
+    const second = /二刷/.test(String(t.title));
+    return kindOf(t) === '阅' ? second : !second;
   });
 }
 
@@ -428,7 +428,7 @@ function englishMatrix() {
   for (let y = 2010; y <= 2023; y++) {
     const list = englishPool().filter((t) => String(t.title).includes(String(y)));
     const cells = {};
-    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: null };
+    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: null, scores: [] };
     for (const t of list) {
       const k = kindOf(t);
       if (!cells[k]) continue;
@@ -438,6 +438,7 @@ function englishMatrix() {
       }
       cells[k].plan++;
       if (t.done) cells[k].done++;
+      if (typeof t.score === 'number') cells[k].scores.push(t.score / (t.scoreMax || 10));
     }
     rows.push({ y, cells, total: list.length });
   }
@@ -564,7 +565,7 @@ function recordPrompt() {
 
 function openYear(year, kind) {
   const list = live()
-    .filter((t) => t.subject === 'english' && String(t.title).includes(String(year)) && (!kind || kindOf(t) === kind))
+    .filter((t) => !isRedo(t) && t.subject === 'english' && String(t.title).includes(String(year)) && (!kind || kindOf(t) === kind))
     .sort((a, b) => a.title.localeCompare(b.title));
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
@@ -572,8 +573,9 @@ function openYear(year, kind) {
     ${list.length ? list.map((t) => `<div class="yt-row">
         <button class="yt-main" data-action="edit" data-id="${t.id}">
           <span>${esc(t.title)}</span>
-          <em class="${isRedo(t) ? '' : t.done ? 'ok' : ''}">${isRedo(t) ? '不计入' : (t.done ? '已完成' : '未完成') + (typeof t.score === 'number' ? ' · ' + t.score + ' 分' : '')}</em>
+          <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : '未完成'}</em>
         </button>
+        <button class="yt-score${typeof t.score === 'number' ? ' has' : ''}" data-action="score" data-id="${t.id}" data-year="${year}" data-kind="${kind || ''}">${typeof t.score === 'number' ? t.score : '分'}</button>
         <button class="yt-tick${t.done ? ' on' : ''}" data-action="toggle-year" data-id="${t.id}" data-year="${year}" data-kind="${kind || ''}" aria-label="切换完成">✓</button>
       </div>`).join('') : '<p class="note">这一年还没有安排</p>'}
     <button class="ghost wide" data-action="year-add" data-year="${year}" data-kind="${kind || ''}">添加${kind ? KIND_NAME[kind] : ''}任务</button>
@@ -584,6 +586,10 @@ function matrixCell(c) {
   if (c.rec) {
     const rate = scoreRate(c.rec);
     return `<i class="rec ${rateClass(rate)}">${typeof c.rec.score === 'number' ? c.rec.score : '✓'}</i>`;
+  }
+  if (c.scores.length) {
+    const rate = c.scores.reduce((a, b) => a + b, 0) / c.scores.length;
+    return `<i class="rec ${rateClass(rate)}">${Math.round(rate * 100)}</i>`;
   }
   if (!c.plan) return '<i class="none">·</i>';
   if (c.done >= c.plan) return '<i class="ok">✓</i>';
@@ -1030,6 +1036,20 @@ document.addEventListener('click', async (e) => {
     for (const t of hit) { t.deleted = true; touch(t); }
     state.dirty = true; save(); render(); schedulePush();
     toast('已清空 ' + hit.length + ' 条');
+    return;
+  }
+  if (a === 'score') {
+    const t = findTask(el.dataset.id);
+    if (!t) return;
+    const input = prompt('得分（满分 ' + (t.scoreMax || 10) + '）', typeof t.score === 'number' ? t.score : '');
+    if (input === null) return;
+    const n = Number(input);
+    if (!Number.isFinite(n)) return toast('请输入数字');
+    t.score = Math.max(0, Math.min(100, n));
+    t.scoreMax = t.scoreMax || 10;
+    t.done = true; t.notDone = false;
+    touch(t); save(); render(); push().catch(() => {});
+    openYear(Number(el.dataset.year), el.dataset.kind || '');
     return;
   }
   if (a === 'toggle-year') {
