@@ -476,7 +476,8 @@ function rateClass(rate) {
 function englishTypes() {
   const map = new Map();
   for (const t of englishPool()) {
-    const k = kindOf(t) || t.type;
+    const k = kindOf(t);
+    if (!k) continue;
     if (!map.has(k)) map.set(k, { k, plan: 0, done: 0, scored: [] });
     const row = map.get(k);
     row.plan++;
@@ -636,7 +637,7 @@ function englishStats() {
   const scored = englishPool().filter((t) => scoreRate(t) != null);
   const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
-  const total = englishPool().length;
+  const total = englishPool().filter((t) => kindOf(t)).length;
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
@@ -706,6 +707,32 @@ function politicsStatsView() {
       <h2>每天刷题</h2>
       <div class="bars">${s.daily.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.done / peak * 84))}px" class="${x.done ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>`;
+}
+
+function weeklyReview() {
+  const start = shift(today(), -6);
+  const s = rangeStats(start, today());
+  const p = progress();
+  const byType = {};
+  for (const t of s.list) {
+    const k = t.type || '其他';
+    byType[k] = byType[k] || { total: 0, done: 0 };
+    byType[k].total++;
+    if (t.done) byType[k].done++;
+  }
+  const weakest = Object.entries(byType)
+    .filter(([, v]) => v.total >= 2)
+    .sort((a, b) => a[1].done / a[1].total - b[1].done / b[1].total)[0];
+  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项。'];
+  if (!s.list.length) lines.push('这周还没有安排。');
+  else if (s.rate >= 80) lines.push('完成率不错，保持节奏。');
+  else if (s.rate >= 50) lines.push('完成率一般，先保住每天必做的几项。');
+  else lines.push('完成率偏低，先减少每天的任务量。');
+  if (weakest) lines.push('最弱的是「' + weakest[0] + '」（' + weakest[1].done + '/' + weakest[1].total + '）。');
+  if (p.days > 0) {
+    lines.push('每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项' + (p.behind ? '，目前落后。' : '，节奏正常。'));
+  }
+  return lines.join(String.fromCharCode(10));
 }
 
 function statsFooter() {
