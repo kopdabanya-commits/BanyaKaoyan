@@ -450,6 +450,10 @@ function scoreRate(t) {
   return Math.max(0, Math.min(1, t.score / (t.scoreMax || 10)));
 }
 
+function fmt1(n) {
+  return (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, '');
+}
+
 function rateClass(rate) {
   if (rate == null) return '';
   return rate >= 0.8 ? 'good' : rate >= 0.6 ? 'mid' : 'low';
@@ -585,11 +589,12 @@ function openYear(year, kind) {
 function matrixCell(c) {
   if (c.rec) {
     const rate = scoreRate(c.rec);
-    return `<i class="rec ${rateClass(rate)}">${typeof c.rec.score === 'number' ? c.rec.score : '✓'}</i>`;
+    const shown = typeof c.rec.score === 'number' ? fmt1(c.rec.score) : '✓';
+    return `<i class="rec ${rateClass(rate)}">${shown}</i>`;
   }
   if (c.scores.length) {
     const rate = c.scores.reduce((a, b) => a + b, 0) / c.scores.length;
-    return `<i class="rec ${rateClass(rate)}">${Math.round(rate * 100)}</i>`;
+    return `<i class="rec ${rateClass(rate)}">${fmt1(rate * 10)}</i>`;
   }
   if (!c.plan) return '<i class="none">·</i>';
   if (c.done >= c.plan) return '<i class="ok">✓</i>';
@@ -613,7 +618,7 @@ function englishStats() {
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
-      <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : Math.round(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
+      <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : fmt1(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
     </section>
     <section class="card">
       <h2>近 7 天</h2>
@@ -645,7 +650,7 @@ function englishStats() {
         return `<div class="type-row">
           <span>${t.k}</span><b>${t.done}/${t.plan}</b>
           <i><u style="width:${pct}%"></u></i>
-          <em class="${rateClass(avg)}">${avg == null ? pct + '%' : Math.round(avg * 100) + '%'}</em>
+          <em class="${rateClass(avg)}">${avg == null ? pct + '%' : fmt1(avg * 100) + '%'}</em>
         </div>`;
       }).join('') || '<p class="note">暂无任务</p>'}
     </section>`;
