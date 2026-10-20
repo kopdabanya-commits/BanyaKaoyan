@@ -28,6 +28,7 @@ let view = 'today';
 let subject = state.prefs.subject === 'politics' ? 'politics' : 'english';
 let selected = today();
 let calMonth = today().slice(0, 7);
+let lookup = { year: '', kind: '' };
 let syncState = 'idle';
 let lastReport = null;
 const DAILY_CAP = 150;
@@ -333,6 +334,35 @@ function row(t) {
   </li>`;
 }
 
+function lookupRows() {
+  const pool = live().filter((t) => t.subject === 'english');
+  return pool
+    .filter((t) => (!lookup.year || String(t.title).includes(lookup.year)) && (!lookup.kind || kindOf(t) === lookup.kind))
+    .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title));
+}
+
+function lookupCard() {
+  const years = ['', ...Array.from({ length: 14 }, (_, i) => String(2023 - i))];
+  const kinds = [['', '全部'], ...EXAM_SHAPE.map(([k, name]) => [k, name])];
+  const rows = lookupRows();
+  return `<section class="card">
+      <h2>查计划</h2>
+      <div class="lookup-row">
+        <select id="lk-year" aria-label="年份">
+          ${years.map((y) => `<option value="${y}"${lookup.year === y ? ' selected' : ''}>${y || '全部年份'}</option>`).join('')}
+        </select>
+        <select id="lk-kind" aria-label="题型">
+          ${kinds.map(([k, name]) => `<option value="${k}"${lookup.kind === k ? ' selected' : ''}>${name}</option>`).join('')}
+        </select>
+      </div>
+      ${rows.length ? rows.map((t) => `<button class="lk-row" data-action="edit" data-id="${t.id}">
+          <b>${t.date ? t.date.slice(5).replace('-', '/') : '无日期'}</b>
+          <span>${esc(t.title)}</span>
+          <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : '未完成'}</em>
+        </button>`).join('') : '<p class="note">没有匹配的计划</p>'}
+    </section>`;
+}
+
 function calendarView() {
   const [year, month] = calMonth.split('-').map(Number);
   const first = new Date(year, month - 1, 1, 12);
@@ -348,49 +378,23 @@ function calendarView() {
     if (date === today()) cls.push('today');
     if (date === selected) cls.push('sel');
     if (list.length) cls.push(done === list.length ? 'full' : 'has');
-    cells.push(`<button class="${cls.join(' ')}" data-action="pick" data-date="${date}">
+    cells.push(`<button class="${cls.join(' ')}" data-action="pick" data-date="${date}" aria-label="${date}">
       <span>${d}</span>${list.length ? `<i class="${done === list.length ? 'ok' : ''}"></i>` : ''}</button>`);
   }
   const list = ofDate(selected);
+  const done = list.filter((t) => t.done).length;
   return `<section class="cal">
     <header><button data-action="month" data-n="-1" aria-label="上个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg></button><b>${year} 年 ${month} 月</b><button data-action="month" data-n="1" aria-label="下个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></button></header>
     <div class="cal-week">${['一','二','三','四','五','六','日'].map((x) => `<span>${x}</span>`).join('')}</div>
     <div class="cal-grid">${cells.join('')}</div>
   </section>
-  <h3 class="sec">${selected.replace(/-/g, '.')} ${weekday(selected)}</h3>
-  ${list.length ? `<ul class="tasks">${list.map(row).join('')}</ul>` : '<p class="note center">这天没有安排</p>'}
-  <button class="ghost wide" data-action="add">在这天添加</button>`;
+  <section class="day-panel">
+    <header><b>${selected.slice(5).replace('-', ' 月 ')} 日 ${weekday(selected)}</b><span>${list.length ? done + '/' + list.length + ' 完成' : '空'}</span></header>
+    ${list.length ? `<ul class="tasks">${list.map(row).join('')}</ul>` : '<p class="note">这天没有安排</p>'}
+    <button class="ghost wide" data-action="add">在这天添加</button>
+  </section>
+  ${lookupCard()}`;
 }
-
-
-function weeklyReview() {
-  const start = shift(today(), -6);
-  const s = rangeStats(start, today());
-  const p = progress();
-  const byType = {};
-  for (const t of s.list) {
-    const k = t.type || '其他';
-    byType[k] = byType[k] || { total: 0, done: 0 };
-    byType[k].total++;
-    if (t.done) byType[k].done++;
-  }
-  const weakest = Object.entries(byType)
-    .filter(([, v]) => v.total >= 2)
-    .sort((a, b) => a[1].done / a[1].total - b[1].done / b[1].total)[0];
-  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项。'];
-  if (!s.list.length) lines.push('这周还没有安排，先去导入一份计划。');
-  else if (s.rate >= 80) lines.push('完成率不错，保持现在的节奏，不要额外加量。');
-  else if (s.rate >= 50) lines.push('完成率一般，优先保住每天必做的那几项，其余可以往后挪。');
-  else lines.push('完成率偏低，先减少每天任务数量，否则容易整天空转。');
-  if (weakest) lines.push('最弱的是「' + weakest[0] + '」（' + weakest[1].done + '/' + weakest[1].total + '），下周先补它。');
-  if (p.days > 0) {
-    lines.push(p.behind
-      ? '每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项，目前落下。'
-      : '每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项，节奏正常。');
-  }
-  return lines.join('\n');
-}
-
 
 /* ---------------- 统计工具 ---------------- */
 const EXAM_SHAPE = [['完', '完形'], ['阅', '阅读'], ['新', '新题型'], ['译', '翻译'], ['小', '小作文'], ['大', '大作文']];
@@ -1030,7 +1034,7 @@ document.addEventListener('click', async (e) => {
     const d = new Date(y, m - 1 + Number(el.dataset.n), 1, 12);
     calMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; render(); return;
   }
-  if (a === 'pick') { selected = el.dataset.date; view = 'today'; render(); return; }
+  if (a === 'pick') { selected = el.dataset.date; calMonth = selected.slice(0, 7); render(); return; }
   if (a === 'toggle') {
     const t = findTask(el.dataset.id);
     if (!t || t._animating) return;
@@ -1207,6 +1211,11 @@ document.addEventListener('click', async (e) => {
     toast(lastReport ? '已整理 ' + lastReport.fixes.length + ' 项' : '已经很整齐，不用调整');
     return;
   }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'lk-year') { lookup.year = e.target.value; render(); }
+  if (e.target.id === 'lk-kind') { lookup.kind = e.target.value; render(); }
 });
 
 function toast(message, action) {

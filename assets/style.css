@@ -375,3 +375,20 @@ h1,h2,h3,p{margin:0}
   .stat b{font-size:21px}
   .card{padding:14px}
 }
+
+/* ---------- 日历当日面板 ---------- */
+.day-panel{margin-top:14px}
+.day-panel>header{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 8px}
+.day-panel>header b{font-size:14px;font-weight:650;letter-spacing:-.01em}
+.day-panel>header span{font-size:11.5px;color:var(--ink-3)}
+.day-panel .ghost{margin-top:10px}
+
+/* ---------- 查计划 ---------- */
+.lookup-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.lookup-row select{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:13px;outline:none}
+.lk-row{display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:baseline;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 0;text-align:left;font-size:13px}
+.lk-row:last-of-type{border-bottom:0}
+.lk-row b{font-size:11.5px;color:var(--ink-3);font-weight:600}
+.lk-row span{color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lk-row em{font-style:normal;font-size:11px;color:var(--ink-3)}
+.lk-row em.ok{color:var(--ok)}
