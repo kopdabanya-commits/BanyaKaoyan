@@ -60,10 +60,15 @@ page = ('<!doctype html><meta charset="utf-8">'
         'header{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;gap:10px;'
         'padding:12px 18px;background:rgba(244,242,236,.96);border-bottom:1px solid #E7E4DB}'
         'header b{font-size:14px}'
-        'button{border:0;border-radius:10px;background:#1F5E4F;color:#fff;font-weight:600;font-size:13px;padding:9px 14px}'
+        'button,a{display:inline-block;border:0;border-radius:10px;background:#1F5E4F;color:#fff;font-weight:600;font-size:13px;padding:9px 14px;text-decoration:none;margin-left:6px}'
+        'button.alt,a.alt{background:#E6F0EC;color:#17453B}'
         'pre{white-space:pre-wrap;word-break:break-word;max-width:760px;margin:0 auto;padding:18px 18px 80px;'
         'font:12.5px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace}'
-        '</style><header><b>板牙考研 v2 · 交接说明</b><button id="copy">复制全文</button></header>'
+        '</style><header><b>板牙考研 v2 · 交接说明</b><span class="acts">'
+        '<button id="copy">复制全文</button>'
+        '<button id="select" class="alt">全选</button>'
+        '<a id="dl" href="handoff.md" download="HANDOFF.md" class="alt">下载</a>'
+        '</span></header>'
         '<pre id="doc">' + escaped + '</pre>'
         '<script src="handoff.js"></script>')
 with sftp.open(f"{dest}/handoff.html", "w") as fh:
@@ -76,7 +81,14 @@ with sftp.open(f"{dest}/handoff.js", "w") as fh:
              "catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById('doc'));"
              "const s=getSelection();s.removeAllRanges();s.addRange(r);"
              "document.getElementById('copy').textContent='已选中，长按复制';}"
-             "setTimeout(()=>{document.getElementById('copy').textContent='复制全文';},4000);});")
+             "setTimeout(()=>{document.getElementById('copy').textContent='复制全文';},4000);});"
+             "document.getElementById('select').addEventListener('click',()=>{"
+             "const r=document.createRange();r.selectNodeContents(document.getElementById('doc'));"
+             "const s=getSelection();s.removeAllRanges();s.addRange(r);"
+             "document.getElementById('select').textContent='已选中';"
+             "setTimeout(()=>{document.getElementById('select').textContent='全选';},3000);});")
+with sftp.open(f"{dest}/handoff.md", "w") as fh:
+    fh.write(handoff)
 run(f"ln -sfn {dest} /var/www/banya-v2/current")
 
 # 3. 服务端

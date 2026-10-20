@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#6c5ce7">
+<meta name="theme-color" content="#08090B">
 <title>板牙考研</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="stylesheet" href="./assets/style.css">
@@ -11,22 +11,42 @@
 <body>
 <div class="shell">
   <header class="topbar">
-    <div class="brand"><span class="mark">板</span><div><b>板牙考研</b><small id="subject-label">英语二</small></div></div>
-    <div class="switcher" role="tablist">
+    <div class="brand"><span class="mark">板</span><span class="name">板牙考研</span></div>
+    <div class="segmented" role="tablist">
       <button data-subject="english" class="on">英语二</button>
       <button data-subject="politics">政治</button>
     </div>
   </header>
+
   <main id="app"></main>
+
   <form id="command" class="command" autocomplete="off">
-    <input id="command-input" maxlength="200" enterkeyhint="send" placeholder="说一句：明天没空 / 今天只有 90 分钟">
-    <button type="submit" aria-label="发送">改</button>
+    <span class="cmd-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9z"/><path d="M18.5 15.5l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7z"/></svg>
+    </span>
+    <input id="command-input" maxlength="200" enterkeyhint="send" placeholder="说一句改计划，例如「明天没空」">
+    <button type="submit" aria-label="发送">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13m-5-6 6 6-6 6"/></svg>
+    </button>
   </form>
+
   <nav class="tabs">
-    <button data-view="today" class="on"><i>今</i><span>今天</span></button>
-    <button data-view="calendar"><i>历</i><span>日历</span></button>
-    <button data-view="stats"><i>统</i><span>统计</span></button>
-    <button data-view="me"><i>我</i><span>我的</span></button>
+    <button data-view="today" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>今天</span>
+    </button>
+    <button data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4m8-4v4M3.5 10h17"/></svg>
+      <span>日历</span>
+    </button>
+    <button data-view="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-7m5 7V6m5 14v-9m5 9V9"/></svg>
+      <span>统计</span>
+    </button>
+    <button data-view="me">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+      <span>我的</span>
+    </button>
   </nav>
 </div>
 <div id="modal" class="modal" hidden></div>

@@ -174,7 +174,6 @@ function dailyReview(force = false) {
 function render() {
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
   document.querySelectorAll('.switcher button').forEach((b) => b.classList.toggle('on', b.dataset.subject === subject));
-  $('#subject-label').textContent = subject === 'english' ? '英语二' : '政治';
   $('#app').innerHTML = view === 'today' ? todayView() : view === 'calendar' ? calendarView() : view === 'stats' ? statsView() : meView();
   const app = $('#app');
   app.classList.remove('enter');
@@ -201,16 +200,16 @@ function todayView() {
   const doneMin = sum(list.filter((t) => t.done), 'minutes');
   const pct = total ? Math.round(doneMin / total * 100) : 0;
   const head = `<section class="topdate">
-    <button class="chev" data-action="day" data-n="-1" aria-label="前一天">‹</button>
+    <button class="chev" data-action="day" data-n="-1" aria-label="前一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg></button>
     <div><b>${isToday ? '今天' : weekday(selected)}</b><span>${selected.replace(/-/g, '.')}</span></div>
-    <button class="chev" data-action="day" data-n="1" aria-label="后一天">›</button>
+    <button class="chev" data-action="day" data-n="1" aria-label="后一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></button>
   </section>`;
   const focus = `<section class="focus">
     <div class="ring" style="--p:${pct}"><div class="ring-in"><b>${remain}</b><small>分钟待做</small></div></div>
     <div class="focus-list">
-      <div><b>${list.length - done}</b><span>项未完成</span></div>
-      <div><b>${done}</b><span>已完成</span></div>
-      <div><b>${total}</b><span>计划分钟</span></div>
+      <div><span>未完成</span><b>${list.length - done}</b></div>
+      <div><span>已完成</span><b>${done}</b></div>
+      <div><span>计划分钟</span><b>${total}</b></div>
     </div>
   </section>`;
   const hint = isToday && p.days >= 3
@@ -261,7 +260,7 @@ function calendarView() {
   }
   const list = ofDate(selected);
   return `<section class="cal">
-    <header><button data-action="month" data-n="-1">‹</button><b>${year} 年 ${month} 月</b><button data-action="month" data-n="1">›</button></header>
+    <header><button data-action="month" data-n="-1" aria-label="上个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg></button><b>${year} 年 ${month} 月</b><button data-action="month" data-n="1" aria-label="下个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></button></header>
     <div class="cal-week">${['一','二','三','四','五','六','日'].map((x) => `<span>${x}</span>`).join('')}</div>
     <div class="cal-grid">${cells.join('')}</div>
   </section>
