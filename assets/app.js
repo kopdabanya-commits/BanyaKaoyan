@@ -615,6 +615,7 @@ function englishStats() {
         <button data-action="backfill">手动补录</button>
         <button data-action="import-records">粘贴补录</button>
         <button data-action="record-prompt">复制提示词</button>
+        <button data-action="clear-records">清空补录</button>
       </div>
     </section>
     <section class="card">
@@ -1005,6 +1006,16 @@ document.addEventListener('click', async (e) => {
   if (a === 'check-update') { await checkUpdate(true); return; }
   if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'import-records') { openImport('records'); return; }
+  if (a === 'clear-records') {
+    const n = state.tasks.filter((t) => !t.deleted && !t.date).length;
+    if (!n) return toast('没有补录记录');
+    if (!confirm('删除全部 ' + n + ' 条补录记录？')) return;
+    pushUndo();
+    for (const t of state.tasks) if (!t.deleted && !t.date) { t.deleted = true; touch(t); }
+    state.dirty = true; save(); render(); schedulePush();
+    toast('已清空 ' + n + ' 条');
+    return;
+  }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
     const year = el.dataset.year, kind = el.dataset.kind;
@@ -1049,12 +1060,23 @@ document.addEventListener('click', async (e) => {
     pushUndo();
     let removed = 0, kept = 0, added = 0;
     if (mode === 'records') {
-      const seen = new Set(live().map((t) => t.title));
-      const fresh = parsed.filter((t) => !seen.has(t.title));
-      state.tasks = state.tasks.concat(fresh);
-      added = fresh.length;
+      let updated = 0;
+      for (const rec of parsed) {
+        const same = state.tasks.find((t) => !t.deleted && !t.date && t.title === rec.title);
+        if (same) {
+          same.score = rec.score;
+          same.scoreMax = rec.scoreMax;
+          same.done = true;
+          touch(same);
+          updated++;
+        } else {
+          state.tasks.push(rec);
+          added++;
+        }
+      }
+      state.dirty = true;
       save(); closeSheet(); render(); schedulePush();
-      toast('补录 ' + added + ' 条历史记录');
+      toast('新增 ' + added + (updated ? ' · 更新 ' + updated : ''));
       return;
     }
     if (mode === 'range') {
