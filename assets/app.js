@@ -55,7 +55,6 @@ if (params.get('demo') === '1' && !state.tasks.length) {
 }
 if (['calendar', 'stats', 'me'].includes(params.get('view'))) view = params.get('view');
 if (['english', 'politics'].includes(params.get('subject'))) { subject = params.get('subject'); state.prefs.subject = subject; }
-if (params.get('action') === 'import') setTimeout(() => openImport(), 0);
 
 function load() {
   const base = DEFAULTS();
@@ -449,6 +448,25 @@ function politicsStats() {
   };
 }
 
+
+const KIND_NAME = { 完: '完形', 阅: '阅读', 新: '新题型', 译: '翻译', 小: '小作文', 大: '大作文' };
+const KIND_TYPE = { 完: '完形', 阅: '阅读', 新: '新题型', 译: '翻译', 小: '写作', 大: '写作' };
+
+function openYear(year, kind) {
+  const list = live()
+    .filter((t) => t.subject === 'english' && String(t.title).includes(String(year)) && (!kind || kindOf(t) === kind))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  $('#modal').hidden = false;
+  $('#modal').innerHTML = `<div class="sheet">
+    <header><h2>${year} 年${kind ? ' · ' + KIND_NAME[kind] : ''}</h2><button data-action="close">×</button></header>
+    ${list.length ? list.map((t) => `<div class="yt-row">
+        <span>${esc(t.title)}</span>
+        <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : typeof t.score === 'number' ? '得分 ' + t.score : '未完成'}</em>
+      </div>`).join('') : '<p class="note">这一年还没有安排</p>'}
+    <button class="ghost wide" data-action="year-add" data-year="${year}" data-kind="${kind || ''}">添加${kind ? KIND_NAME[kind] : ''}任务</button>
+  </div>`;
+}
+
 function matrixCell(c) {
   if (!c.plan) return '<i class="none">·</i>';
   if (c.done >= c.plan) return `<i class="ok">${c.plan}</i>`;
@@ -484,7 +502,10 @@ function englishStats() {
       <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项 · ${avg ? '二刷均分 ' + avg : '无分数'}</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
-        ${covered.map((r) => `<div class="mrow"><b>${r.y}</b>${EXAM_SHAPE.map(([k]) => matrixCell(r.cells[k])).join('')}</div>`).join('')}
+        ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
+          <button class="myear" data-action="year" data-year="${r.y}">${r.y}</button>
+          ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k])}</button>`).join('')}
+        </div>`).join('')}
       </div>
       <button class="ghost wide" data-action="backfill">补录记录</button>
     </section>
@@ -862,6 +883,12 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
+  if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
+  if (a === 'year-add') {
+    const year = el.dataset.year, kind = el.dataset.kind;
+    openSheet({ date: year + '-12-01', title: year + ' ', type: KIND_TYPE[kind] || '阅读', minutes: 30 });
+    return;
+  }
   if (a === 'backfill') { openSheet({ date: shift(today(), -1), title: '', type: '阅读', minutes: 30 }); return; }
   if (a === 'close') { closeSheet(); return; }
   if (a === 'save-task') {
@@ -988,6 +1015,9 @@ pull().finally(() => {
   if (linked) toast('已连接云端');
   lastReport = dailyReview();
   if (lastReport) render();
+  const action = params.get('action');
+  if (action === 'import') openImport();
+  if (action === 'year') openYear(Number(params.get('year') || 2015), params.get('kind') || '');
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull().catch(() => {}); });
 window.addEventListener('online', () => { if (state.dirty) push().catch(() => {}); });
