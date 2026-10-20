@@ -377,8 +377,7 @@ function weeklyReview() {
   const weakest = Object.entries(byType)
     .filter(([, v]) => v.total >= 2)
     .sort((a, b) => a[1].done / a[1].total - b[1].done / b[1].total)[0];
-  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项，实际 ' +
-    s.actualMinutes + ' 分钟，计划 ' + s.planMinutes + ' 分钟。'];
+  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项。'];
   if (!s.list.length) lines.push('这周还没有安排，先去导入一份计划。');
   else if (s.rate >= 80) lines.push('完成率不错，保持现在的节奏，不要额外加量。');
   else if (s.rate >= 50) lines.push('完成率一般，优先保住每天必做的那几项，其余可以往后挪。');
@@ -386,8 +385,8 @@ function weeklyReview() {
   if (weakest) lines.push('最弱的是「' + weakest[0] + '」（' + weakest[1].done + '/' + weakest[1].total + '），下周先补它。');
   if (p.days > 0) {
     lines.push(p.behind
-      ? '按剩余 ' + p.remain + ' 分钟 / ' + p.days + ' 天算，每天需要 ' + p.required + ' 分钟，目前平均 ' + p.actual + ' 分钟，落后。'
-      : '每天应做 ' + p.required + ' 分钟，近 7 天平均 ' + p.actual + ' 分钟，节奏正常。');
+      ? '每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项，目前落下。'
+      : '每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项，节奏正常。');
   }
   return lines.join('\n');
 }
@@ -410,26 +409,30 @@ function englishMatrix() {
   for (let y = 2010; y <= 2023; y++) {
     const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(String(y)));
     const cells = {};
-    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: 0 };
+    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0, rec: null };
     for (const t of list) {
       const k = kindOf(t);
       if (!cells[k]) continue;
-      if (!t.date) { cells[k].rec = 1; continue; }
+      if (!t.date) {
+        if (!cells[k].rec || (t.score ?? -1) > (cells[k].rec.score ?? -1)) cells[k].rec = t;
+        continue;
+      }
       cells[k].plan++;
       if (t.done) cells[k].done++;
     }
-    // 无日期记录 = 至少做过一次
-    for (const k of Object.keys(cells)) {
-      if (cells[k].rec) {
-        cells[k].plan = Math.max(cells[k].plan, 1);
-        cells[k].done = Math.max(cells[k].done, 1);
-      }
-    }
-    const scored = list.filter((t) => typeof t.score === 'number');
-    rows.push({ y, cells, total: list.length,
-      avg: scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null });
+    rows.push({ y, cells, total: list.length });
   }
   return rows;
+}
+
+function scoreRate(t) {
+  if (typeof t.score !== 'number') return null;
+  return Math.max(0, Math.min(1, t.score / (t.scoreMax || 10)));
+}
+
+function rateClass(rate) {
+  if (rate == null) return '';
+  return rate >= 0.8 ? 'good' : rate >= 0.6 ? 'mid' : 'low';
 }
 
 function englishTypes() {
@@ -440,7 +443,8 @@ function englishTypes() {
     const row = map.get(k);
     row.plan++;
     if (t.done) row.done++;
-    if (typeof t.score === 'number') row.scored.push(t.score);
+    const r = scoreRate(t);
+    if (r != null) row.scored.push({ rate: r });
   }
   const order = ['阅', '完', '新', '译', '小', '大'];
   return [...map.values()].sort((a, b) => {
@@ -555,8 +559,13 @@ function openYear(year, kind) {
 }
 
 function matrixCell(c) {
+  if (c.rec) {
+    const rate = scoreRate(c.rec);
+    const show = typeof c.rec.score === 'number' ? c.rec.score : '✓';
+    return `<i class="rec ${rateClass(rate)}">${show}</i>`;
+  }
   if (!c.plan) return '<i class="none">·</i>';
-  if (c.done >= c.plan) return `<i class="ok">${c.plan}</i>`;
+  if (c.done >= c.plan) return '<i class="ok">✓</i>';
   if (c.done) return `<i class="part">${c.done}/${c.plan}</i>`;
   return `<i class="plan">${c.plan}</i>`;
 }
@@ -568,17 +577,17 @@ function englishStats() {
     const d = shift(today(), i - 6);
     return { d, minutes: rangeStats(d, d).actualMinutes };
   });
-  const peak = Math.max(60, ...days.map((x) => x.minutes));
+  const peak = Math.max(30, ...days.map((x) => x.minutes));
   const rows = englishMatrix();
   const covered = rows.filter((r) => r.total);
-  const scored = live().filter((t) => t.subject === 'english' && typeof t.score === 'number');
-  const avg = scored.length ? (scored.reduce((a, t) => a + t.score, 0) / scored.length).toFixed(1) : null;
+  const scored = live().filter((t) => t.subject === 'english' && scoreRate(t) != null);
+  const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
   const total = live().filter((t) => t.subject === 'english').length;
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
-      <div class="stat"><b>${week.actualMinutes}</b><span>实际分钟</span></div>
-      <div class="stat"><b>${week.rate}<small>%</small></b><span>完成率</span></div>
+      <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
+      <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : Math.round(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
     </section>
     <section class="card">
       <h2>近 7 天</h2>
@@ -586,7 +595,7 @@ function englishStats() {
     </section>
     <section class="card">
       <h2>真题覆盖</h2>
-      <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项 · ${avg ? '二刷均分 ' + avg : '无分数'}</p>
+      <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
         ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
@@ -601,12 +610,17 @@ function englishStats() {
       </div>
     </section>
     <section class="card">
-      <h2>题型合计</h2>
-      ${types.map((t) => `<div class="type-row">
-        <span>${t.k}</span><b>${t.done}/${t.plan}</b>
-        <i><u style="width:${t.plan ? Math.round(t.done / t.plan * 100) : 0}%"></u></i>
-        <em>${t.scored.length ? '均 ' + (t.scored.reduce((a, b) => a + b, 0) / t.scored.length).toFixed(1) : Math.round(t.plan ? t.done / t.plan * 100 : 0) + '%'}</em>
-      </div>`).join('') || '<p class="note">暂无任务</p>'}
+      <h2>题型</h2>
+      ${types.map((t) => {
+        const rates = t.scored.map((x) => x.rate);
+        const avg = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
+        const pct = Math.round((t.done / (t.plan || 1)) * 100);
+        return `<div class="type-row">
+          <span>${t.k}</span><b>${t.done}/${t.plan}</b>
+          <i><u style="width:${pct}%"></u></i>
+          <em class="${rateClass(avg)}">${avg == null ? pct + '%' : Math.round(avg * 100) + '%'}</em>
+        </div>`;
+      }).join('') || '<p class="note">暂无任务</p>'}
     </section>`;
 }
 
@@ -869,8 +883,8 @@ function gptText(scope) {
   }
   const s = rangeStats(from || (list[0]?.date || today()), to);
   const p = progress();
-  lines.push(`— 合计：完成 ${s.done.length}/${s.list.length} 项，计划 ${s.planMinutes} 分钟，实际 ${s.actualMinutes} 分钟`);
-  lines.push(`— 进度：还剩 ${p.count} 项 ${p.remain} 分钟，每天应做 ${p.required} 分钟，近 7 天平均 ${p.actual} 分钟${p.behind ? '（落后）' : ''}`);
+  lines.push(`— 合计：完成 ${s.done.length}/${s.list.length} 项`);
+  lines.push(`— 进度：还剩 ${p.count} 项，到考试 ${p.days} 天${p.behind ? '（落后）' : ''}`);
   return lines.join('\n');
 }
 
