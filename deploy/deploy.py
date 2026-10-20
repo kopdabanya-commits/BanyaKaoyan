@@ -47,6 +47,8 @@ for name in ["index.html", "manifest.webmanifest", "sw.js"]:
     sftp.put(os.path.join(ROOT, name), f"{dest}/{name}")
 for name in ["app.js", "style.css", "icon.svg"]:
     sftp.put(os.path.join(ROOT, "assets", name), f"{dest}/assets/{name}")
+# 交接文档同步一份到线上，手机上可直接打开复制（不含密钥）
+sftp.put(os.path.join(ROOT, "HANDOFF.md"), f"{dest}/handoff.txt")
 run(f"ln -sfn {dest} /var/www/banya-v2/current")
 
 # 3. 服务端
