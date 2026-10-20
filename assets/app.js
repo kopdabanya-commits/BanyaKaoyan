@@ -54,6 +54,7 @@ if (params.get('demo') === '1' && !state.tasks.length) {
   state.dirty = false; save();
 }
 if (['calendar', 'stats', 'me'].includes(params.get('view'))) view = params.get('view');
+if (['english', 'politics'].includes(params.get('subject'))) { subject = params.get('subject'); state.prefs.subject = subject; }
 if (params.get('action') === 'import') setTimeout(() => openImport(), 0);
 
 function load() {
@@ -363,6 +364,8 @@ function weeklyReview() {
 
 /* ---------------- 统计工具 ---------------- */
 const EXAM_SHAPE = [['完', '完形'], ['阅', '阅读'], ['新', '新题型'], ['译', '翻译'], ['小', '小作文'], ['大', '大作文']];
+const QB_MODULES = ['马原', '毛中特', '新思想', '史纲', '思修'];
+const MA_YUAN_LESSONS = 27;
 
 function kindOf(t) {
   if (t.type === '写作') return /小作文|应用文|书信|通知|告示/.test(t.title) ? '小' : '大';
@@ -384,10 +387,8 @@ function englishMatrix() {
       if (cells[k]) { cells[k].plan++; if (t.done) cells[k].done++; }
     }
     const scored = list.filter((t) => typeof t.score === 'number');
-    rows.push({
-      y, cells, total: list.length,
-      avg: scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null
-    });
+    rows.push({ y, cells, total: list.length,
+      avg: scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null });
   }
   return rows;
 }
@@ -415,38 +416,31 @@ function moduleOf(title) {
   if (/毛中特|毛泽东|新民主主义|社会主义改造|改革开放/.test(s)) return '毛中特';
   if (/史纲|近代史|党史/.test(s)) return '史纲';
   if (/思修|道德|法治/.test(s)) return '思修';
-  if (/习思想|习近平|新时代|中国式现代化|总论/.test(s)) return '习思想';
-  if (/时政|形势与政策/.test(s)) return '时政';
-  return '其他';
+  if (/习思想|习近平|新时代|中国式现代化|总论|新思想/.test(s)) return '新思想';
+  if (/时政|形势与政策/.test(s)) return '新思想';
+  return '';
 }
-
-// 徐涛强化课各模块的真实讲数；没配的按计划数显示
-const POL_TARGET = { 马原: 27 };
 
 function politicsStats() {
   const list = live().filter((t) => t.subject === 'politics');
-  const mods = new Map();
-  for (const t of list) {
-    const m = moduleOf(t.title);
-    if (!mods.has(m)) mods.set(m, { m, course: 0, courseDone: 0, drill: 0, drillDone: 0 });
-    const row = mods.get(m);
-    if (t.type === '课程') { row.course++; if (t.done) row.courseDone++; }
-    if (t.type === '刷题') { row.drill++; if (t.done) row.drillDone++; }
-  }
+  const courses = list.filter((t) => t.type === '课程' && moduleOf(t.title) === '马原');
   const drills = list.filter((t) => t.type === '刷题');
-  // 取标题里最后一个「N题」，并排除「肖1000题」这种题库名
-  const qOf = (t) => {
-    const hits = [...String(t.title).matchAll(/(\d{1,4})\s*题/g)];
-    if (!hits.length) return 0;
-    const n = Number(hits[hits.length - 1][1]);
-    return n >= 1000 ? 0 : n;
-  };
+  const per = {};
+  for (const m of QB_MODULES) per[m] = { plan: 0, done: 0 };
+  for (const t of drills) {
+    const m = moduleOf(t.title);
+    if (per[m]) { per[m].plan++; if (t.done) per[m].done++; }
+  }
+  const daily = [...Array(7)].map((_, i) => {
+    const d = shift(today(), i - 6);
+    return { d, n: drills.filter((t) => t.date === d).length, done: drills.filter((t) => t.date === d && t.done).length };
+  });
   return {
-    mods: [...mods.values()].sort((a, b) => b.course - a.course),
+    courses: courses.length,
+    doneCourses: courses.filter((t) => t.done).length,
+    per, daily,
     drills: drills.length,
-    doneDrills: drills.filter((t) => t.done).length,
-    questions: drills.reduce((sum, t) => sum + qOf(t), 0),
-    doneQuestions: drills.filter((t) => t.done).reduce((sum, t) => sum + qOf(t), 0)
+    doneDrills: drills.filter((t) => t.done).length
   };
 }
 
@@ -457,10 +451,9 @@ function matrixCell(c) {
   return `<i class="plan">${c.plan}</i>`;
 }
 
-function statsView() {
+function englishStats() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
-  const p = progress();
   const days = [...Array(7)].map((_, i) => {
     const d = shift(today(), i - 6);
     return { d, minutes: rangeStats(d, d).actualMinutes };
@@ -471,7 +464,7 @@ function statsView() {
   const scored = live().filter((t) => t.subject === 'english' && typeof t.score === 'number');
   const avg = scored.length ? (scored.reduce((a, t) => a + t.score, 0) / scored.length).toFixed(1) : null;
   const types = englishTypes();
-  const pol = politicsStats();
+  const total = live().filter((t) => t.subject === 'english').length;
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${week.actualMinutes}</b><span>实际分钟</span></div>
@@ -482,56 +475,85 @@ function statsView() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
-      <h2>英语真题覆盖</h2>
-      <p class="note">${avg ? `二刷平均 <b>${avg}</b> 分 · ${scored.length} 次` : '还没有分数记录'}　计划覆盖 ${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${live().filter((t) => t.subject === 'english').length} 项</p>
+      <h2>真题覆盖</h2>
+      <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项 · ${avg ? '二刷均分 ' + avg : '无分数'}</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
         ${covered.map((r) => `<div class="mrow"><b>${r.y}</b>${EXAM_SHAPE.map(([k]) => matrixCell(r.cells[k])).join('')}</div>`).join('')}
       </div>
-      <p class="note">数字 = 当年该题型的计划项数；紫色 = 已完成。每年应有 完形1 · 阅读4 · 新题型1 · 翻译1 · 小作文1 · 大作文1。</p>
-      <button class="ghost wide" data-action="backfill">补录以前的记录</button>
+      <button class="ghost wide" data-action="backfill">补录记录</button>
     </section>
     <section class="card">
-      <h2>英语题型合计</h2>
+      <h2>题型合计</h2>
       ${types.map((t) => `<div class="type-row">
         <span>${t.k}</span><b>${t.done}/${t.plan}</b>
         <i><u style="width:${t.plan ? Math.round(t.done / t.plan * 100) : 0}%"></u></i>
-        <em>${t.scored.length ? '均 ' + (t.scored.reduce((a, b) => a + b, 0) / t.scored.length).toFixed(1) : t.plan ? Math.round(t.done / t.plan * 100) + '%' : '—'}</em>
-      </div>`).join('') || '<p class="note">还没有英语任务</p>'}
+        <em>${t.scored.length ? '均 ' + (t.scored.reduce((a, b) => a + b, 0) / t.scored.length).toFixed(1) : Math.round(t.plan ? t.done / t.plan * 100 : 0) + '%'}</em>
+      </div>`).join('') || '<p class="note">暂无任务</p>'}
+    </section>`;
+}
+
+function politicsStatsView() {
+  const s = politicsStats();
+  const totals = state.prefs.qbTotals || {};
+  const coursePct = Math.round((s.doneCourses / MA_YUAN_LESSONS) * 100);
+  const peak = Math.max(1, ...s.daily.map((x) => x.done));
+  const rows = QB_MODULES.map((m) => {
+    const r = s.per[m] || { plan: 0, done: 0 };
+    const total = Number(totals[m]) || 0;
+    const pct = total ? Math.round((r.done / total) * 100) : (r.plan ? Math.round((r.done / r.plan) * 100) : 0);
+    if (!total && !r.plan) {
+      return `<div class="type-row"><span>${m}</span><b>—</b><i></i><em></em></div>`;
+    }
+    return `<div class="type-row">
+      <span>${m}</span><b>${total ? r.done + '/' + total : r.done + '/' + r.plan}</b>
+      <i><u style="width:${pct}%"></u></i>
+      <em>${total ? pct + '%' : '已排 ' + r.plan}</em>
+    </div>`;
+  }).join('');
+  return `<section class="stat-row">
+      <div class="stat"><b>${s.doneCourses}<small>/${MA_YUAN_LESSONS}</small></b><span>马原强化课</span></div>
+      <div class="stat"><b>${s.doneDrills}<small>/${s.drills}</small></b><span>肖1000 章节</span></div>
+      <div class="stat"><b>${s.daily.reduce((a, x) => a + x.done, 0)}</b><span>近 7 天刷题</span></div>
     </section>
     <section class="card">
-      <h2>政治</h2>
-      ${pol.mods.map((m) => {
-        const target = POL_TARGET[m.m];
-        const total = target || m.course;
-        return `<div class="type-row">
-          <span>${m.m}</span><b>${m.courseDone}/${total}</b>
-          <i><u style="width:${total ? Math.round(m.courseDone / total * 100) : 0}%"></u></i>
-          <em>${target ? '课 · 已排 ' + m.course : '已排 ' + m.course}</em>
-        </div>`;
-      }).join('') || '<p class="note">还没有政治任务</p>'}
-      <p class="line" style="margin-top:10px">苍盾题库：<b>${pol.doneDrills}/${pol.drills}</b> 次 · <b>${pol.doneQuestions}/${pol.questions}</b> 题</p>
+      <h2>马原强化课</h2>
+      <div class="type-row">
+        <span>徐涛</span><b>${s.doneCourses}/${MA_YUAN_LESSONS}</b>
+        <i><u style="width:${coursePct}%"></u></i>
+        <em>${s.courses ? '已排 ' + s.courses : '未排'}</em>
+      </div>
     </section>
     <section class="card">
-      <h2>进度</h2>
-      <p class="line">还剩 <b>${p.count}</b> 项 · <b>${p.remain}</b> 分钟，到 ${p.end.replace(/-/g, '.')} 还有 ${p.days} 天</p>
-      <p class="line ${p.behind ? 'warn' : ''}">${p.behind ? '落后' : '正常'}：每天应做 <b>${p.required}</b> 分钟，近 7 天平均 <b>${p.actual}</b> 分钟</p>
+      <h2>肖1000 章节</h2>
+      ${rows}
+      <div class="qb-form">
+        ${QB_MODULES.map((m) => `<label><span>${m}</span><input type="number" min="0" max="200" data-qb="${m}" value="${Number(totals[m]) || ''}" placeholder="总章数"></label>`).join('')}
+      </div>
+      <button class="ghost wide" data-action="save-qb">保存章节总数</button>
     </section>
     <section class="card">
+      <h2>每天刷题</h2>
+      <div class="bars">${s.daily.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.done / peak * 84))}px" class="${x.done ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
+    </section>`;
+}
+
+
+function statsFooter() {
+  return `<section class="card">
       <h2>本周复盘</h2>
-      <p class="line">${weeklyReview().split('\n').map(esc).join('<br>')}</p>
-      <button class="ghost wide" data-action="copy-review">复制复盘给 GPT</button>
-    </section>
-    <section class="card">
-      <h2>复制给 GPT</h2>
-      <div class="chips">
+      <p class="line">${weeklyReview().split(String.fromCharCode(10)).map(esc).join('<br>')}</p>
+      <div class="chips" style="margin-top:10px">
+        <button data-action="copy-review">复制复盘</button>
         <button data-action="copy" data-scope="day">今天</button>
         <button data-action="copy" data-scope="week">近 7 天</button>
         <button data-action="copy" data-scope="all">全部</button>
       </div>
-      <button class="cta wide" data-action="copy" data-scope="week">复制近 7 天，让 GPT 分析</button>
-      <p class="note">包含日期、任务、类型、计划/实际分钟、状态和得分。</p>
     </section>`;
+}
+
+function statsView() {
+  return (subject === 'english' ? englishStats() : politicsStatsView()) + statsFooter();
 }
 
 function meView() {
@@ -930,6 +952,13 @@ document.addEventListener('click', async (e) => {
     pushUndo();
     for (const t of state.tasks) if (t.subject === subject && !t.deleted) { t.deleted = true; touch(t); }
     state.dirty = true; save(); render(); schedulePush(); toast('已清空，可撤销');
+    return;
+  }
+  if (a === 'save-qb') {
+    const totals = {};
+    document.querySelectorAll('[data-qb]').forEach((el) => { totals[el.dataset.qb] = Number(el.value) || 0; });
+    state.prefs.qbTotals = totals;
+    save(); render(); toast('已保存章节数');
     return;
   }
   if (a === 'save-prefs') {
