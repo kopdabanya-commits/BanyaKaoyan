@@ -9,7 +9,7 @@ HOST = os.environ.get("BANYA_ECS_HOST", "124.70.128.201")
 USER = os.environ.get("BANYA_ECS_USER", "root")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # app/
 PASS_FILE = os.environ.get("BANYA_ECS_PASS_FILE", os.path.join(ROOT, ".secrets", "ecs-pass.txt"))
-KNOWN_HOSTS = os.environ.get("BANYA_KNOWN_HOSTS", os.path.expanduser("~/.ssh/known_hosts"))
+KNOWN_HOSTS = os.environ.get("BANYA_KNOWN_HOSTS", os.path.join(ROOT, "deploy", "known_hosts"))
 
 password = open(PASS_FILE, encoding="utf-8").read().strip()
 client = paramiko.SSHClient()
@@ -118,8 +118,8 @@ location /v2/ {
     run("nginx -t && systemctl reload nginx")
 
 # 5. 自检
-run("curl -fsS -o /dev/null -w 'v2-index %{http_code}\\n' http://127.0.0.1/v2/")
-run("curl -fsS -H 'Host: 124.70.128.201' -o /dev/null -w 'v2-health %{http_code}\\n' http://127.0.0.1/v2/api/health")
+run("curl -fsSk -H 'Host: 124.70.128.201' -o /dev/null -w 'index %{http_code}\n' https://127.0.0.1/")
+run("curl -fsSk -H 'Host: 124.70.128.201' -o /dev/null -w 'health %{http_code}\n' https://127.0.0.1/api/health")
 sftp.close()
 client.close()
 if os.environ.get("BANYA_PRINT_TOKEN") == "1":
