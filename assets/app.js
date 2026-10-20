@@ -47,6 +47,7 @@ if (params.get('demo') === '1' && !state.tasks.length) {
   state.dirty = false; save();
 }
 if (['calendar', 'stats', 'me'].includes(params.get('view'))) view = params.get('view');
+if (params.get('action') === 'import') setTimeout(() => openImport(), 0);
 
 function load() {
   const base = DEFAULTS();
@@ -175,6 +176,19 @@ function render() {
   document.querySelectorAll('.switcher button').forEach((b) => b.classList.toggle('on', b.dataset.subject === subject));
   $('#subject-label').textContent = subject === 'english' ? '英语二' : '政治';
   $('#app').innerHTML = view === 'today' ? todayView() : view === 'calendar' ? calendarView() : view === 'stats' ? statsView() : meView();
+  const app = $('#app');
+  app.classList.remove('enter');
+  void app.offsetWidth;
+  app.classList.add('enter');
+  animateRing();
+}
+
+function animateRing() {
+  const ring = document.querySelector('.ring');
+  if (!ring) return;
+  const target = ring.style.getPropertyValue('--p') || '0';
+  ring.style.setProperty('--p', '0');
+  requestAnimationFrame(() => requestAnimationFrame(() => ring.style.setProperty('--p', target)));
 }
 
 function todayView() {
@@ -256,6 +270,36 @@ function calendarView() {
   <button class="ghost wide" data-action="add">在这天添加</button>`;
 }
 
+
+function weeklyReview() {
+  const start = shift(today(), -6);
+  const s = rangeStats(start, today());
+  const p = progress();
+  const byType = {};
+  for (const t of s.list) {
+    const k = t.type || '其他';
+    byType[k] = byType[k] || { total: 0, done: 0 };
+    byType[k].total++;
+    if (t.done) byType[k].done++;
+  }
+  const weakest = Object.entries(byType)
+    .filter(([, v]) => v.total >= 2)
+    .sort((a, b) => a[1].done / a[1].total - b[1].done / b[1].total)[0];
+  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项，实际 ' +
+    s.actualMinutes + ' 分钟，计划 ' + s.planMinutes + ' 分钟。'];
+  if (!s.list.length) lines.push('这周还没有安排，先去导入一份计划。');
+  else if (s.rate >= 80) lines.push('完成率不错，保持现在的节奏，不要额外加量。');
+  else if (s.rate >= 50) lines.push('完成率一般，优先保住每天必做的那几项，其余可以往后挪。');
+  else lines.push('完成率偏低，先减少每天任务数量，否则容易整天空转。');
+  if (weakest) lines.push('最弱的是「' + weakest[0] + '」（' + weakest[1].done + '/' + weakest[1].total + '），下周先补它。');
+  if (p.days > 0) {
+    lines.push(p.behind
+      ? '按剩余 ' + p.remain + ' 分钟 / ' + p.days + ' 天算，每天需要 ' + p.required + ' 分钟，目前平均 ' + p.actual + ' 分钟，落后。'
+      : '每天应做 ' + p.required + ' 分钟，近 7 天平均 ' + p.actual + ' 分钟，节奏正常。');
+  }
+  return lines.join('\n');
+}
+
 function statsView() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
@@ -285,6 +329,11 @@ function statsView() {
     <section class="card">
       <h2>题型分布</h2>
       <div class="chips">${Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)} ${v}</span>`).join('') || '<span class="muted">暂无</span>'}</div>
+    </section>
+    <section class="card">
+      <h2>本周复盘</h2>
+      <p class="line">${weeklyReview().split('\n').map(esc).join('<br>')}</p>
+      <button class="ghost wide" data-action="copy-review">复制复盘给 GPT</button>
     </section>
     <section class="card">
       <h2>复制给 GPT</h2>
@@ -409,11 +458,13 @@ function openImport() {
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>导入计划</h2><button data-action="close">×</button></header>
     <p class="note">粘贴 GPT 生成的计划：Markdown 表格、每行一条或 JSON 都能识别。</p>
-    <textarea id="import-text" rows="10" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
-    <div class="row-btns">
-      <button class="ghost" data-action="import-merge">合并</button>
-      <button class="cta" data-action="import-replace">替换</button>
+    <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
+    <div class="modes">
+      <label><input type="radio" name="import-mode" value="range" checked><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
+      <label><input type="radio" name="import-mode" value="merge"><span><b>只添加</b><em>相同日期和内容的任务跳过</em></span></label>
+      <label><input type="radio" name="import-mode" value="all"><span><b>全部替换</b><em>清空当前科目后导入</em></span></label>
     </div>
+    <button class="cta wide" data-action="import-run">导入</button>
   </div>`;
 }
 
@@ -512,6 +563,7 @@ async function push() {
       state.tasks = mergeTasks(state.tasks, err.payload.tasks);
       state.rev = err.payload.revision;
       save();
+      toast('云端有更新，已自动合并');
       return push();
     }
     syncState = 'error';
@@ -575,7 +627,17 @@ document.addEventListener('click', async (e) => {
   if (a === 'pick') { selected = el.dataset.date; view = 'today'; render(); return; }
   if (a === 'toggle') {
     const t = findTask(el.dataset.id);
-    if (t) { t.done = !t.done; if (t.done) t.notDone = false; touch(t); save(); render(); schedulePush(); }
+    if (!t || t._animating) return;
+    t.done = !t.done; if (t.done) t.notDone = false;
+    touch(t); save(); schedulePush();
+    const card = el.closest('.task');
+    if (card && t.done) {
+      t._animating = true;
+      card.classList.add('pop');
+      setTimeout(() => { t._animating = false; render(); }, 220);
+    } else {
+      render();
+    }
     return;
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
@@ -604,22 +666,40 @@ document.addEventListener('click', async (e) => {
     return;
   }
   if (a === 'import') { openImport(); return; }
-  if (a === 'import-replace' || a === 'import-merge') {
+  if (a === 'import-run') {
+    const text = $('#import-text').value;
+    const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'range';
     let parsed = [];
-    try { parsed = parsePlan($('#import-text').value); } catch { return toast('格式无法识别'); }
+    try { parsed = parsePlan(text); } catch { return toast('格式无法识别'); }
     if (!parsed.length) return toast('没有识别到任务');
     pushUndo();
-    if (a === 'import-replace') {
-      for (const t of state.tasks) if (t.subject === subject && !t.deleted) { t.deleted = true; touch(t); }
+    let removed = 0, kept = 0, added = 0;
+    if (mode === 'range') {
+      const dates = new Set(parsed.map((t) => t.date));
+      for (const t of state.tasks) {
+        if (t.deleted || t.subject !== subject || !dates.has(t.date)) continue;
+        if (t.done || t.notDone) { kept++; continue; }
+        t.deleted = true; touch(t); removed++;
+      }
+      state.tasks = state.tasks.concat(parsed); added = parsed.length;
+    } else if (mode === 'merge') {
+      const seen = new Set(live().filter(mine).map((t) => t.date + '|' + t.title));
+      const fresh = parsed.filter((t) => !seen.has(t.date + '|' + t.title));
+      state.tasks = state.tasks.concat(fresh); added = fresh.length;
+    } else {
+      for (const t of state.tasks) {
+        if (!t.deleted && t.subject === subject) { t.deleted = true; touch(t); removed++; }
+      }
+      state.tasks = state.tasks.concat(parsed); added = parsed.length;
     }
-    state.tasks = state.tasks.concat(parsed);
     state.dirty = true; save(); closeSheet(); render(); schedulePush();
-    toast((a === 'import-replace' ? '已替换 ' : '已合并 ') + parsed.length + ' 条');
+    toast('新增 ' + added + (removed ? ' · 删除 ' + removed : '') + (kept ? ' · 保留已完成 ' + kept : ''));
     return;
   }
   if (a === 'export') { exportAll(); return; }
   if (a === 'prompt') { copyText(promptText(), '导入提示词'); return; }
   if (a === 'copy') { copyText(gptText(el.dataset.scope), '学习情况'); return; }
+  if (a === 'copy-review') { copyText(weeklyReview() + '\n\n' + gptText('week'), '本周复盘'); return; }
   if (a === 'clear') {
     if (!confirm('清空「' + (subject === 'english' ? '英语二' : '政治') + '」的全部任务？云端也会同步删除。')) return;
     pushUndo();

@@ -196,3 +196,67 @@ h1,h2,h3,p{margin:0}
 /* ---------- Toast ---------- */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(136px + env(safe-area-inset-bottom));background:#22241F;color:#F7F5EF;padding:11px 16px;border-radius:11px;font-size:var(--fs-2);max-width:88%;text-align:center;z-index:150;box-shadow:0 10px 30px rgba(23,24,27,.25)}
 .toast[hidden]{display:none}
+
+/* ============ 动效 ============ */
+@property --p { syntax: '<number>'; initial-value: 0; inherits: false; }
+.ring{transition: --p .75s cubic-bezier(.22,1,.36,1)}
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(.985); } 100% { transform: scale(1); } }
+
+#app.enter{animation: fadeUp .26s cubic-bezier(.22,1,.36,1)}
+.task.pop{animation: pop .22s ease; background: var(--accent-soft)}
+.sheet{animation: sheetUp .3s cubic-bezier(.22,1,.36,1)}
+.modal{animation: fadeIn .18s ease}
+.toast{animation: toastIn .2s ease}
+.cta:active,.ghost:active,.danger:active{transform: scale(.985)}
+.tabs button:active i{transform: scale(.9)}
+.tabs button i{transition: transform .15s ease, background .15s ease}
+.tick,.task,.switcher button{transition: background .15s ease, color .15s ease, border-color .15s ease}
+
+@media (prefers-reduced-motion: reduce) {
+  *{animation-duration:.01ms !important; transition-duration:.01ms !important}
+}
+
+/* ============ 导入模式 ============ */
+.modes{display:grid;gap:8px;margin:14px 0}
+.modes label{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#FCFBF9;transition:border-color .15s,background .15s}
+.modes input{margin-top:3px;accent-color:var(--accent)}
+.modes b{display:block;font-size:13.5px;font-weight:600}
+.modes em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.modes label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+
+/* ============ 深色模式 ============ */
+@media (prefers-color-scheme: dark) {
+  :root{
+    --paper:#121310; --card:#1B1D19; --ink:#F1F0EA; --ink-2:#BDBEB6; --muted:#8B8D85;
+    --line:#2A2C26; --accent:#6FC29F; --accent-ink:#13352A; --accent-soft:#1C2C25;
+    --alert:#E98A72; --alert-soft:#2A1E19;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.28);
+  }
+  body{background:var(--paper)}
+  .switcher{background:#232520}
+  .switcher button.on{background:#1B1D19;box-shadow:none}
+  .mark{color:#0F1A15}
+  .chev,.ghost,.chips button,.tags span,.sheet header button{background:#232520}
+  .chev{color:var(--ink-2)}
+  .ghost:active,.chips button:active{background:#2B2E28}
+  .field input,.field select,.field textarea,.sheet textarea{background:#191B17;border-color:var(--line)}
+  .field input:focus{background:#1D201B}
+  .modes label{background:#191B17}
+  .modes label:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
+  .task.done{opacity:.45}
+  .cal-day i{background:#3B3E36}
+  .cal-day.sel{background:var(--accent-soft)}
+  .tabs{background:rgba(18,19,16,.92)}
+  .command{background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast{background:#EFEDE6;color:#17181B}
+  .review{background:var(--accent-soft)}
+  .review header b,.review p{color:#B9E6D2}
+  .review .ghost.small{background:rgba(255,255,255,.08);color:#D8F3E6}
+  .task.pop{background:#20302A}
+  .empty,.card,.focus,.tasks,.cal,.stat{box-shadow:var(--shadow)}
+}
