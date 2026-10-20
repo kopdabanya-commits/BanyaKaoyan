@@ -86,8 +86,14 @@ with sftp.open("/etc/systemd/system/banya-v2.service", "w") as fh:
 run("systemctl daemon-reload && systemctl enable banya-v2.service >/dev/null && systemctl restart banya-v2.service")
 run("sleep 2; systemctl is-active banya-v2.service")
 
-# 4. nginx
-snippet = """location /v2/api/ {
+# 4. nginx：只在首次安装时接入；根路径已由 v2 提供服务时不重复插入
+live = "/etc/nginx/sites-available/banya-sync"
+with sftp.open(live) as fh:
+    config = fh.read().decode()
+if "root /var/www/banya-v2/current;" in config:
+    print("site already serves v2 at root; nginx untouched")
+else:
+    snippet = '''location /v2/api/ {
     access_log off;
     proxy_pass http://127.0.0.1:8766/;
     proxy_set_header Host $host;
@@ -98,23 +104,18 @@ location /v2/ {
     alias /var/www/banya-v2/current/;
     index index.html;
     try_files $uri $uri/ /v2/index.html;
-    add_header Cache-Control "no-cache" always;
 }
-"""
-with sftp.open("/etc/nginx/snippets/banya-v2.conf", "w") as fh:
-    fh.write(snippet)
-
-live = "/etc/nginx/sites-available/banya-sync"
-with sftp.open(live) as fh:
-    config = fh.read().decode()
-if "banya-v2.conf" not in config:
-    run(f"cp -p {live} /root/nginx-banya-sync.bak-$(date -u +%Y%m%dT%H%M%SZ)")
-    marker = "    include /etc/nginx/snippets/banya-v2.conf;\n"
-    index = config.rstrip().rfind("}")
-    with sftp.open(live, "w") as fh:
-        fh.write(config[:index] + marker + config[index:])
-    print("nginx include added")
-run("nginx -t && systemctl reload nginx")
+'''
+    with sftp.open("/etc/nginx/snippets/banya-v2.conf", "w") as fh:
+        fh.write(snippet)
+    if "banya-v2.conf" not in config:
+        run(f"cp -p {live} /root/nginx-banya-sync.bak-$(date -u +%Y%m%dT%H%M%SZ)")
+        marker = "    include /etc/nginx/snippets/banya-v2.conf;" + chr(10)
+        index = config.rstrip().rfind("}")
+        with sftp.open(live, "w") as fh:
+            fh.write(config[:index] + marker + config[index:])
+        print("nginx include added")
+    run("nginx -t && systemctl reload nginx")
 
 # 5. 自检
 run("curl -fsS -o /dev/null -w 'v2-index %{http_code}\\n' http://127.0.0.1/v2/")
