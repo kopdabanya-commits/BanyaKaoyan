@@ -236,9 +236,14 @@ function todayView() {
         ${lastReport.fixes.length > 3 ? `<p class="more">…等 ${lastReport.fixes.length} 项</p>` : ''}
         <button class="ghost small" data-action="undo">撤销这次整理</button>
       </section>` : '';
+  const name = subject === 'english' ? '英语二' : '政治';
+  const total0 = live().filter(mine).length;
+  const empty = total0 === 0
+    ? `<section class="empty"><b>「${name}」还没有任务</b><p>在「我的」里导入这个科目的计划，或先添加一条。导入时会把政治和英语自动分开。</p><button class="cta" data-action="add">添加任务</button></section>`
+    : `<section class="empty"><b>这一天还没有任务</b><p>在「我的」里导入计划，或直接添加一条。</p><button class="cta" data-action="add">添加任务</button></section>`;
   const body = list.length
     ? `<section class="group"><h2>${isToday ? '今日任务' : '当天任务'} <em>${list.length}</em></h2><ul class="tasks">${list.map(row).join('')}</ul></section>`
-    : `<section class="empty"><b>这一天还没有任务</b><p>可以在「我的」里导入 GPT 生成的计划，或直接添加一条。</p><button class="cta" data-action="add">添加任务</button></section>`;
+    : empty;
   return head + focus + hint + review + body;
 }
 
