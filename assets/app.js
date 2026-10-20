@@ -364,8 +364,6 @@ function weeklyReview() {
 
 /* ---------------- 统计工具 ---------------- */
 const EXAM_SHAPE = [['完', '完形'], ['阅', '阅读'], ['新', '新题型'], ['译', '翻译'], ['小', '小作文'], ['大', '大作文']];
-const QB_MODULES = ['马原', '毛中特', '新思想', '史纲', '思修'];
-const MA_YUAN_LESSONS = 27;
 
 function kindOf(t) {
   if (t.type === '写作') return /小作文|应用文|书信|通知|告示/.test(t.title) ? '小' : '大';
@@ -423,24 +421,31 @@ function moduleOf(title) {
 
 function politicsStats() {
   const list = live().filter((t) => t.subject === 'politics');
-  const courses = list.filter((t) => t.type === '课程' && moduleOf(t.title) === '马原');
+  const courses = list.filter((t) => t.type === '课程');
   const drills = list.filter((t) => t.type === '刷题');
-  const per = {};
-  for (const m of QB_MODULES) per[m] = { plan: 0, done: 0 };
-  for (const t of drills) {
-    const m = moduleOf(t.title);
-    if (per[m]) { per[m].plan++; if (t.done) per[m].done++; }
-  }
+  const group = (items) => {
+    const map = new Map();
+    for (const t of items) {
+      const m = moduleOf(t.title) || '其他';
+      if (!map.has(m)) map.set(m, { m, plan: 0, done: 0 });
+      const row = map.get(m);
+      row.plan++;
+      if (t.done) row.done++;
+    }
+    return [...map.values()].sort((a, b) => b.plan - a.plan);
+  };
   const daily = [...Array(7)].map((_, i) => {
     const d = shift(today(), i - 6);
-    return { d, n: drills.filter((t) => t.date === d).length, done: drills.filter((t) => t.date === d && t.done).length };
+    return { d, done: drills.filter((t) => t.date === d && t.done).length };
   });
   return {
-    courses: courses.length,
-    doneCourses: courses.filter((t) => t.done).length,
-    per, daily,
-    drills: drills.length,
-    doneDrills: drills.filter((t) => t.done).length
+    courses: group(courses),
+    drills: group(drills),
+    coursePlan: courses.length,
+    courseDone: courses.filter((t) => t.done).length,
+    drillPlan: drills.length,
+    drillDone: drills.filter((t) => t.done).length,
+    daily
   };
 }
 
@@ -495,49 +500,33 @@ function englishStats() {
 
 function politicsStatsView() {
   const s = politicsStats();
-  const totals = state.prefs.qbTotals || {};
-  const coursePct = Math.round((s.doneCourses / MA_YUAN_LESSONS) * 100);
   const peak = Math.max(1, ...s.daily.map((x) => x.done));
-  const rows = QB_MODULES.map((m) => {
-    const r = s.per[m] || { plan: 0, done: 0 };
-    const total = Number(totals[m]) || 0;
-    const pct = total ? Math.round((r.done / total) * 100) : (r.plan ? Math.round((r.done / r.plan) * 100) : 0);
-    if (!total && !r.plan) {
-      return `<div class="type-row"><span>${m}</span><b>—</b><i></i><em></em></div>`;
-    }
+  const row = (r, label) => {
+    const pct = r.plan ? Math.round((r.done / r.plan) * 100) : 0;
     return `<div class="type-row">
-      <span>${m}</span><b>${total ? r.done + '/' + total : r.done + '/' + r.plan}</b>
+      <span>${r.m}</span><b>${r.done}/${r.plan}</b>
       <i><u style="width:${pct}%"></u></i>
-      <em>${total ? pct + '%' : '已排 ' + r.plan}</em>
+      <em>${pct}%</em>
     </div>`;
-  }).join('');
+  };
   return `<section class="stat-row">
-      <div class="stat"><b>${s.doneCourses}<small>/${MA_YUAN_LESSONS}</small></b><span>马原强化课</span></div>
-      <div class="stat"><b>${s.doneDrills}<small>/${s.drills}</small></b><span>肖1000 章节</span></div>
-      <div class="stat"><b>${s.daily.reduce((a, x) => a + x.done, 0)}</b><span>近 7 天刷题</span></div>
+      <div class="stat"><b>${s.courseDone}<small>/${s.coursePlan}</small></b><span>强化课</span></div>
+      <div class="stat"><b>${s.drillDone}<small>/${s.drillPlan}</small></b><span>刷题</span></div>
+      <div class="stat"><b>${s.daily.reduce((a, x) => a + x.done, 0)}</b><span>近 7 天</span></div>
     </section>
     <section class="card">
-      <h2>马原强化课</h2>
-      <div class="type-row">
-        <span>徐涛</span><b>${s.doneCourses}/${MA_YUAN_LESSONS}</b>
-        <i><u style="width:${coursePct}%"></u></i>
-        <em>${s.courses ? '已排 ' + s.courses : '未排'}</em>
-      </div>
+      <h2>强化课</h2>
+      ${s.courses.map((r) => row(r)).join('') || '<p class="note">计划里还没有课程</p>'}
     </section>
     <section class="card">
-      <h2>肖1000 章节</h2>
-      ${rows}
-      <div class="qb-form">
-        ${QB_MODULES.map((m) => `<label><span>${m}</span><input type="number" min="0" max="200" data-qb="${m}" value="${Number(totals[m]) || ''}" placeholder="总章数"></label>`).join('')}
-      </div>
-      <button class="ghost wide" data-action="save-qb">保存章节总数</button>
+      <h2>刷题</h2>
+      ${s.drills.map((r) => row(r)).join('') || '<p class="note">计划里还没有刷题</p>'}
     </section>
     <section class="card">
       <h2>每天刷题</h2>
       <div class="bars">${s.daily.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.done / peak * 84))}px" class="${x.done ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>`;
 }
-
 
 function statsFooter() {
   return `<section class="card">
@@ -952,13 +941,6 @@ document.addEventListener('click', async (e) => {
     pushUndo();
     for (const t of state.tasks) if (t.subject === subject && !t.deleted) { t.deleted = true; touch(t); }
     state.dirty = true; save(); render(); schedulePush(); toast('已清空，可撤销');
-    return;
-  }
-  if (a === 'save-qb') {
-    const totals = {};
-    document.querySelectorAll('[data-qb]').forEach((el) => { totals[el.dataset.qb] = Number(el.value) || 0; });
-    state.prefs.qbTotals = totals;
-    save(); render(); toast('已保存章节数');
     return;
   }
   if (a === 'save-prefs') {
