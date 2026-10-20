@@ -1,4 +1,4 @@
-"""本地/CI 冒烟：计划读写、版本冲突、一句话调整。使用假模型，不产生费用。"""
+"""本地冒烟：鉴权、计划读写、版本冲突。"""
 import json
 import os
 import shutil
@@ -38,7 +38,7 @@ def wait_ready():
 
 def main() -> int:
     work = tempfile.mkdtemp(prefix="banya-smoke-")
-    env = dict(os.environ, BANYA_V2_FAKE="1", BANYA_V2_TOKEN="testtoken",
+    env = dict(os.environ, BANYA_V2_TOKEN="testtoken",
                BANYA_V2_DB=os.path.join(work, "v2.sqlite3"))
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8801"],
@@ -54,12 +54,6 @@ def main() -> int:
 
         status, payload = call("PUT", "/plan", {"expectedRevision": 0, "tasks": [task]})
         assert status == 409 and payload["revision"] == 1 and payload["tasks"][0]["id"] == "t1"
-
-        status, payload = call("POST", "/adjust", {"instruction": "明天没空", "today": "2026-10-20",
-                                                   "subject": "english", "tasks": [task]})
-        assert status == 200, payload
-        assert payload["tasks"][0]["date"] == "2026-10-22"
-        assert payload["changes"][0]["kind"] == "move"
 
         print("smoke ok")
         return 0

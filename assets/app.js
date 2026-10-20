@@ -17,9 +17,10 @@ const API_BASE = (() => {
   const path = (typeof location !== 'undefined' && location.pathname) || '/';
   return location.origin + (path.startsWith('/v2/') ? '/v2/api' : '/api');
 })();
+const EXAM_DATE = '2026-12-19';
 const DEFAULTS = () => ({
   tasks: [], rev: 0, dirty: false, undo: [], lastReview: '',
-  prefs: { subject: 'english', apiBase: API_BASE, token: '', examDate: '', autoReview: true }
+  prefs: { subject: 'english', apiBase: API_BASE, token: '', autoReview: true, theme: 'auto' }
 });
 
 let state = load();
@@ -111,7 +112,7 @@ function progress() {
   const start = today();
   const future = live().filter((t) => mine(t) && t.date >= start && openTask(t));
   const remain = sum(future, 'minutes');
-  const end = state.prefs.examDate || future.reduce((m, t) => (t.date > m ? t.date : m), start);
+  const end = EXAM_DATE;
   const days = Math.max(1, Math.round((new Date(end + 'T12:00:00') - new Date(start + 'T12:00:00')) / 86400000));
   const week = rangeStats(shift(start, -6), start);
   const actual = Math.round(week.actualMinutes / 7);
@@ -170,10 +171,23 @@ function dailyReview(force = false) {
   return fixes.length ? { date: day, fixes } : null;
 }
 
+
+/* ---------------- 主题 ---------------- */
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+function resolveTheme() {
+  const pref = state.prefs.theme || 'auto';
+  if (pref === 'light' || pref === 'dark') return pref;
+  return darkQuery.matches ? 'dark' : 'light';
+}
+function applyTheme() {
+  document.documentElement.dataset.theme = resolveTheme();
+}
+darkQuery.addEventListener('change', () => { if ((state.prefs.theme || 'auto') === 'auto') applyTheme(); });
+
 /* ---------------- 渲染 ---------------- */
 function render() {
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
-  document.querySelectorAll('.switcher button').forEach((b) => b.classList.toggle('on', b.dataset.subject === subject));
+  document.querySelectorAll('.segmented button[data-subject]').forEach((b) => b.classList.toggle('on', b.dataset.subject === subject));
   $('#app').innerHTML = view === 'today' ? todayView() : view === 'calendar' ? calendarView() : view === 'stats' ? statsView() : meView();
   const app = $('#app');
   app.classList.remove('enter');
@@ -213,7 +227,7 @@ function todayView() {
     </div>
   </section>`;
   const hint = isToday && p.days >= 3
-    ? `<p class="hint${p.behind ? ' warn' : ''}">${p.days} 天后${state.prefs.examDate ? '考试' : '计划结束'} · 每天应做 ${p.required} 分钟 · 近 7 天平均 ${p.actual} 分钟${p.behind ? ' · 落后' : ''}</p>`
+    ? `<p class="hint${p.behind ? ' warn' : ''}">${p.days} 天后考试 · 每天应做 ${p.required} 分钟 · 近 7 天平均 ${p.actual} 分钟${p.behind ? ' · 落后' : ''}</p>`
     : '';
   const review = lastReport && isToday && lastReport.date === today() && lastReport.fixes.length
     ? `<section class="review">
@@ -351,12 +365,26 @@ function meView() {
   const status = state.prefs.token
     ? (syncState === 'error' ? '同步失败，稍后重试' : syncState === 'syncing' ? '同步中…' : `已连接 · 版本 ${state.rev}`)
     : '未连接';
+  const theme = state.prefs.theme || 'auto';
   return `<section class="card">
-      <h2>云端同步</h2>
+      <h2>外观</h2>
+      <div class="segmented wide-seg" role="tablist">
+        <button data-theme-choice="auto" class="${theme === 'auto' ? 'on' : ''}">跟随系统</button>
+        <button data-theme-choice="light" class="${theme === 'light' ? 'on' : ''}">白天</button>
+        <button data-theme-choice="dark" class="${theme === 'dark' ? 'on' : ''}">夜间</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>云同步</h2>
       <div class="row"><span>状态</span><em>${status}</em></div>
-      <label class="field"><span>访问口令</span><input id="pref-token" type="password" value="${esc(state.prefs.token)}" placeholder="部署时生成的口令"></label>
-      <label class="field"><span>考试日期</span><input id="pref-exam" type="date" value="${esc(state.prefs.examDate)}"></label>
+      <label class="field"><span>同步密码</span><input id="pref-token" type="password" value="${esc(state.prefs.token)}" placeholder="部署时生成，只需填一次"></label>
+      <p class="note">这不是账号密码，是这台手机访问你自己服务器的钥匙，只需要填一次。忘了可以在服务器的 /etc/banya-v2.env 里查看。</p>
       <button class="cta" data-action="save-prefs">保存并同步</button>
+    </section>
+    <section class="card">
+      <h2>考试</h2>
+      <div class="row"><span>初试日期</span><em>2026 年 12 月 19 日</em></div>
+      <div class="row"><span>倒计时</span><em>${p.days} 天</em></div>
     </section>
     <section class="card">
       <h2>每日整理</h2>
@@ -366,15 +394,16 @@ function meView() {
     </section>
     <section class="card">
       <h2>计划</h2>
-      <button class="ghost wide" data-action="import">导入 GPT 计划</button>
+      <button class="ghost wide" data-action="import">导入计划</button>
       <button class="ghost wide" data-action="prompt">复制导入提示词</button>
+      <button class="ghost wide" data-action="reclassify">按内容重新分科</button>
       <button class="ghost wide" data-action="export">导出全部</button>
       <button class="ghost wide" data-action="clear">清空当前科目</button>
     </section>
     <section class="card">
       <h2>数据</h2>
-      <div class="row"><span>任务</span><em>${live().filter(mine).length} 条</em></div>
-      <div class="row"><span>待做</span><em>${p.count} 项 · ${p.remain} 分钟</em></div>
+      <div class="row"><span>英语 / 政治</span><em>${countBySubject()}</em></div>
+      <div class="row"><span>本科目待做</span><em>${p.count} 项 · ${p.remain} 分钟</em></div>
       <div class="row"><span>每天应做</span><em>${p.required} 分钟</em></div>
     </section>
     <p class="version">板牙考研 v2</p>`;
@@ -403,6 +432,29 @@ function openSheet(t) {
   </div>`;
 }
 function closeSheet() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
+
+
+/* ---------------- 科目识别 ---------------- */
+const POLITICS_KW = /马原|毛中特|毛概|史纲|思修|时政|政治|肖秀荣|徐涛|腿姐|一千题|1000题|800题|精讲精练|背诵手册|选择题|大题/;
+const ENGLISH_KW = /阅读|翻译|写作|完形|新题型|单词|真题|Text|长难句|作文|模板|黄皮书|恋练有词|英语/;
+function guessSubject(text) {
+  const s = String(text || '');
+  const p = POLITICS_KW.test(s), e = ENGLISH_KW.test(s);
+  if (p && !e) return 'politics';
+  if (e && !p) return 'english';
+  return '';
+}
+function subjectFor(cells, title) {
+  const cell = (cells || []).find((c) => /^(英语|英语二|政治)$/.test(c));
+  if (cell) return /政治/.test(cell) ? 'politics' : 'english';
+  return guessSubject(title) || subject;
+}
+function countBySubject() {
+  const live0 = live();
+  const en = live0.filter((t) => t.subject === 'english').length;
+  const po = live0.filter((t) => t.subject === 'politics').length;
+  return en + ' / ' + po;
+}
 
 /* ---------------- 导入导出 ---------------- */
 const DATE_RE = /(\d{4})-(\d{2})-(\d{2})/;
@@ -436,7 +488,7 @@ function parsePlan(text) {
       const typeCell = cells.find((c) => TYPES.includes(c));
       const nums = cells.filter((c) => /^\d{1,3}$/.test(c));
       const title = cells.find((c) => c && !DATE_RE.test(c) && !/^\d+$/.test(c) && c !== typeCell) || '任务';
-      out.push({ id: uid(), subject, date, title, type: typeCell || '阅读',
+      out.push({ id: uid(), subject: subjectFor(cells, title), date, title, type: typeCell || '阅读',
         minutes: Number(nums.length ? nums[nums.length - 1] : 30), done: false, notDone: false,
         note: '', actualMinutes: null, updatedAt: Date.now() });
       continue;
@@ -446,7 +498,7 @@ function parsePlan(text) {
     const mins = (cleaned.match(/(\d{1,3})\s*(分钟|min)/i) || [])[1];
     const title = cleaned.replace(/\s*\d{1,3}\s*(分钟|min).*$/i, '').replace(DATE_RE, '').replace(/^\d{1,2}[月\/.-]\d{1,2}\s*/, '').trim();
     if (!title) continue;
-    out.push({ id: uid(), subject, date, title, type: TYPES.find((k) => title.includes(k)) || '阅读',
+    out.push({ id: uid(), subject: subjectFor([], title), date, title, type: TYPES.find((k) => title.includes(k)) || '阅读',
       minutes: Number(mins) || 30, done: false, notDone: false, note: '', actualMinutes: null, updatedAt: Date.now() });
   }
   return out;
@@ -586,36 +638,13 @@ async function pull() {
   } catch { syncState = 'error'; if (view === 'me') render(); }
 }
 
-/* ---------------- AI ---------------- */
-async function adjust(text) {
-  const day = today();
-  const windowTasks = live().filter((t) => mine(t) && t.date >= shift(day, -7) && t.date <= shift(day, 45))
-    .map(({ updatedAt, deleted, ...rest }) => rest);
-  const data = await api('/adjust', {
-    method: 'POST',
-    body: JSON.stringify({ instruction: text, today: day, subject, tasks: windowTasks })
-  });
-  if (Array.isArray(data.tasks)) {
-    pushUndo();
-    const now = Date.now();
-    const byId = new Map(state.tasks.map((t) => [t.id, t]));
-    for (const t of data.tasks) {
-      const merged = { ...(byId.get(t.id) || {}), ...t, updatedAt: now };
-      if (!merged.subject) merged.subject = subject;
-      byId.set(t.id, merged);
-    }
-    state.tasks = [...byId.values()];
-    state.dirty = true; save(); render(); schedulePush();
-  }
-  return data;
-}
-
 /* ---------------- 事件 ---------------- */
 document.addEventListener('click', async (e) => {
-  const el = e.target.closest('[data-action],[data-view],[data-subject]');
+  const el = e.target.closest('[data-action],[data-view],[data-subject],[data-theme-choice]');
   if (!el) { if (e.target.id === 'modal') closeSheet(); return; }
   if (el.dataset.view) { view = el.dataset.view; if (view === 'calendar') calMonth = selected.slice(0, 7); render(); return; }
   if (el.dataset.subject) { subject = el.dataset.subject; state.prefs.subject = subject; save(); render(); return; }
+  if (el.dataset.themeChoice) { state.prefs.theme = el.dataset.themeChoice; save(); applyTheme(); render(); return; }
   const a = el.dataset.action;
   if (a === 'day') { selected = shift(selected, Number(el.dataset.n)); render(); return; }
   if (a === 'month') {
@@ -695,6 +724,17 @@ document.addEventListener('click', async (e) => {
     toast('新增 ' + added + (removed ? ' · 删除 ' + removed : '') + (kept ? ' · 保留已完成 ' + kept : ''));
     return;
   }
+  if (a === 'reclassify') {
+    let changed = 0;
+    for (const t of state.tasks) {
+      if (t.deleted) continue;
+      const s = guessSubject(t.title);
+      if (s && s !== t.subject) { t.subject = s; touch(t); changed++; }
+    }
+    if (changed) { pushUndo(); state.dirty = true; save(); render(); schedulePush(); toast('重新分科 ' + changed + ' 项'); }
+    else toast('没有需要改的任务');
+    return;
+  }
   if (a === 'export') { exportAll(); return; }
   if (a === 'prompt') { copyText(promptText(), '导入提示词'); return; }
   if (a === 'copy') { copyText(gptText(el.dataset.scope), '学习情况'); return; }
@@ -708,7 +748,6 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'save-prefs') {
     state.prefs.token = $('#pref-token').value.trim();
-    state.prefs.examDate = $('#pref-exam').value;
     if ($('#pref-review')) state.prefs.autoReview = $('#pref-review').checked;
     save();
     try { await pull(); toast('已连接云端'); } catch { toast('连接失败，检查口令'); }
@@ -723,28 +762,13 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-document.addEventListener('submit', async (e) => {
-  if (e.target.id !== 'command') return;
-  e.preventDefault();
-  const input = $('#command-input'), text = input.value.trim();
-  if (!text) return;
-  const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = '…';
-  try {
-    const data = await adjust(text);
-    input.value = '';
-    toast(data.changes?.length ? '调整 ' + data.changes.length + ' 项 · 点这里撤销' : (data.reply || '没有需要改的地方'), () => undoLast());
-    if (data.violations?.length) setTimeout(() => toast(data.violations[0]), 2200);
-  } catch (err) {
-    toast(err.message || '调整失败，计划未改');
-  } finally { btn.disabled = false; btn.textContent = '改'; }
-});
-
 function toast(message, action) {
   const el = $('#toast'); el.hidden = false; el.textContent = message;
   el.onclick = action ? () => { action(); el.hidden = true; } : null;
   clearTimeout(toast.timer); toast.timer = setTimeout(() => { el.hidden = true; }, action ? 6000 : 2800);
 }
 
+applyTheme();
 render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 pull().finally(() => { lastReport = dailyReview(); if (lastReport) { render(); } });

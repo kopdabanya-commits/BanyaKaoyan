@@ -15,7 +15,6 @@
 - **统计**：近 7 天完成率、实际分钟、进度基线（每天应做 / 落后）、题型分布
 - **复制给 GPT**：今天 / 近 7 天 / 全部，紧凑文本，省 token
 - **导入 GPT 计划**：Markdown 表格、每行一条、JSON；替换或合并
-- **一句话改计划**：移动 / 改时长 / 删除 / 新增，直接落库，可撤销
 - **每日自动整理**：逾期任务按容量分散、每天上限 150 分钟，附改动汇报
 - **云端同步**：版本号条件写入、按任务时间戳合并、删除用墓碑同步
 
@@ -30,7 +29,7 @@ assets/
   style.css                设计系统（CSS 变量集中在 :root）
   icon.svg
 server/
-  main.py                  FastAPI：计划存储 + 一句话调整
+  main.py                  FastAPI：计划存储（带版本号）
   requirements.txt
 deploy/
   deploy.py                发布静态站与后端服务
@@ -57,7 +56,6 @@ task = { id, subject, date, title, type, minutes, done, notDone, actualMinutes, 
 |---|---|---|
 | GET | `/api/plan` | 取云端计划 `{ revision, tasks }` |
 | PUT | `/api/plan` | `{ expectedRevision, tasks }`，冲突返回 409 + 云端任务 |
-| POST | `/api/adjust` | `{ instruction, today, subject, tasks }` → 操作应用后的任务与改动摘要 |
 | GET | `/api/health` | 服务与密钥状态 |
 
 除 health 外都需要 `Authorization: Bearer <口令>`。
