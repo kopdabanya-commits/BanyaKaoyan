@@ -312,7 +312,7 @@ h1,h2,h3,p{margin:0}
 .type-row em{font-style:normal;text-align:right;font-size:11px;color:var(--ink-3);white-space:nowrap}
 
 /* ---------- 真题覆盖矩阵 ---------- */
-.matrix{display:grid;gap:3px;margin:10px 0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.matrix{display:grid;gap:3px;margin:10px 0 8px}
 .mhead,.mrow{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1.45fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px}
 .mhead span{font-size:10px;color:var(--ink-3)}
 .mhead i{font-style:normal;font-size:10px;color:var(--ink-3);text-align:center;letter-spacing:.06em}
