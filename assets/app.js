@@ -60,7 +60,7 @@ function load() {
       lastReview: raw.lastReview || '',
       undo: Array.isArray(raw.undo) ? raw.undo : [],
       lastReview: raw.lastReview || '',
-      prefs: { ...base.prefs, ...(raw.prefs || {}) }
+      prefs: (() => { const merged = { ...base.prefs, ...(raw.prefs || {}) }; if (!merged.apiBase) merged.apiBase = API_BASE; return merged; })()
     };
   } catch { return base; }
 }
@@ -548,7 +548,11 @@ async function adjust(text) {
     pushUndo();
     const now = Date.now();
     const byId = new Map(state.tasks.map((t) => [t.id, t]));
-    for (const t of data.tasks) byId.set(t.id, { ...(byId.get(t.id) || {}), ...t, updatedAt: now });
+    for (const t of data.tasks) {
+      const merged = { ...(byId.get(t.id) || {}), ...t, updatedAt: now };
+      if (!merged.subject) merged.subject = subject;
+      byId.set(t.id, merged);
+    }
     state.tasks = [...byId.values()];
     state.dirty = true; save(); render(); schedulePush();
   }
@@ -662,10 +666,9 @@ function toast(message, action) {
   clearTimeout(toast.timer); toast.timer = setTimeout(() => { el.hidden = true; }, action ? 6000 : 2800);
 }
 
-lastReport = dailyReview();
 render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
-pull();
+pull().finally(() => { lastReport = dailyReview(); if (lastReport) { render(); } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull().catch(() => {}); });
 window.addEventListener('online', () => { if (state.dirty) push().catch(() => {}); });
 })();

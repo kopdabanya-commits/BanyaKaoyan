@@ -38,7 +38,7 @@ msedge --headless=new --window-size=500,1050 --screenshot=shot.png "file:///<rep
 
 ## 发布
 
-- 只从 `main` 发布；先合并 PR、CI 绿。
+- 只从 `main` 发布；本项目不使用 GitHub Actions（私有仓库额度），提交前在本地跑完检查。
 - `python deploy/deploy.py` 发布静态与后端；`switch_root.py` 只在首次切换根路径时用。
 - 发布后核验：`GET /api/health` 200、首页 200、`/assets/app.js` 200。
 - 出问题回滚：`/var/www/banya-v2/current` 指回上一个 `releases/<时间戳>`，`systemctl restart banya-v2`。

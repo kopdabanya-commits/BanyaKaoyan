@@ -74,12 +74,16 @@ python tests/smoke.py
 
 ## 部署
 
+不使用 GitHub Actions（私有仓库按分钟计费，避免额度依赖），改为本地一键脚本：
+
 ```bash
 export BANYA_ECS_PASS_FILE=/path/to/pass.txt
 export BANYA_KNOWN_HOSTS=$PWD/deploy/known_hosts
 python deploy/deploy.py        # 发布静态文件 + 重启服务
-python deploy/switch_root.py   # 首次切换根路径、旧版下线
+python deploy/switch_root.py   # 首次切换根路径、旧版下线（已执行过）
 ```
+
+`deploy/known_hosts` 固定服务器主机公钥；口令只从环境变量指向的文件读取。
 
 服务器上：
 
@@ -98,4 +102,5 @@ python deploy/switch_root.py   # 首次切换根路径、旧版下线
 - 不用框架、不加构建步骤、不引入前端依赖
 - 不提交任何密钥、口令、`.secrets/`、数据库
 - 改动先跑 `node --check assets/app.js` 与 `python tests/smoke.py`
-- 发布只从 main 触发；发布后确认 `/api/health` 正常
+- 发布只从 main 执行本地脚本；发布后确认 `/api/health` 正常
+- 不使用 CI/Actions：提交前在本地跑完检查
