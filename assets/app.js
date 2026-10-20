@@ -595,8 +595,9 @@ function englishStats() {
         </div>`).join('')}
       </div>
       <div class="chips" style="margin-top:10px">
-        <button data-action="backfill">补录记录</button>
-        <button data-action="record-prompt">复制补录提示词</button>
+        <button data-action="backfill">手动补录</button>
+        <button data-action="import-records">粘贴补录</button>
+        <button data-action="record-prompt">复制提示词</button>
       </div>
     </section>
     <section class="card">
@@ -807,17 +808,17 @@ function parsePlan(text) {
   return out;
 }
 
-function openImport() {
+function openImport(preset) {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>导入计划</h2><button data-action="close">×</button></header>
     <p class="note">表格、每行一条或 JSON。</p>
     <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
     <div class="modes">
-      <label><input type="radio" name="import-mode" value="range" checked><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
+      <label><input type="radio" name="import-mode" value="range"${preset === 'range' || !preset ? ' checked' : ''}><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
       <label><input type="radio" name="import-mode" value="merge"><span><b>只添加</b><em>相同日期和内容的任务跳过</em></span></label>
       <label><input type="radio" name="import-mode" value="all"><span><b>全部替换</b><em>清空当前科目后导入</em></span></label>
-      <label><input type="radio" name="import-mode" value="records"><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
+      <label><input type="radio" name="import-mode" value="records"${preset === 'records' ? ' checked' : ''}><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
     </div>
     <button class="cta wide" data-action="import-run">导入</button>
   </div>`;
@@ -981,6 +982,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'add') { openSheet({ date: selected }); return; }
   if (a === 'check-update') { await checkUpdate(true); return; }
   if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
+  if (a === 'import-records') { openImport('records'); return; }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
     const year = el.dataset.year, kind = el.dataset.kind;
@@ -1124,7 +1126,7 @@ pull().finally(() => {
   if (lastReport) render();
   checkUpdate(false);
   const action = params.get('action');
-  if (action === 'import') openImport();
+  if (action === 'import') openImport(params.get('mode') || '');
   if (action === 'year') openYear(Number(params.get('year') || 2015), params.get('kind') || '');
 });
 let lastCheck = Date.now();
