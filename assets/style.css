@@ -310,3 +310,15 @@ h1,h2,h3,p{margin:0}
 .type-row i{display:block;height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 .type-row i u{display:block;height:100%;background:linear-gradient(90deg,#8F72FF,#6B48F5);border-radius:3px;transition:width .4s var(--ease)}
 .type-row em{font-style:normal;text-align:right;font-size:11px;color:var(--ink-3);white-space:nowrap}
+
+/* ---------- 真题覆盖矩阵 ---------- */
+.matrix{display:grid;gap:3px;margin:10px 0 8px}
+.mhead,.mrow{display:grid;grid-template-columns:44px repeat(6,1fr);align-items:center;gap:5px}
+.mhead span{font-size:10px;color:var(--ink-3)}
+.mhead i{font-style:normal;font-size:10px;color:var(--ink-3);text-align:center;letter-spacing:.06em}
+.mrow b{font-size:12px;font-weight:650;color:var(--ink-2);letter-spacing:-.01em}
+.mrow i{font-style:normal;height:26px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.mrow i.none{color:#343945}
+.mrow i.plan{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-3)}
+.mrow i.part{background:rgba(124,92,255,.16);border:1px solid rgba(124,92,255,.35);color:var(--accent-ink)}
+.mrow i.ok{background:var(--accent);color:#fff}

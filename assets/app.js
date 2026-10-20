@@ -58,6 +58,8 @@ if (params.get('action') === 'import') setTimeout(() => openImport(), 0);
 
 function load() {
   const base = DEFAULTS();
+  // 首次打开（还没有本地状态）也要带上部署时注入的同步密码
+  if (!base.prefs.token) base.prefs.token = (window.BANYA_CONFIG || {}).token || '';
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!raw || typeof raw !== 'object') return base;
@@ -360,96 +362,116 @@ function weeklyReview() {
 
 
 /* ---------------- 统计工具 ---------------- */
+const EXAM_SHAPE = [['完', '完形'], ['阅', '阅读'], ['新', '新题型'], ['译', '翻译'], ['小', '小作文'], ['大', '大作文']];
 
-function rangeText(years) {
-  const out = [];
-  let start = null, prev = null;
-  for (const y of years) {
-    if (start === null) { start = prev = y; continue; }
-    if (y === prev + 1) { prev = y; continue; }
-    out.push(start === prev ? String(start) : start + '–' + prev);
-    start = prev = y;
-  }
-  if (start !== null) out.push(start === prev ? String(start) : start + '–' + prev);
-  return out.join('、');
+function kindOf(t) {
+  if (t.type === '写作') return /小作文|应用文|书信|通知|告示/.test(t.title) ? '小' : '大';
+  if (t.type === '阅读') return '阅';
+  if (t.type === '完形') return '完';
+  if (t.type === '新题型') return '新';
+  if (t.type === '翻译') return '译';
+  return '';
 }
 
-function englishYears() {
+function englishMatrix() {
   const rows = [];
   for (let y = 2010; y <= 2023; y++) {
-    const key = String(y);
-    const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(key));
-    const parts = [1, 2, 3, 4].map((n) => {
-      const re = new RegExp('text\\s*' + n, 'i');
-      return list.find((t) => re.test(String(t.title))) || null;
-    });
+    const list = live().filter((t) => t.subject === 'english' && String(t.title).includes(String(y)));
+    const cells = {};
+    for (const [k] of EXAM_SHAPE) cells[k] = { plan: 0, done: 0 };
+    for (const t of list) {
+      const k = kindOf(t);
+      if (cells[k]) { cells[k].plan++; if (t.done) cells[k].done++; }
+    }
     const scored = list.filter((t) => typeof t.score === 'number');
-    const avg = scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null;
-    rows.push({ year: y, parts, count: list.length, done: list.filter((t) => t.done).length, avg, n: scored.length });
+    rows.push({
+      y, cells, total: list.length,
+      avg: scored.length ? scored.reduce((a, t) => a + t.score, 0) / scored.length : null
+    });
   }
   return rows;
 }
 
-function typeRows(key) {
+function englishTypes() {
   const map = new Map();
-  for (const t of live().filter((x) => x.subject === key)) {
-    const k = t.type || '其他';
-    if (!map.has(k)) map.set(k, { k, total: 0, done: 0, scored: [] });
+  for (const t of live().filter((x) => x.subject === 'english')) {
+    const k = kindOf(t) || t.type;
+    if (!map.has(k)) map.set(k, { k, plan: 0, done: 0, scored: [] });
     const row = map.get(k);
-    row.total++;
+    row.plan++;
     if (t.done) row.done++;
     if (typeof t.score === 'number') row.scored.push(t.score);
   }
-  return [...map.values()].sort((a, b) => b.total - a.total);
+  const order = ['阅', '完', '新', '译', '小', '大'];
+  return [...map.values()].sort((a, b) => {
+    const ia = order.indexOf(a.k), ib = order.indexOf(b.k);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
 }
 
-const POL_MODULES = [
-  ['马原', /马原|唯物|辩证法|认识论|政治经济学|科学社会主义/],
-  ['毛中特', /毛中特|毛概|毛泽东|中国特色|新时代/],
-  ['史纲', /史纲|近代史|党史/],
-  ['思修', /思修|道德|法治|法律/],
-  ['时政', /时政|形势与政策|当代世界经济/]
-];
-function politicsModules() {
+function moduleOf(title) {
+  const s = String(title);
+  if (/马原|唯物|辩证法|认识论|政治经济学|科学社会主义/.test(s)) return '马原';
+  if (/毛中特|毛泽东|新民主主义|社会主义改造|改革开放/.test(s)) return '毛中特';
+  if (/史纲|近代史|党史/.test(s)) return '史纲';
+  if (/思修|道德|法治/.test(s)) return '思修';
+  if (/习思想|习近平|新时代|中国式现代化|总论/.test(s)) return '习思想';
+  if (/时政|形势与政策/.test(s)) return '时政';
+  return '其他';
+}
+
+// 徐涛强化课各模块的真实讲数；没配的按计划数显示
+const POL_TARGET = { 马原: 27 };
+
+function politicsStats() {
   const list = live().filter((t) => t.subject === 'politics');
-  return POL_MODULES.map(([name, re]) => {
-    const hit = list.filter((t) => re.test(String(t.title)));
-    return { name, total: hit.length, done: hit.filter((t) => t.done).length };
-  }).filter((m) => m.total > 0);
+  const mods = new Map();
+  for (const t of list) {
+    const m = moduleOf(t.title);
+    if (!mods.has(m)) mods.set(m, { m, course: 0, courseDone: 0, drill: 0, drillDone: 0 });
+    const row = mods.get(m);
+    if (t.type === '课程') { row.course++; if (t.done) row.courseDone++; }
+    if (t.type === '刷题') { row.drill++; if (t.done) row.drillDone++; }
+  }
+  const drills = list.filter((t) => t.type === '刷题');
+  // 取标题里最后一个「N题」，并排除「肖1000题」这种题库名
+  const qOf = (t) => {
+    const hits = [...String(t.title).matchAll(/(\d{1,4})\s*题/g)];
+    if (!hits.length) return 0;
+    const n = Number(hits[hits.length - 1][1]);
+    return n >= 1000 ? 0 : n;
+  };
+  return {
+    mods: [...mods.values()].sort((a, b) => b.course - a.course),
+    drills: drills.length,
+    doneDrills: drills.filter((t) => t.done).length,
+    questions: drills.reduce((sum, t) => sum + qOf(t), 0),
+    doneQuestions: drills.filter((t) => t.done).reduce((sum, t) => sum + qOf(t), 0)
+  };
 }
 
-function rowsHtml(rows) {
-  if (!rows.length) return '<p class="note">还没有任务</p>';
-  return rows.map((r) => {
-    const pct = r.total ? Math.round((r.done / r.total) * 100) : 0;
-    const avg = r.scored.length ? (r.scored.reduce((a, b) => a + b, 0) / r.scored.length).toFixed(1) : null;
-    return `<div class="type-row">
-      <span>${esc(r.k)}</span>
-      <b>${r.done}/${r.total}</b>
-      <i><u style="width:${pct}%"></u></i>
-      <em>${avg ? '均 ' + avg : pct + '%'}</em>
-    </div>`;
-  }).join('');
+function matrixCell(c) {
+  if (!c.plan) return '<i class="none">·</i>';
+  if (c.done >= c.plan) return `<i class="ok">${c.plan}</i>`;
+  if (c.done) return `<i class="part">${c.done}/${c.plan}</i>`;
+  return `<i class="plan">${c.plan}</i>`;
 }
 
 function statsView() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
   const p = progress();
-  const byType = {};
-  for (const t of week.list) byType[t.type] = (byType[t.type] || 0) + 1;
   const days = [...Array(7)].map((_, i) => {
     const d = shift(today(), i - 6);
-    const s = rangeStats(d, d);
-    return { d, minutes: s.actualMinutes };
+    return { d, minutes: rangeStats(d, d).actualMinutes };
   });
   const peak = Math.max(60, ...days.map((x) => x.minutes));
-  const years = englishYears();
-  const scoredAll = live().filter((t) => t.subject === 'english' && typeof t.score === 'number');
-  const avgAll = scoredAll.length ? (scoredAll.reduce((a, t) => a + t.score, 0) / scoredAll.length).toFixed(1) : null;
-  const enTypes = typeRows('english');
-  const poTypes = typeRows('politics');
-  const modules = politicsModules();
+  const rows = englishMatrix();
+  const covered = rows.filter((r) => r.total);
+  const scored = live().filter((t) => t.subject === 'english' && typeof t.score === 'number');
+  const avg = scored.length ? (scored.reduce((a, t) => a + t.score, 0) / scored.length).toFixed(1) : null;
+  const types = englishTypes();
+  const pol = politicsStats();
   return `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${week.actualMinutes}</b><span>实际分钟</span></div>
@@ -460,24 +482,35 @@ function statsView() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
-      <h2>英语真题 · 2010–2023</h2>
-      <p class="note">${avgAll ? `二刷平均 <b>${avgAll}</b> 分 · ${scoredAll.length} 次记录` : '还没有分数记录，做完一套可以填得分'}　仅统计阅读 · 2010–2023</p>
-      <div class="years">${years.filter((r) => r.count).map((r) => `<div class="yr">
-        <b>${r.year}</b>
-        <span class="dots">${r.parts.map((t) => `<i class="${t && t.done ? 'on' : ''}"></i>`).join('')}</span>
-        <em>${r.avg != null ? '均 ' + r.avg.toFixed(1) : r.done + '/' + r.count}</em>
-      </div>`).join('') || '<p class="note">还没有真题记录，可以点下面的补录。</p>'}</div>
-      ${years.some((r) => r.count) && years.some((r) => !r.count) ? `<p class="note">未开始：${rangeText(years.filter((r) => !r.count).map((r) => r.year))}</p>` : ''}
+      <h2>英语真题覆盖</h2>
+      <p class="note">${avg ? `二刷平均 <b>${avg}</b> 分 · ${scored.length} 次` : '还没有分数记录'}　计划覆盖 ${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${live().filter((t) => t.subject === 'english').length} 项</p>
+      <div class="matrix">
+        <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
+        ${covered.map((r) => `<div class="mrow"><b>${r.y}</b>${EXAM_SHAPE.map(([k]) => matrixCell(r.cells[k])).join('')}</div>`).join('')}
+      </div>
+      <p class="note">数字 = 当年该题型的计划项数；紫色 = 已完成。每年应有 完形1 · 阅读4 · 新题型1 · 翻译1 · 小作文1 · 大作文1。</p>
       <button class="ghost wide" data-action="backfill">补录以前的记录</button>
     </section>
     <section class="card">
-      <h2>英语题型</h2>
-      ${rowsHtml(enTypes)}
+      <h2>英语题型合计</h2>
+      ${types.map((t) => `<div class="type-row">
+        <span>${t.k}</span><b>${t.done}/${t.plan}</b>
+        <i><u style="width:${t.plan ? Math.round(t.done / t.plan * 100) : 0}%"></u></i>
+        <em>${t.scored.length ? '均 ' + (t.scored.reduce((a, b) => a + b, 0) / t.scored.length).toFixed(1) : t.plan ? Math.round(t.done / t.plan * 100) + '%' : '—'}</em>
+      </div>`).join('') || '<p class="note">还没有英语任务</p>'}
     </section>
     <section class="card">
       <h2>政治</h2>
-      ${rowsHtml(poTypes)}
-      ${modules.length ? `<div class="chips" style="margin-top:10px">${modules.map((m) => `<span>${m.name} ${m.done}/${m.total}</span>`).join('')}</div>` : ''}
+      ${pol.mods.map((m) => {
+        const target = POL_TARGET[m.m];
+        const total = target || m.course;
+        return `<div class="type-row">
+          <span>${m.m}</span><b>${m.courseDone}/${total}</b>
+          <i><u style="width:${total ? Math.round(m.courseDone / total * 100) : 0}%"></u></i>
+          <em>${target ? '课 · 已排 ' + m.course : '已排 ' + m.course}</em>
+        </div>`;
+      }).join('') || '<p class="note">还没有政治任务</p>'}
+      <p class="line" style="margin-top:10px">苍盾题库：<b>${pol.doneDrills}/${pol.drills}</b> 次 · <b>${pol.doneQuestions}/${pol.questions}</b> 题</p>
     </section>
     <section class="card">
       <h2>进度</h2>
