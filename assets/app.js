@@ -415,7 +415,7 @@ function roundOf(t) {
 }
 
 function isRedo(t) {
-  return /错题|重做|重刷/.test(String(t.title));
+  return /错题|重做|重刷|重译|复盘/.test(String(t.title));
 }
 
 function englishPool() {
