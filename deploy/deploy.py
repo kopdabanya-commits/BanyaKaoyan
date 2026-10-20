@@ -1,0 +1,128 @@
+"""部署板牙考研 v2 到现有 ECS。幂等：可重复执行。"""
+import os
+import secrets
+import sys
+
+import paramiko
+
+HOST = os.environ.get("BANYA_ECS_HOST", "124.70.128.201")
+USER = os.environ.get("BANYA_ECS_USER", "root")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # app/
+PASS_FILE = os.environ.get("BANYA_ECS_PASS_FILE", os.path.join(ROOT, ".secrets", "ecs-pass.txt"))
+KNOWN_HOSTS = os.environ.get("BANYA_KNOWN_HOSTS", os.path.expanduser("~/.ssh/known_hosts"))
+
+password = open(PASS_FILE, encoding="utf-8").read().strip()
+client = paramiko.SSHClient()
+if os.path.exists(KNOWN_HOSTS):
+    client.load_host_keys(KNOWN_HOSTS)
+    client.set_missing_host_key_policy(paramiko.RejectPolicy())
+else:
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect(HOST, username=USER, password=password, timeout=25, look_for_keys=False, allow_agent=False)
+sftp = client.open_sftp()
+
+
+def run(cmd, timeout=300, check=True):
+    _, out, err = client.exec_command(cmd, timeout=timeout)
+    text = out.read().decode("utf-8", "replace")
+    error = err.read().decode("utf-8", "replace")
+    code = out.channel.recv_exit_status()
+    tail = (text + error).strip()[-500:]
+    shown = "[redacted]" if "BANYA_V2_TOKEN" in cmd else cmd[:70]
+    print(f"[{code}] {shown} | {tail}")
+    if check and code != 0:
+        raise SystemExit("failed: " + cmd)
+    return text
+
+
+# 1. 目录
+run("install -d -m 0755 /var/www/banya-v2/releases /opt/banya-v2 /etc/nginx/snippets")
+run("install -d -m 0700 -o banya-sync -g banya-sync /var/lib/banya-v2")
+
+# 2. 静态文件
+stamp = run("date -u +%Y%m%dT%H%M%SZ").strip()
+dest = f"/var/www/banya-v2/releases/{stamp}"
+run(f"install -d -m 0755 {dest}/assets")
+for name in ["index.html", "manifest.webmanifest", "sw.js"]:
+    sftp.put(os.path.join(ROOT, name), f"{dest}/{name}")
+for name in ["app.js", "style.css", "icon.svg"]:
+    sftp.put(os.path.join(ROOT, "assets", name), f"{dest}/assets/{name}")
+run(f"ln -sfn {dest} /var/www/banya-v2/current")
+
+# 3. 服务端
+sftp.put(os.path.join(ROOT, "server", "main.py"), "/opt/banya-v2/main.py")
+
+token = run("test -f /etc/banya-v2.env && sed -n 's/^BANYA_V2_TOKEN=//p' /etc/banya-v2.env || true").strip()
+if not token:
+    token = secrets.token_urlsafe(24)
+    run("umask 077; { "
+        f"echo 'BANYA_V2_TOKEN={token}'; "
+        "grep -E '^DEEPSEEK_API_KEY=' /etc/banya-sync.env || true; "
+        "echo 'BANYA_V2_MODEL=deepseek-flash'; "
+        "echo 'BANYA_V2_DB=/var/lib/banya-v2/v2.sqlite3'; "
+        "} > /etc/banya-v2.env")
+
+unit = """[Unit]
+Description=Banya v2 plan + AI proxy
+After=network.target
+
+[Service]
+User=banya-sync
+Group=banya-sync
+WorkingDirectory=/opt/banya-v2
+EnvironmentFile=/etc/banya-v2.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/banya-sync/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8766 --workers 1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+"""
+with sftp.open("/etc/systemd/system/banya-v2.service", "w") as fh:
+    fh.write(unit)
+run("systemctl daemon-reload && systemctl enable banya-v2.service >/dev/null && systemctl restart banya-v2.service")
+run("sleep 2; systemctl is-active banya-v2.service")
+
+# 4. nginx
+snippet = """location /v2/api/ {
+    access_log off;
+    proxy_pass http://127.0.0.1:8766/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_read_timeout 90s;
+}
+location /v2/ {
+    alias /var/www/banya-v2/current/;
+    index index.html;
+    try_files $uri $uri/ /v2/index.html;
+    add_header Cache-Control "no-cache" always;
+}
+"""
+with sftp.open("/etc/nginx/snippets/banya-v2.conf", "w") as fh:
+    fh.write(snippet)
+
+live = "/etc/nginx/sites-available/banya-sync"
+with sftp.open(live) as fh:
+    config = fh.read().decode()
+if "banya-v2.conf" not in config:
+    run(f"cp -p {live} /root/nginx-banya-sync.bak-$(date -u +%Y%m%dT%H%M%SZ)")
+    marker = "    include /etc/nginx/snippets/banya-v2.conf;\n"
+    index = config.rstrip().rfind("}")
+    with sftp.open(live, "w") as fh:
+        fh.write(config[:index] + marker + config[index:])
+    print("nginx include added")
+run("nginx -t && systemctl reload nginx")
+
+# 5. 自检
+run("curl -fsS -o /dev/null -w 'v2-index %{http_code}\\n' http://127.0.0.1/v2/")
+run("curl -fsS -H 'Host: 124.70.128.201' -o /dev/null -w 'v2-health %{http_code}\\n' http://127.0.0.1/v2/api/health")
+sftp.close()
+client.close()
+if os.environ.get("BANYA_PRINT_TOKEN") == "1":
+    print("TOKEN=" + token)
+else:
+    print("token stored on server (/etc/banya-v2.env)")
+print("DONE")

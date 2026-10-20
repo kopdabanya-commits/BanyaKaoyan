@@ -1,15 +1,49 @@
-# 板牙考研：公开仓库工程约定
+# 工程约定（板牙考研 v2）
 
-这是同一套 PWA 代码、一个 GitHub 仓库、一个保留用于历史恢复的 Cloudflare Worker，包含英语二与政治两个独立科目。因部分手机网络无法访问 workers.dev，华为云 ECS 是唯一日常运行和发布入口；不能据此另建第二个项目。修改前读取 `docs/index.md`、`docs/PROJECT_STATUS.md`、`docs/SINGLE_APP_CONTRACT.md`、`docs/WORKFLOW.md`，并核对最新 main 和开放 PR。
+面向任何接手这个仓库的 agent（包括 AI）。
 
-## 隐私优先
-仓库已公开。不要提交真实学习进度、做题成绩、错题、笔记、备份、设备识别信息、密码、令牌、私钥或完整服务器日志。个人数据只保存在用户设备和经授权的服务器私有数据库；不能从公开计划推断用户实际完成情况。若需要个人反馈，向用户询问，不能从 Git 历史中复制已删除的私人记录。
+## 这是什么
 
-保持原有 `yantu_` 本地存储键、备份格式、PWA manifest ID、Worker 地址；保护两科数据隔离。浏览器按 origin 隔离数据，ECS 备用入口必须先安全复制原入口记录，不得静默覆盖。不要自行更改复习计划内容。修改共享 UI 或存储代码时跑双科及跨科测试，更新 Service Worker 缓存版本，并区分代码、CI、线上发布与手机验收。合并前检查 PR、CI 和生产部署证据。
+一个给自己用的考研计划 PWA。前端原生 JS，后端 FastAPI + SQLite。
+根目录是 v2；`legacy/v1/` 是旧版完整归档，**只读参考，不要修改、不要接入构建**。
 
-## 个人计划调整的快速路径
+## 硬规则
 
-手机日常入口是 `https://124.70.128.201/`。用户自己的任务增删改属于私人学习记录：优先使用 PWA 的计划编辑与现有云快照，不把个人计划或完成情况写入公开 JSON、GitHub 文档、PR 或 Actions 日志。英语二已有私人自定义任务及编辑；政治的私人覆盖层从 M4.5 开始。只有用户明确要求修改所有设备共用的默认计划模板，才编辑公开计划文件、运行镜像生成和发布 PR。GPT 直接读取服务器私有记录尚无授权连接；不得把同步写入密钥交给对话或创建公开记录端点。
+1. **不提交密钥**：口令、服务器密码、`.secrets/`、数据库、`*.pem` 一律不进仓库。
+2. **不用框架、不加构建**：前端保持原生 JS + CSS；不要引入 React/Vue/Tailwind/打包器。
+3. **不改 legacy**：旧版只作参考；需要旧逻辑时复制片段，不要动目录。
+4. **数据安全**：任何迁移先备份 `/var/lib/banya-v2/v2.sqlite3`；不写脚本直接清库。
+5. **已完成/不做不可被自动改动**：一句话调整和每日整理都必须跳过这类任务。
 
-## ECS 工程优先
-日常发布只走华为云 ECS，见 docs/ECS_RELEASE.md。今后不主动新增 Cloudflare 构建、诊断或发布依赖；除非用户明确要求，不为 Cloudflare 外部检查失败投入开发工作。保留原 Worker 线上历史服务、恢复代码、manifest 身份及存储键。普通 PR 不发布生产；手动发布需经授权，本阶段任务不得擅自触发。
+## 代码风格
+
+- 前端：一个 IIFE、无全局变量泄漏；视图函数返回模板字符串；事件用 `data-action` 委托。
+- 样式：设计变量集中在 `style.css` 的 `:root`；不要散落硬编码颜色。
+- 后端：单文件 `server/main.py`；Pydantic 严格校验；错误用 `HTTPException(detail=中文提示)`。
+- 注释写"为什么"，不写"是什么"；不要留 TODO 假实现。
+
+## 提交前必须跑
+
+```bash
+node --check assets/app.js && node --check sw.js
+python -m py_compile server/main.py
+python tests/smoke.py        # 假模型，不花钱
+```
+
+改动了界面，再用 Edge/Chrome 无头截一张图确认没有布局塌陷：
+
+```bash
+msedge --headless=new --window-size=500,1050 --screenshot=shot.png "file:///<repo>/index.html?demo=1"
+```
+
+## 发布
+
+- 只从 `main` 发布；先合并 PR、CI 绿。
+- `python deploy/deploy.py` 发布静态与后端；`switch_root.py` 只在首次切换根路径时用。
+- 发布后核验：`GET /api/health` 200、首页 200、`/assets/app.js` 200。
+- 出问题回滚：`/var/www/banya-v2/current` 指回上一个 `releases/<时间戳>`，`systemctl restart banya-v2`。
+
+## 与旧版的关系
+
+旧版站点与接口已停用；旧数据保留在 `/var/lib/banya-sync/sync.sqlite3`，未迁移。
+若需要旧数据，只做只读导出，不恢复旧服务。

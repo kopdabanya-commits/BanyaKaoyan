@@ -1,0 +1,36 @@
+name: deploy
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: banya-v2-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 发布前自检
+        run: |
+          python -m pip install --quiet -r server/requirements.txt
+          python -m py_compile server/main.py
+      - name: 通过 SSH 发布
+        env:
+          SSH_PASSWORD: ${{ secrets.BANYA_ECS_SSH_PASSWORD }}
+          BANYA_ECS_HOST: ${{ vars.BANYA_ECS_HOST || '124.70.128.201' }}
+          BANYA_KNOWN_HOSTS: ${{ github.workspace }}/deploy/known_hosts
+        run: |
+          python -m pip install --quiet paramiko
+          install -m 600 /dev/null /tmp/ecs-pass
+          printf '%s' "$SSH_PASSWORD" > /tmp/ecs-pass
+          export BANYA_ECS_PASS_FILE=/tmp/ecs-pass
+          python deploy/deploy.py
+          rm -f /tmp/ecs-pass
+      - name: 线上核验
+        run: |
+          curl -fsS -o /dev/null -w 'index %{http_code}\n' https://124.70.128.201/
+          curl -fsS https://124.70.128.201/api/health
