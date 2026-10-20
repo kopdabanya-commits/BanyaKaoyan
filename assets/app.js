@@ -404,14 +404,17 @@ function kindOf(t) {
   return '';
 }
 
-function isSecondPass(t) {
-  return !t.date || String(t.title).includes('二刷');
+function roundOf(t) {
+  if (t.round === 2) return 2;
+  if (t.round === 1) return 1;
+  return /二刷/.test(String(t.title)) ? 2 : 1;
 }
 
 function englishPool() {
   const all = live().filter((t) => t.subject === 'english');
-  const second = all.filter(isSecondPass);
-  return second.length ? second : all;
+  const want = state.prefs.round === 1 ? 1 : 2;
+  const pool = all.filter((t) => roundOf(t) === want);
+  return pool.length ? pool : all.filter((t) => roundOf(t) === want);
 }
 
 function englishMatrix() {
@@ -513,7 +516,7 @@ const KIND_TYPE = { 完: '完形', 阅: '阅读', 新: '新题型', 译: '翻译
 const RECORD_KINDS = ['完形', '阅读', '新题型', '翻译', '小作文', '大作文'];
 const RECORD_TYPE = { 完形: '完形', 阅读: '阅读', 新题型: '新题型', 翻译: '翻译', 小作文: '写作', 大作文: '写作' };
 
-function parseRecords(text) {
+function parseRecords(text, round) {
   const out = [];
   for (const line of String(text || '').split(/\r?\n/)) {
     const raw = line.trim();
@@ -528,7 +531,7 @@ function parseRecords(text) {
       id: uid(), subject: 'english', date: '', title: year + ' ' + kind,
       type: RECORD_TYPE[kind], minutes: 0, done: true, notDone: false,
       score: score === undefined ? null : Number(score), scoreMax: 10,
-      note: '补录', updatedAt: Date.now()
+      note: '补录', round: round === 1 ? 1 : 2, updatedAt: Date.now()
     });
   }
   return out;
@@ -578,6 +581,14 @@ function matrixCell(c) {
   return '<i class="plan"></i>';
 }
 
+function roundTabs() {
+  const r = state.prefs.round === 1 ? 1 : 2;
+  return `<div class="segmented wide-seg" role="tablist">
+    <button data-round="1" class="${r === 1 ? 'on' : ''}">一刷</button>
+    <button data-round="2" class="${r === 2 ? 'on' : ''}">二刷</button>
+  </div>`;
+}
+
 function englishStats() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
@@ -592,7 +603,7 @@ function englishStats() {
   const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
   const total = englishPool().length;
-  return `<section class="stat-row">
+  return roundTabs() + `<section class="stat-row">
       <div class="stat"><b>${week.done.length}<small>/${week.list.length}</small></b><span>近 7 天完成</span></div>
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
       <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : Math.round(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
@@ -602,7 +613,7 @@ function englishStats() {
       <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>
     <section class="card">
-      <h2>二刷覆盖</h2>
+      <h2>${state.prefs.round === 1 ? '一刷' : '二刷'}覆盖</h2>
       <p class="meta-line">${covered.length ? covered[0].y + '–' + covered[covered.length - 1].y : '—'} · ${total} 项</p>
       <div class="matrix">
         <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
@@ -843,6 +854,9 @@ function openImport(preset) {
       <label><input type="radio" name="import-mode" value="all"><span><b>全部替换</b><em>清空当前科目后导入</em></span></label>
       <label><input type="radio" name="import-mode" value="records"${preset === 'records' ? ' checked' : ''}><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
     </div>
+    <label class="field"><span>补录轮次</span><select id="record-round">
+      <option value="1">一刷</option><option value="2" selected>二刷</option>
+    </select></label>
     <button class="cta wide" data-action="import-run">导入</button>
   </div>`;
 }
@@ -973,10 +987,11 @@ async function pull() {
 
 /* ---------------- 事件 ---------------- */
 document.addEventListener('click', async (e) => {
-  const el = e.target.closest('[data-action],[data-view],[data-subject],[data-theme-choice]');
+  const el = e.target.closest('[data-action],[data-view],[data-subject],[data-theme-choice],[data-round]');
   if (!el) { if (e.target.id === 'modal') closeSheet(); return; }
   if (el.dataset.view) { view = el.dataset.view; if (view === 'calendar') calMonth = selected.slice(0, 7); render(); return; }
   if (el.dataset.subject) { subject = el.dataset.subject; state.prefs.subject = subject; save(); render(); return; }
+  if (el.dataset.round) { state.prefs.round = Number(el.dataset.round); save(); render(); return; }
   if (el.dataset.themeChoice) { state.prefs.theme = el.dataset.themeChoice; save(); applyTheme(); render(); return; }
   const a = el.dataset.action;
   if (a === 'day') { selected = shift(selected, Number(el.dataset.n)); render(); return; }
@@ -1007,13 +1022,15 @@ document.addEventListener('click', async (e) => {
   if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'import-records') { openImport('records'); return; }
   if (a === 'clear-records') {
-    const n = state.tasks.filter((t) => !t.deleted && !t.date).length;
-    if (!n) return toast('没有补录记录');
-    if (!confirm('删除全部 ' + n + ' 条补录记录？')) return;
+    const want = state.prefs.round === 1 ? 1 : 2;
+    const name = want === 1 ? '一刷' : '二刷';
+    const hit = state.tasks.filter((t) => !t.deleted && !t.date && roundOf(t) === want);
+    if (!hit.length) return toast(name + '没有补录记录');
+    if (!confirm('删除 ' + name + ' 的 ' + hit.length + ' 条补录记录？')) return;
     pushUndo();
-    for (const t of state.tasks) if (!t.deleted && !t.date) { t.deleted = true; touch(t); }
+    for (const t of hit) { t.deleted = true; touch(t); }
     state.dirty = true; save(); render(); schedulePush();
-    toast('已清空 ' + n + ' 条');
+    toast('已清空 ' + hit.length + ' 条');
     return;
   }
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
@@ -1055,7 +1072,7 @@ document.addEventListener('click', async (e) => {
     const text = $('#import-text').value;
     const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'range';
     let parsed = [];
-    try { parsed = mode === 'records' ? parseRecords(text) : parsePlan(text); } catch { return toast('格式无法识别'); }
+    try { parsed = mode === 'records' ? parseRecords(text, Number(($('#record-round') || {}).value) || 2) : parsePlan(text); } catch { return toast('格式无法识别'); }
     if (!parsed.length) return toast('没有识别到内容');
     pushUndo();
     let removed = 0, kept = 0, added = 0;
