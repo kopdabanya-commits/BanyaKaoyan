@@ -28,7 +28,7 @@ let view = 'today';
 let subject = state.prefs.subject === 'politics' ? 'politics' : 'english';
 let selected = today();
 let calMonth = today().slice(0, 7);
-let lookup = { year: '', kind: '' };
+let lookup = { year: '', kind: '', open: false };
 let syncState = 'idle';
 let lastReport = null;
 const DAILY_CAP = 150;
@@ -211,6 +211,21 @@ function autoReclassify() {
 }
 
 
+
+/* ---------------- 表单自动填充 ---------------- */
+function markNoAutofill(root) {
+  root.querySelectorAll('input, textarea, select').forEach((el) => {
+    if (el.type === 'password') return;
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('data-bwignore', 'true');
+    el.setAttribute('data-lpignore', 'true');
+    el.setAttribute('data-1p-ignore', 'true');
+  });
+}
+
+const fillObserver = new MutationObserver(() => markNoAutofill(document));
+fillObserver.observe(document.body, { childList: true, subtree: true });
+
 /* ---------------- 版本 ---------------- */
 const APP_VERSION = (window.BANYA_CONFIG || {}).version || '';
 let latest = null;
@@ -345,6 +360,8 @@ function lookupCard() {
   const years = ['', ...Array.from({ length: 14 }, (_, i) => String(2023 - i))];
   const kinds = [['', '全部'], ...EXAM_SHAPE.map(([k, name]) => [k, name])];
   const rows = lookupRows();
+  const done = rows.filter((t) => t.done).length;
+  const shown = lookup.open ? rows : rows.slice(0, 5);
   return `<section class="card">
       <h2>查计划</h2>
       <div class="lookup-row">
@@ -355,11 +372,13 @@ function lookupCard() {
           ${kinds.map(([k, name]) => `<option value="${k}"${lookup.kind === k ? ' selected' : ''}>${name}</option>`).join('')}
         </select>
       </div>
-      ${rows.length ? rows.map((t) => `<button class="lk-row" data-action="edit" data-id="${t.id}">
+      <p class="meta-line">${rows.length ? rows.length + ' 项 · 完成 ' + done : '没有匹配的计划'}</p>
+      ${shown.map((t) => `<button class="lk-row" data-action="edit" data-id="${t.id}">
           <b>${t.date ? t.date.slice(5).replace('-', '/') : '无日期'}</b>
           <span>${esc(t.title)}</span>
           <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : '未完成'}</em>
-        </button>`).join('') : '<p class="note">没有匹配的计划</p>'}
+        </button>`).join('')}
+      ${rows.length > 5 ? `<button class="ghost wide" data-action="lookup-toggle">${lookup.open ? '收起' : '展开全部 ' + rows.length + ' 项'}</button>` : ''}
     </section>`;
 }
 
@@ -1074,6 +1093,7 @@ document.addEventListener('click', async (e) => {
     const d = new Date(y, m - 1 + Number(el.dataset.n), 1, 12);
     calMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; render(); return;
   }
+  if (a === 'lookup-toggle') { lookup.open = !lookup.open; render(); return; }
   if (a === 'pick') { selected = el.dataset.date; calMonth = selected.slice(0, 7); render(); return; }
   if (a === 'toggle') {
     const t = findTask(el.dataset.id);
@@ -1254,8 +1274,8 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('change', (e) => {
-  if (e.target.id === 'lk-year') { lookup.year = e.target.value; render(); }
-  if (e.target.id === 'lk-kind') { lookup.kind = e.target.value; render(); }
+  if (e.target.id === 'lk-year') { lookup.year = e.target.value; lookup.open = false; render(); }
+  if (e.target.id === 'lk-kind') { lookup.kind = e.target.value; lookup.open = false; render(); }
 });
 
 function toast(message, action) {
