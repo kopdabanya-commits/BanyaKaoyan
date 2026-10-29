@@ -69,20 +69,13 @@ h1,h2,h3,p{margin:0}
 .chev svg{width:18px;height:18px}
 .chev:active{background:var(--surface-2);transform:scale(.94)}
 
-/* ---------- 焦点卡 ---------- */
-.focus{display:grid;grid-template-columns:104px 1fr;align-items:center;gap:var(--sp-5);
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-5);margin-bottom:var(--sp-4)}
-.ring{--p:0;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;
-  background:conic-gradient(var(--accent) calc(var(--p) * 1%), var(--track) 0);
-  transition:--p .8s var(--ease)}
-.ring-in{width:82px;height:82px;border-radius:50%;background:var(--surface);display:grid;place-items:center;text-align:center;border:1px solid rgba(255,255,255,.04)}
-.ring-in b{display:block;font-size:27px;font-weight:700;letter-spacing:-.04em;line-height:1}
-.ring-in small{display:block;font-size:10px;color:var(--ink-3);margin-top:4px;letter-spacing:.06em}
-.focus-list{display:grid;gap:2px;min-width:0}
-.focus-list div{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3);padding:7px 0;border-bottom:1px solid var(--line)}
-.focus-list div:last-child{border-bottom:0;padding-bottom:0}
-.focus-list span{font-size:12px;color:var(--ink-3);white-space:nowrap}
-.focus-list b{font-size:16px;font-weight:650;letter-spacing:-.02em}
+/* ---------- 当天进度 ---------- */
+.day-summary{padding:0 2px;margin:0 0 var(--sp-3)}
+.day-summary>div:first-child{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-3);font-size:12px}
+.day-summary b{font-weight:620;color:var(--ink-2)}
+.day-summary span{color:var(--ink-3)}
+.day-progress{height:4px;background:var(--surface-3);border-radius:var(--r-pill);overflow:hidden;margin-top:8px}
+.day-progress i{display:block;height:100%;background:var(--accent);border-radius:inherit;transition:width .25s var(--ease)}
 
 /* ---------- 说明 ---------- */
 .hint{font-size:var(--fs-meta);color:var(--ink-2);line-height:1.6;margin:0 2px var(--sp-4)}
@@ -130,6 +123,30 @@ h1,h2,h3,p{margin:0}
 .card .line{font-size:var(--fs-meta);color:var(--ink-2);line-height:1.7;margin-top:6px}
 .card .line b{color:var(--ink);font-weight:650}
 .card .line.warn{color:var(--warn)}
+.details-card{padding:0;overflow:hidden}
+.details-card>summary{display:flex;align-items:center;gap:var(--sp-2);min-height:54px;padding:0 var(--sp-4);cursor:pointer;list-style:none}
+.details-card>summary::-webkit-details-marker{display:none}
+.details-card>summary::after{content:"⌄";margin-left:4px;color:var(--ink-3);font-size:14px;transition:transform .16s}
+.details-card[open]>summary{border-bottom:1px solid var(--line)}
+.details-card[open]>summary::after{transform:rotate(180deg)}
+.details-card>summary span{font-size:var(--fs-label);font-weight:600;color:var(--ink-3);letter-spacing:.1em}
+.details-card>summary em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.details-body{padding:0 var(--sp-4) var(--sp-4)}
+.subsettings{margin-top:var(--sp-3);border-top:1px solid var(--line)}
+.subsettings>summary{display:flex;justify-content:space-between;padding:12px 0 0;color:var(--ink-3);font-size:12px;cursor:pointer;list-style:none}
+.subsettings>summary::-webkit-details-marker{display:none}
+.subsettings>summary::after{content:"⌄";transition:transform .16s}
+.subsettings[open]>summary::after{transform:rotate(180deg)}
+.subsettings .details-body{padding:0}
+.profile-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-2)}
+.profile-metrics>div{min-width:0;padding:8px 4px;text-align:center;background:var(--surface-2);border-radius:var(--r-sm)}
+.profile-metrics b{display:block;font-size:20px;line-height:1.2;font-weight:680;letter-spacing:-.03em}
+.profile-metrics span{display:block;margin-top:4px;color:var(--ink-3);font-size:10px;white-space:nowrap}
+.setting-block{margin-top:var(--sp-4)}
+.setting-label{display:block;margin-bottom:7px;color:var(--ink-3);font-size:var(--fs-label)}
+.week-summary{font-size:13px;color:var(--ink-2)}
+.week-summary b{color:var(--ink);font-size:16px}
+.week-summary span{color:var(--ink-3);padding:0 3px}
 
 /* ---------- 统计 ---------- */
 .stat-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-3)}
@@ -137,12 +154,6 @@ h1,h2,h3,p{margin:0}
 .stat b{display:block;font-size:24px;font-weight:680;letter-spacing:-.03em;line-height:1.05}
 .stat b small{font-size:12px;font-weight:600;color:var(--ink-3);margin-left:1px}
 .stat span{display:block;font-size:10.5px;color:var(--ink-3);letter-spacing:.04em}
-
-.bars{display:flex;align-items:flex-end;gap:var(--sp-2);height:96px;padding-top:var(--sp-2);min-width:0}
-.bars .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
-.bars .col i{width:100%;max-width:22px;border-radius:5px;background:var(--surface-3);display:block;transition:height .4s var(--ease)}
-.bars .col i.on{background:linear-gradient(180deg,#8F72FF,#6B48F5)}
-.bars .col span{font-size:10px;color:var(--ink-3)}
 
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chips button,.chips span{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;color:var(--ink-2);font-weight:500}
@@ -269,8 +280,6 @@ h1,h2,h3,p{margin:0}
 :root[data-theme="light"] .tabs{background:rgba(246,246,248,.9)}
 :root[data-theme="light"] .toast{background:#1D1E24;color:#fff;border-color:#1D1E24}
 :root[data-theme="light"] .cta{box-shadow:0 6px 18px rgba(124,92,255,.22)}
-:root[data-theme="light"] .ring{background:conic-gradient(var(--accent) calc(var(--p) * 1%), var(--track) 0)}
-:root[data-theme="light"] .bars .col i{background:var(--surface-3)}
 
 /* ---------- 同步状态点 ---------- */
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;transition:background .2s}
@@ -340,7 +349,7 @@ h1,h2,h3,p{margin:0}
 .yt-row em.ok{color:var(--ok)}
 
 /* ---------- 今日副标题 ---------- */
-.hint-line{font-size:12.5px;color:var(--ink-3);letter-spacing:.02em;margin:-6px 2px 14px;text-align:center}
+.hint-line{font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;margin:-4px 2px var(--sp-3);text-align:center}
 
 /* ---------- 得分率配色 ---------- */
 .good{color:var(--ok)}
@@ -383,12 +392,3 @@ h1,h2,h3,p{margin:0}
 .day-panel>header span{font-size:11.5px;color:var(--ink-3)}
 .day-panel .ghost{margin-top:10px}
 
-/* ---------- 查计划 ---------- */
-.lookup-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.lookup-row select{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:13px;outline:none}
-.lk-row{display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:baseline;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 0;text-align:left;font-size:13px}
-.lk-row:last-of-type{border-bottom:0}
-.lk-row b{font-size:11.5px;color:var(--ink-3);font-weight:600}
-.lk-row span{color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lk-row em{font-style:normal;font-size:11px;color:var(--ink-3)}
-.lk-row em.ok{color:var(--ok)}
