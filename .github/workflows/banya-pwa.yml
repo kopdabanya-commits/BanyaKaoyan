@@ -1,0 +1,74 @@
+name: 板牙考研 · 自动检查与前端发布
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_now:
+        description: "确认从 main 发布前端（不会更新后端或数据库）"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: banya-pwa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: 前端语法 + 后端测试（不访问生产数据）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安装测试依赖
+        run: python -m pip install -r server/requirements.txt
+      - name: 执行已有离线测试
+        run: bash scripts/check.sh
+      - name: 检查云端部署脚本的语法
+        run: python -m py_compile deploy/github_static.py
+
+  deploy-frontend:
+    name: 发布 PWA 前端（保留服务器与学习数据）
+    needs: check
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (
+        (github.event_name == 'push' && vars.BANYA_AUTO_DEPLOY == 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_now == true)
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安装安全 SSH 客户端
+        run: python -m pip install "paramiko>=3.5,<5"
+      - name: 检查部署凭据并发布
+        env:
+          BANYA_ECS_PASSWORD: ${{ secrets.BANYA_ECS_PASSWORD }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [ -z "$BANYA_ECS_PASSWORD" ]; then
+            echo "::error::缺少 production 环境或仓库 Secret：BANYA_ECS_PASSWORD。尚未发布。"
+            exit 1
+          fi
+          python deploy/github_static.py
