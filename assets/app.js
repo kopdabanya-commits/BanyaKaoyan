@@ -28,7 +28,6 @@ let view = 'today';
 let subject = state.prefs.subject === 'politics' ? 'politics' : 'english';
 let selected = today();
 let calMonth = today().slice(0, 7);
-let lookup = { year: '', kind: '', open: false };
 let syncState = 'idle';
 let lastReport = null;
 const DAILY_CAP = 150;
@@ -197,21 +196,6 @@ function takeTokenFromLink() {
   return true;
 }
 
-function autoReclassify() {
-  if (state.prefs.reclassified) return 0;
-  let changed = 0;
-  for (const t of state.tasks) {
-    if (t.deleted) continue;
-    const s = guessSubject(t.title);
-    if (s && s !== t.subject) { t.subject = s; touch(t); changed++; }
-  }
-  state.prefs.reclassified = true;
-  if (changed) { state.dirty = true; save(); }
-  return changed;
-}
-
-
-
 /* ---------------- 表单自动填充 ---------------- */
 function markNoAutofill(root) {
   root.querySelectorAll('input, textarea, select').forEach((el) => {
@@ -228,23 +212,18 @@ fillObserver.observe(document.body, { childList: true, subtree: true });
 
 /* ---------------- 版本 ---------------- */
 const APP_VERSION = (window.BANYA_CONFIG || {}).version || '';
-let latest = null;
 
-async function checkUpdate(manual) {
+async function checkUpdate() {
   try {
     const r = await fetch('./api/version?ts=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('bad');
     const data = await r.json();
     if (data.version && APP_VERSION && data.version !== APP_VERSION) {
-      latest = data;
-      if (manual) toast('有新版本，点这里更新', () => forceUpdate());
-      else toast('有新版本，点这里更新', () => forceUpdate());
+      toast('有新版本，点这里更新', () => forceUpdate());
       return true;
     }
-    if (manual) toast('已是最新版本');
     return false;
   } catch {
-    if (manual) toast('检查失败，稍后再试');
     return false;
   }
 }
@@ -283,15 +262,6 @@ function render() {
   app.classList.remove('enter');
   void app.offsetWidth;
   app.classList.add('enter');
-  animateRing();
-}
-
-function animateRing() {
-  const ring = document.querySelector('.ring');
-  if (!ring) return;
-  const target = ring.style.getPropertyValue('--p') || '0';
-  ring.style.setProperty('--p', '0');
-  requestAnimationFrame(() => requestAnimationFrame(() => ring.style.setProperty('--p', target)));
 }
 
 function todayView() {
@@ -308,14 +278,11 @@ function todayView() {
     <div><b>${isToday ? '今天' : weekday(selected)}</b><span>${selected.replace(/-/g, '.')}</span></div>
     <button class="chev" data-action="day" data-n="1" aria-label="后一天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"/></svg></button>
   </section>`;
-  const focus = `<section class="focus">
-    <div class="ring" style="--p:${pct}"><div class="ring-in"><b>${remain}</b><small>分钟待做</small></div></div>
-    <div class="focus-list">
-      <div><span>未完成</span><b>${list.length - done}</b></div>
-      <div><span>已完成</span><b>${done}</b></div>
-      <div><span>计划分钟</span><b>${total}</b></div>
-    </div>
-  </section>`;
+  const summary = list.length
+    ? `<section class="day-summary" aria-label="当天进度">
+        <div><b>${done}/${list.length} 项完成</b><span>${remain} 分钟待做</span></div>
+        <div class="day-progress"><i style="width:${pct}%"></i></div>
+      </section>` : '';
   const hint = isToday && p.days >= 3
     ? `<p class="hint-line">距考试 ${p.days} 天 · 每天 ${p.required} 分钟${p.behind ? ' · 落后' : ''}</p>`
     : '';
@@ -329,12 +296,12 @@ function todayView() {
   const name = subject === 'english' ? '英语二' : '政治';
   const total0 = live().filter(mine).length;
   const empty = total0 === 0
-    ? `<section class="empty"><b>「${name}」还没有任务</b><p>先导入这个科目的计划。</p><button class="cta" data-action="add">添加任务</button></section>`
-    : `<section class="empty"><b>这一天还没有任务</b><p>导入计划或添加一条。</p><button class="cta" data-action="add">添加任务</button></section>`;
+    ? `<section class="empty"><b>${name}还没有计划</b><p>先导入已有安排，再从今天开始打卡。</p><button class="cta" data-action="import">导入计划</button></section>`
+    : `<section class="empty"><b>这一天没有安排</b><button class="ghost wide" data-action="add">在这天添加任务</button></section>`;
   const body = list.length
     ? `<section class="group"><h2>${isToday ? '今日任务' : '当天任务'} <em>${list.length}</em></h2><ul class="tasks">${list.map(row).join('')}</ul></section>`
     : empty;
-  return head + focus + hint + review + body;
+  return head + hint + review + summary + body;
 }
 
 function row(t) {
@@ -347,39 +314,6 @@ function row(t) {
     </button>
     <span class="mins">${t.minutes}<small>分</small></span>
   </li>`;
-}
-
-function lookupRows() {
-  const pool = live().filter((t) => t.subject === 'english');
-  return pool
-    .filter((t) => (!lookup.year || String(t.title).includes(lookup.year)) && (!lookup.kind || kindOf(t) === lookup.kind))
-    .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title));
-}
-
-function lookupCard() {
-  const years = ['', ...Array.from({ length: 14 }, (_, i) => String(2023 - i))];
-  const kinds = [['', '全部'], ...EXAM_SHAPE.map(([k, name]) => [k, name])];
-  const rows = lookupRows();
-  const done = rows.filter((t) => t.done).length;
-  const shown = lookup.open ? rows : rows.slice(0, 5);
-  return `<section class="card">
-      <h2>查计划</h2>
-      <div class="lookup-row">
-        <select id="lk-year" aria-label="年份">
-          ${years.map((y) => `<option value="${y}"${lookup.year === y ? ' selected' : ''}>${y || '全部年份'}</option>`).join('')}
-        </select>
-        <select id="lk-kind" aria-label="题型">
-          ${kinds.map(([k, name]) => `<option value="${k}"${lookup.kind === k ? ' selected' : ''}>${name}</option>`).join('')}
-        </select>
-      </div>
-      <p class="meta-line">${rows.length ? rows.length + ' 项 · 完成 ' + done : '没有匹配的计划'}</p>
-      ${shown.map((t) => `<button class="lk-row" data-action="edit" data-id="${t.id}">
-          <b>${t.date ? t.date.slice(5).replace('-', '/') : '无日期'}</b>
-          <span>${esc(t.title)}</span>
-          <em class="${t.done ? 'ok' : ''}">${t.done ? '已完成' : '未完成'}</em>
-        </button>`).join('')}
-      ${rows.length > 5 ? `<button class="ghost wide" data-action="lookup-toggle">${lookup.open ? '收起' : '展开全部 ' + rows.length + ' 项'}</button>` : ''}
-    </section>`;
 }
 
 function calendarView() {
@@ -412,7 +346,7 @@ function calendarView() {
     ${list.length ? `<ul class="tasks">${list.map(row).join('')}</ul>` : '<p class="note">这天没有安排</p>'}
     <button class="ghost wide" data-action="add">在这天添加</button>
   </section>
-  ${lookupCard()}`;
+  `;
 }
 
 /* ---------------- 统计工具 ---------------- */
@@ -600,25 +534,6 @@ function parseRecords(text, round) {
   return out;
 }
 
-function recordPrompt() {
-  return [
-    '请根据我做过的英语二真题，输出下面格式的表格，只输出表格，不要任何解释：',
-    '',
-    '| 年份 | 题型 | 得分 |',
-    '| --- | --- | --- |',
-    '| 2015 | 阅读 | 8 |',
-    '| 2015 | 完形 |  |',
-    '',
-    '要求：',
-    '1. 年份范围 2010–2023。',
-    '2. 题型只能填：完形、阅读、新题型、翻译、小作文、大作文。',
-    '3. 得分填 0–10，忘了或没做就留空；整行不要出现没做过的。',
-    '4. 我写过的才列出，一行代表该年该题型做过一次。',
-    '',
-    '我的情况：（在这里补充：哪几年做过、大概得分、哪些还没做）'
-  ].join(String.fromCharCode(10));
-}
-
 function openYear(year, kind) {
   const list = live()
     .filter((t) => !isRedo(t) && t.subject === 'english' && String(t.title).includes(String(year)) && (!kind || kindOf(t) === kind))
@@ -664,13 +579,7 @@ function matrixCell(c, kind) {
 function englishStats() {
   const start = shift(today(), -6);
   const week = rangeStats(start, today());
-  const days = [...Array(7)].map((_, i) => {
-    const d = shift(today(), i - 6);
-    return { d, minutes: rangeStats(d, d).actualMinutes };
-  });
-  const peak = Math.max(30, ...days.map((x) => x.minutes));
   const rows = englishMatrix();
-  const covered = rows.filter((r) => r.total);
   const scored = englishPool().filter((t) => scoreRate(t) != null);
   const avgRate = scored.length ? scored.reduce((a, t) => a + scoreRate(t), 0) / scored.length : null;
   const types = englishTypes();
@@ -680,29 +589,25 @@ function englishStats() {
       <div class="stat"><b>${Math.round(week.actualMinutes / 7)}</b><span>日均分钟</span></div>
       <div class="stat"><b class="${rateClass(avgRate)}">${avgRate == null ? '—' : fmt1(avgRate * 100) + '<small>%</small>'}</b><span>得分率</span></div>
     </section>
-    <section class="card">
-      <h2>近 7 天</h2>
-      <div class="bars">${days.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.minutes / peak * 84))}px" class="${x.minutes ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
-    </section>
-    <section class="card">
-      <h2>真题覆盖</h2>
-      <p class="meta-line">阅读二刷 · 其余一刷 · ${total} 项</p>
-      <div class="matrix">
-        <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
-        ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
-          <button class="myear" data-action="year" data-year="${r.y}">${r.y}</button>
-          ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k], k)}</button>`).join('')}
-        </div>`).join('')}
+    <details class="card details-card">
+      <summary><span>历年真题</span><em>${rows.filter((r) => r.total).length} 年 · ${total} 项</em></summary>
+      <div class="details-body">
+        <p class="note">阅读按二刷、其他题型按一刷统计。</p>
+        <div class="matrix">
+          <div class="mhead"><span>年份</span>${EXAM_SHAPE.map(([k]) => `<i>${k}</i>`).join('')}</div>
+          ${rows.map((r) => `<div class="mrow${r.total ? '' : ' off'}">
+            <button class="myear" data-action="year" data-year="${r.y}">${r.y}</button>
+            ${EXAM_SHAPE.map(([k]) => `<button class="mcell" data-action="year" data-year="${r.y}" data-kind="${k}" aria-label="${r.y} 年 ${KIND_NAME[k]}">${matrixCell(r.cells[k], k)}</button>`).join('')}
+          </div>`).join('')}
+        </div>
+        <div class="row-btns">
+          <button class="ghost" data-action="backfill">手动补录</button>
+          <button class="ghost" data-action="import-records">粘贴记录</button>
+        </div>
       </div>
-      <div class="chips" style="margin-top:10px">
-        <button data-action="backfill">手动补录</button>
-        <button data-action="import-records">粘贴补录</button>
-        <button data-action="record-prompt">复制提示词</button>
-        <button data-action="clear-records">清空补录</button>
-      </div>
-    </section>
+    </details>
     <section class="card">
-      <h2>题型</h2>
+      <h2>题型进度</h2>
       ${types.map((t) => {
         const rates = t.scored.map((x) => x.rate);
         const avg = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
@@ -718,7 +623,6 @@ function englishStats() {
 
 function politicsStatsView() {
   const s = politicsStats();
-  const peak = Math.max(1, ...s.daily.map((x) => x.done));
   const row = (r, label) => {
     const pct = r.plan ? Math.round((r.done / r.plan) * 100) : 0;
     return `<div class="type-row">
@@ -739,49 +643,15 @@ function politicsStatsView() {
     <section class="card">
       <h2>刷题</h2>
       ${s.drills.map((r) => row(r)).join('') || '<p class="note">计划里还没有刷题</p>'}
-    </section>
-    <section class="card">
-      <h2>每天刷题</h2>
-      <div class="bars">${s.daily.map((x) => `<div class="col"><i style="height:${Math.max(3, Math.round(x.done / peak * 84))}px" class="${x.done ? 'on' : ''}"></i><span>${x.d.slice(8)}</span></div>`).join('')}</div>
     </section>`;
 }
 
-function weeklyReview() {
-  const start = shift(today(), -6);
-  const s = rangeStats(start, today());
-  const p = progress();
-  const byType = {};
-  for (const t of s.list) {
-    const k = t.type || '其他';
-    byType[k] = byType[k] || { total: 0, done: 0 };
-    byType[k].total++;
-    if (t.done) byType[k].done++;
-  }
-  const weakest = Object.entries(byType)
-    .filter(([, v]) => v.total >= 2)
-    .sort((a, b) => a[1].done / a[1].total - b[1].done / b[1].total)[0];
-  const lines = ['近 7 天：完成 ' + s.done.length + '/' + s.list.length + ' 项。'];
-  if (!s.list.length) lines.push('这周还没有安排。');
-  else if (s.rate >= 80) lines.push('完成率不错，保持节奏。');
-  else if (s.rate >= 50) lines.push('完成率一般，先保住每天必做的几项。');
-  else lines.push('完成率偏低，先减少每天的任务量。');
-  if (weakest) lines.push('最弱的是「' + weakest[0] + '」（' + weakest[1].done + '/' + weakest[1].total + '）。');
-  if (p.days > 0) {
-    lines.push('每天需完成 ' + Math.max(1, Math.ceil(p.count / p.days)) + ' 项' + (p.behind ? '，目前落后。' : '，节奏正常。'));
-  }
-  return lines.join(String.fromCharCode(10));
-}
-
 function statsFooter() {
+  const s = rangeStats(shift(today(), -6), today());
   return `<section class="card">
-      <h2>本周复盘</h2>
-      <p class="line">${weeklyReview().split(String.fromCharCode(10)).map(esc).join('<br>')}</p>
-      <div class="chips" style="margin-top:10px">
-        <button data-action="copy-review">复制复盘</button>
-        <button data-action="copy" data-scope="day">今天</button>
-        <button data-action="copy" data-scope="week">近 7 天</button>
-        <button data-action="copy" data-scope="all">全部</button>
-      </div>
+      <h2>近 7 天</h2>
+      <p class="week-summary"><b>${s.done.length}/${s.list.length}</b> 项完成 <span>·</span> 日均 ${Math.round(s.actualMinutes / 7)} 分钟</p>
+      <button class="ghost wide" data-action="copy" data-scope="week">复制近 7 天记录</button>
     </section>`;
 }
 
@@ -791,54 +661,62 @@ function statsView() {
 
 function meView() {
   const p = progress();
+  const [englishCount, politicsCount] = countBySubject().split(' / ');
   const status = state.prefs.token
     ? (syncState === 'error' ? '同步失败，稍后重试' : syncState === 'syncing' ? '同步中…' : `已连接 · 版本 ${state.rev}`)
     : '未连接';
   const theme = state.prefs.theme || 'auto';
   return `<section class="card">
-      <h2>外观</h2>
-      <div class="segmented wide-seg" role="tablist">
-        <button data-theme-choice="auto" class="${theme === 'auto' ? 'on' : ''}">跟随系统</button>
-        <button data-theme-choice="light" class="${theme === 'light' ? 'on' : ''}">白天</button>
-        <button data-theme-choice="dark" class="${theme === 'dark' ? 'on' : ''}">夜间</button>
+      <h2>计划概况</h2>
+      <div class="profile-metrics">
+        <div><b>${p.count}</b><span>待做任务</span></div>
+        <div><b>${p.remain}</b><span>待做分钟</span></div>
+        <div><b>${p.days}</b><span>距离初试 · 天</span></div>
       </div>
+      <p class="note">英语二 ${englishCount} 项 · 政治 ${politicsCount} 项</p>
     </section>
     <section class="card">
       <h2>云同步</h2>
       <div class="row"><span>状态</span><em>${status}</em></div>
-      <label class="field"><span>同步密码</span><input id="pref-token" type="password" value="${esc(state.prefs.token)}" placeholder="部署时生成，只需填一次"></label>
-      <p class="note">只需填一次。</p>
-      <button class="cta" data-action="save-prefs">保存并同步</button>
+      ${state.prefs.token
+        ? `<button class="ghost wide" data-action="sync-now">立即同步</button>
+          <details class="subsettings">
+            <summary>更换同步密码</summary>
+            <div class="details-body">
+              <label class="field"><span>新同步密码</span><input id="pref-token" type="password" value="" placeholder="留空则不修改"></label>
+              <button class="ghost wide" data-action="save-prefs">保存同步设置</button>
+            </div>
+          </details>`
+        : `<label class="field"><span>同步密码</span><input id="pref-token" type="password" value="" placeholder="部署时生成，只需填一次"></label>
+          <button class="cta" data-action="save-prefs">连接并同步</button>`}
     </section>
     <section class="card">
-      <h2>考试</h2>
-      <div class="row"><span>初试日期</span><em>2026 年 12 月 19 日</em></div>
-      <div class="row"><span>倒计时</span><em>${p.days} 天</em></div>
+      <h2>计划与记录</h2>
+      <button class="cta" data-action="import">导入计划或学习记录</button>
+      <button class="ghost wide" data-action="export">备份当前科目</button>
     </section>
-    <section class="card">
-      <h2>每日整理</h2>
-      <label class="check-line"><input type="checkbox" id="pref-review"${state.prefs.autoReview ? ' checked' : ''}> 每天打开时自动整理</label>
-      <button class="ghost wide" data-action="review-now">立即整理一次</button>
-    </section>
-    <section class="card">
-      <h2>计划</h2>
-      <button class="ghost wide" data-action="import">导入计划</button>
-      <button class="ghost wide" data-action="prompt">复制导入提示词</button>
-      <button class="ghost wide" data-action="reclassify">按内容重新分科</button>
-      <button class="ghost wide" data-action="export">导出全部</button>
-      <button class="ghost wide" data-action="clear">清空当前科目</button>
-    </section>
-    <section class="card">
-      <h2>数据</h2>
-      <div class="row"><span>英语 / 政治</span><em>${countBySubject()}</em></div>
-      <div class="row"><span>本科目待做</span><em>${p.count} 项 · ${p.remain} 分钟</em></div>
-      <div class="row"><span>每天应做</span><em>${p.required} 分钟</em></div>
-    </section>
-    <section class="card">
-      <h2>版本</h2>
-      <div class="row"><span>当前</span><em>${esc(APP_VERSION || '本地预览')}</em></div>
-      <button class="ghost wide" data-action="check-update">检查更新</button>
-    </section>`;
+    <details class="card details-card">
+      <summary><span>学习与外观</span></summary>
+      <div class="details-body">
+        <label class="check-line"><input type="checkbox" id="pref-review"${state.prefs.autoReview ? ' checked' : ''}> 每天打开时自动整理逾期与超量任务</label>
+        <button class="ghost wide" data-action="review-now">现在整理一次</button>
+        <div class="setting-block">
+          <span class="setting-label">外观</span>
+          <div class="segmented wide-seg" role="tablist">
+            <button data-theme-choice="auto" class="${theme === 'auto' ? 'on' : ''}">跟随系统</button>
+            <button data-theme-choice="light" class="${theme === 'light' ? 'on' : ''}">白天</button>
+            <button data-theme-choice="dark" class="${theme === 'dark' ? 'on' : ''}">夜间</button>
+          </div>
+        </div>
+      </div>
+    </details>
+    <details class="card details-card">
+      <summary><span>高级数据管理</span></summary>
+      <div class="details-body">
+        <button class="ghost wide" data-action="clear-records">清空无日期补录</button>
+        <button class="danger wide" data-action="clear">清空当前科目</button>
+      </div>
+    </details>`;
 }
 
 /* ---------------- 编辑 ---------------- */
@@ -948,33 +826,18 @@ function openImport(preset) {
     <p class="note">表格、每行一条或 JSON。</p>
     <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
     <div class="modes">
-      <label><input type="radio" name="import-mode" value="range"${preset === 'range' || !preset ? ' checked' : ''}><span><b>按日期覆盖</b><em>替换导入日期内的安排，保留已完成与不做</em></span></label>
-      <label><input type="radio" name="import-mode" value="merge"><span><b>只添加</b><em>相同日期和内容的任务跳过</em></span></label>
-      <label><input type="radio" name="import-mode" value="all"><span><b>全部替换</b><em>清空当前科目后导入</em></span></label>
+      <label><input type="radio" name="import-mode" value="range"${preset === 'range' ? ' checked' : ''}><span><b>按日期覆盖</b><em>替换导入日期内的待做安排</em></span></label>
+      <label><input type="radio" name="import-mode" value="merge"${preset === 'merge' || !preset ? ' checked' : ''}><span><b>只添加</b><em>重复记录自动跳过</em></span></label>
       <label><input type="radio" name="import-mode" value="records"${preset === 'records' ? ' checked' : ''}><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
     </div>
-    <label class="field"><span>补录轮次</span><select id="record-round">
-      <option value="1">一刷</option><option value="2" selected>二刷</option>
-    </select></label>
+    <details class="subsettings">
+      <summary>补录轮次设置</summary>
+      <div class="details-body"><label class="field"><span>默认轮次</span><select id="record-round">
+        <option value="1">一刷</option><option value="2" selected>二刷</option>
+      </select></label></div>
+    </details>
     <button class="cta wide" data-action="import-run">导入</button>
   </div>`;
-}
-
-function promptText() {
-  const start = today();
-  return `请帮我排一份考研学习计划，只输出 Markdown 表格，不要解释、不要额外文字。
-
-表格格式：
-| 日期 | 任务 | 类型 | 分钟 |
-| --- | --- | --- | --- |
-| ${start} | 示例：阅读真题 2021 Text 1 | 阅读 | 40 |
-
-要求：
-1. 日期用 YYYY-MM-DD，从 ${start} 开始，按天递增，不要排到考试之后。
-2. 类型只能从：${TYPES.join('、')} 中选。
-3. 每项 15-120 分钟；每天总时长不超过 150 分钟；每 7 天留 1 天休息。
-4. 任务名具体到材料，例如「阅读真题 2021 Text 1」「马原 第 3 章 刷题 30 题」。
-5. 我的情况：（在这里补充：目标院校/专业、考试日期、每天可用时间、薄弱科目、已做过的真题）。`;
 }
 
 function copyText(text, label) {
@@ -1106,7 +969,6 @@ document.addEventListener('click', async (e) => {
     const d = new Date(y, m - 1 + Number(el.dataset.n), 1, 12);
     calMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; render(); return;
   }
-  if (a === 'lookup-toggle') { lookup.open = !lookup.open; render(); return; }
   if (a === 'pick') { selected = el.dataset.date; calMonth = selected.slice(0, 7); render(); return; }
   if (a === 'toggle') {
     const t = findTask(el.dataset.id);
@@ -1125,8 +987,6 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
-  if (a === 'check-update') { await checkUpdate(true); return; }
-  if (a === 'record-prompt') { copyText(recordPrompt(), '补录提示词'); return; }
   if (a === 'import-records') { openImport('records'); return; }
   if (a === 'clear-records') {
     const hit = state.tasks.filter((t) => !t.deleted && !t.date);
@@ -1201,7 +1061,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'import') { openImport(); return; }
   if (a === 'import-run') {
     const text = $('#import-text').value;
-    const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'range';
+    const mode = document.querySelector('input[name="import-mode"]:checked')?.value || 'merge';
     let parsed = [];
     try { parsed = mode === 'records' ? parseRecords(text, Number(($('#record-round') || {}).value) || 2) : parsePlan(text); } catch { return toast('格式无法识别'); }
     if (!parsed.length) return toast('没有识别到内容');
@@ -1236,34 +1096,22 @@ document.addEventListener('click', async (e) => {
       }
       state.tasks = state.tasks.concat(parsed); added = parsed.length;
     } else if (mode === 'merge') {
-      const seen = new Set(live().filter(mine).map((t) => t.date + '|' + t.title));
-      const fresh = parsed.filter((t) => !seen.has(t.date + '|' + t.title));
+      const keyOf = (t) => `${t.subject}|${t.date}|${t.title}`;
+      const seen = new Set(live().map(keyOf));
+      const fresh = parsed.filter((t) => {
+        const key = keyOf(t);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       state.tasks = state.tasks.concat(fresh); added = fresh.length;
-    } else {
-      for (const t of state.tasks) {
-        if (!t.deleted && t.subject === subject) { t.deleted = true; touch(t); removed++; }
-      }
-      state.tasks = state.tasks.concat(parsed); added = parsed.length;
     }
     state.dirty = true; save(); closeSheet(); render(); schedulePush();
     toast('新增 ' + added + (removed ? ' · 删除 ' + removed : '') + (kept ? ' · 保留已完成 ' + kept : ''));
     return;
   }
-  if (a === 'reclassify') {
-    let changed = 0;
-    for (const t of state.tasks) {
-      if (t.deleted) continue;
-      const s = guessSubject(t.title);
-      if (s && s !== t.subject) { t.subject = s; touch(t); changed++; }
-    }
-    if (changed) { pushUndo(); state.dirty = true; save(); render(); schedulePush(); toast('重新分科 ' + changed + ' 项'); }
-    else toast('没有需要改的任务');
-    return;
-  }
   if (a === 'export') { exportAll(); return; }
-  if (a === 'prompt') { copyText(promptText(), '导入提示词'); return; }
   if (a === 'copy') { copyText(gptText(el.dataset.scope), '学习情况'); return; }
-  if (a === 'copy-review') { copyText(weeklyReview() + '\n\n' + gptText('week'), '本周复盘'); return; }
   if (a === 'clear') {
     if (!confirm('清空「' + (subject === 'english' ? '英语二' : '政治') + '」的全部任务？云端也会同步删除。')) return;
     pushUndo();
@@ -1271,8 +1119,15 @@ document.addEventListener('click', async (e) => {
     state.dirty = true; save(); render(); schedulePush(); toast('已清空，可撤销');
     return;
   }
+  if (a === 'sync-now') {
+    if (!state.prefs.token) { syncState = 'idle'; render(); return toast('未连接云端'); }
+    await pull();
+    toast(syncState === 'error' ? '同步失败，稍后重试' : '已同步');
+    return;
+  }
   if (a === 'save-prefs') {
-    state.prefs.token = $('#pref-token').value.trim();
+    const token = $('#pref-token')?.value.trim();
+    if (token) state.prefs.token = token;
     if ($('#pref-review')) state.prefs.autoReview = $('#pref-review').checked;
     save();
     if (!state.prefs.token) { syncState = 'idle'; render(); toast('未连接云端'); return; }
@@ -1291,8 +1146,11 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('change', (e) => {
-  if (e.target.id === 'lk-year') { lookup.year = e.target.value; lookup.open = false; render(); }
-  if (e.target.id === 'lk-kind') { lookup.kind = e.target.value; lookup.open = false; render(); }
+  if (e.target.id === 'pref-review') {
+    state.prefs.autoReview = e.target.checked;
+    save();
+    toast(e.target.checked ? '已开启每日整理' : '已关闭每日整理');
+  }
 });
 
 function toast(message, action) {
@@ -1303,9 +1161,7 @@ function toast(message, action) {
 
 applyTheme();
 const linked = takeTokenFromLink();
-const reclassified = autoReclassify();
 render();
-if (reclassified) setTimeout(() => toast('已按内容分科 ' + reclassified + ' 项'), 400);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then((reg) => {
     reg.update().catch(() => {});
@@ -1324,7 +1180,7 @@ pull().finally(() => {
   if (linked) toast('已连接云端');
   lastReport = dailyReview();
   if (lastReport) render();
-  checkUpdate(false);
+  checkUpdate();
   const action = params.get('action');
   if (action === 'import') openImport(params.get('mode') || '');
   if (action === 'year') openYear(Number(params.get('year') || 2015), params.get('kind') || '');
@@ -1333,7 +1189,7 @@ let lastCheck = Date.now();
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   pull().catch(() => {});
-  if (Date.now() - lastCheck > 300000) { lastCheck = Date.now(); checkUpdate(false); }
+  if (Date.now() - lastCheck > 300000) { lastCheck = Date.now(); checkUpdate(); }
 });
 window.addEventListener('online', () => { if (state.dirty) push().catch(() => {}); });
 })();
