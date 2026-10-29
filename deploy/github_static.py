@@ -107,6 +107,39 @@ def main() -> None:
 
         # config.js 含同步口令：只在远端复制，永远不通过 GitHub 下载或打印。
         run(f"cp -p {q(LIVE + '/config.js')} {q(stage + '/config.js')}")
+        # 仅在 ECS 内部更新版本号；同步 token 从不离开服务器。
+        patch_config = """
+import json
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+raw = path.read_text(encoding="utf-8").strip()
+prefix = "window.BANYA_CONFIG = "
+if not raw.startswith(prefix) or not raw.endswith(";"):
+    raise SystemExit("config.js 格式与既有部署约定不符")
+value = json.loads(raw[len(prefix):-1])
+if not isinstance(value, dict) or not value.get("token"):
+    raise SystemExit("config.js 缺少原有同步 token")
+value["version"] = sys.argv[2]
+value["builtAt"] = sys.argv[3]
+path.write_text(prefix + json.dumps(value, ensure_ascii=False) + ";\\n", encoding="utf-8")
+"""
+        run("python3 -c " + q(patch_config) + " " +
+            q(stage + "/config.js") + " " + q(sha[:12]) + " " + q(built_at))
+        # 每次发布强制更新 Service Worker 缓存名，否则手机仍可能使用旧版页面。
+        patch_worker = """
+import re
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+raw = path.read_text(encoding="utf-8")
+updated, count = re.subn(r"(?m)^const CACHE = ['\\\"][^'\\\"]+['\\\"];", "const CACHE = '" + sys.argv[2] + "';", raw, count=1)
+if count != 1:
+    raise SystemExit("无法定位 Service Worker 缓存名，停止部署")
+path.write_text(updated, encoding="utf-8")
+"""
+        run("python3 -c " + q(patch_worker) + " " +
+            q(stage + "/sw.js") + " " + q("banya-gh-" + sha[:12]))
         # 保留既有交接文档，避免旧链接失效。
         for relative in ("handoff.html", "handoff.js", "handoff.txt", "handoff.md"):
             source = f"{LIVE}/{relative}"
