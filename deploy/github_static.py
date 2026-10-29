@@ -92,7 +92,7 @@ def main() -> None:
         run(f"test -L {q(LIVE)} && test -s {q(LIVE + '/config.js')}")
         run("test -f /etc/banya-v2.env && test -f /var/lib/banya-v2/v2.sqlite3")
         run("systemctl is-active --quiet banya-v2.service")
-        run("curl -fsSk --max-time 12 -o /dev/null https://127.0.0.1/api/health")
+        run("curl -fsSk --max-time 12 -o /dev/null -H 'Host: 124.70.128.201' https://127.0.0.1/api/health")
         previous = run(f"readlink -f {q(LIVE)}")
         if not previous.startswith(RELEASES + "/"):
             raise RuntimeError("当前站点不在预期 releases 目录，停止部署")
@@ -124,9 +124,9 @@ def main() -> None:
         # 先原子换静态站点；验证失败立即恢复旧软链及旧版本。
         run(f"ln -s {q(stage)} {q(next_link)} && mv -Tf {q(next_link)} {q(LIVE)}")
         switched = True
-        run(f"curl -fsSk --max-time 12 -o /dev/null https://127.0.0.1/")
-        run(f"curl -fsSk --max-time 12 -o /dev/null https://127.0.0.1/assets/app.js")
-        run(f"curl -fsSk --max-time 12 -o /dev/null https://127.0.0.1/api/health")
+        run(f"curl -fsSk --max-time 12 -o /dev/null -H 'Host: 124.70.128.201' https://127.0.0.1/")
+        run(f"curl -fsSk --max-time 12 -o /dev/null -H 'Host: 124.70.128.201' https://127.0.0.1/assets/app.js")
+        run(f"curl -fsSk --max-time 12 -o /dev/null -H 'Host: 124.70.128.201' https://127.0.0.1/api/health")
         run(f"mv -f {q(version_tmp)} {q(VERSION_FILE)}")
         print(f"前端已部署：{sha[:12]}；服务器后端、数据库与 AI 配置未改动")
     except Exception:
