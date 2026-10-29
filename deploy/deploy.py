@@ -23,16 +23,17 @@ client.connect(HOST, username=USER, password=password, timeout=25, look_for_keys
 sftp = client.open_sftp()
 
 
-def run(cmd, timeout=300, check=True):
+def run(cmd, timeout=300, check=True, sensitive=False):
+    sensitive = sensitive or "BANYA_V2_TOKEN" in cmd
     _, out, err = client.exec_command(cmd, timeout=timeout)
     text = out.read().decode("utf-8", "replace")
     error = err.read().decode("utf-8", "replace")
     code = out.channel.recv_exit_status()
     tail = (text + error).strip()[-500:]
     shown = "[redacted]" if "BANYA_V2_TOKEN" in cmd else cmd[:70]
-    print(f"[{code}] {shown} | {tail}")
+    print(f"[{code}] [redacted]" if sensitive else f"[{code}] {shown} | {tail}")
     if check and code != 0:
-        raise SystemExit("failed: " + cmd)
+        raise SystemExit("failed: " + ("[redacted]" if sensitive else cmd))
     return text
 
 
@@ -96,7 +97,7 @@ run(f"ln -sfn {dest} /var/www/banya-v2/current")
 # 3. 服务端
 sftp.put(os.path.join(ROOT, "server", "main.py"), "/opt/banya-v2/main.py")
 
-token = run("test -f /etc/banya-v2.env && sed -n 's/^BANYA_V2_TOKEN=//p' /etc/banya-v2.env || true").strip()
+token = run("test -f /etc/banya-v2.env && sed -n 's/^BANYA_V2_TOKEN=//p' /etc/banya-v2.env || true", sensitive=True).strip()
 built = run("date -u '+%Y-%m-%d %H:%M UTC'").strip()
 
 if not token:

@@ -524,14 +524,19 @@ function englishTypes() {
     });
 }
 
+// 政治标题有两种写法：模块全称，以及肖1000 的「马2/毛1/习4/史3/思2」简写。
+// 只认全称会让一大半刷题落进「其他」，所以按模块逐个匹配，先到先得。
+const POLITICS_MODULES = [
+  ['马原', /马原|马\d|唯物|辩证法|认识论|政治经济学|科学社会主义|对立统一|否定之否定|量变质变|真理|剩余价值|资本主义|价值规律|商品二因素|劳动二重性|资本积累|资本循环|平均利润|经济危机|生产力|生产关系|社会存在|人民群众|历史人物/],
+  ['毛中特', /毛中特|毛概|毛\d|毛泽东|新民主主义|社会主义改造|改革开放理论|社会主义建设道路|社会主义初级阶段|中国特色社会主义理论/],
+  ['史纲', /史纲|史\d|近代史|党史|近代中国|辛亥革命|建党|革命道路|抗日战争|解放战争|社会主义建设|改革开放历史|新中国成立|五四|长征|遵义|延安/],
+  ['思修', /思修|思\d|道德|法治|理想信念|中国精神|价值观|人生|社会公德|职业道德|家庭美德/],
+  ['新思想', /习思想|习\d|习近平|新时代|中国式现代化|总论|新思想|全过程人民民主|国家安全|党的建设|文化与民生|高质量发展|全面深化改革|文化强国|民生/],
+  ['时政', /时政|形势与政策|肖八|肖四|模拟/]
+];
 function moduleOf(title) {
   const s = String(title);
-  if (/马原|唯物|辩证法|认识论|政治经济学|科学社会主义/.test(s)) return '马原';
-  if (/毛中特|毛泽东|新民主主义|社会主义改造|改革开放/.test(s)) return '毛中特';
-  if (/史纲|近代史|党史/.test(s)) return '史纲';
-  if (/思修|道德|法治/.test(s)) return '思修';
-  if (/习思想|习近平|新时代|中国式现代化|总论|新思想/.test(s)) return '新思想';
-  if (/时政|形势与政策/.test(s)) return '新思想';
+  for (const [name, re] of POLITICS_MODULES) if (re.test(s)) return name;
   return '';
 }
 
@@ -839,7 +844,8 @@ function meView() {
 /* ---------------- 编辑 ---------------- */
 function openSheet(t) {
   const isNew = !t.id;
-  const draft = isNew ? { date: selected, title: '', type: '阅读', minutes: 30, note: '' } : t;
+  // 新任务也要带上调用方给的年份/题型/日期，否则年份面板的「添加」会丢参数
+  const draft = isNew ? { date: selected, title: '', type: '阅读', minutes: 30, note: '', ...t } : t;
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>${isNew ? '添加任务' : '编辑任务'}</h2><button data-action="close">×</button></header>
@@ -985,10 +991,15 @@ function gptText(scope) {
   const name = subject === 'english' ? '英语二' : '政治';
   const from = scope === 'day' ? selected : scope === 'week' ? shift(today(), -6) : '';
   const to = scope === 'day' ? selected : today();
-  const list = live().filter((t) => mine(t) && t.date >= (from || '0000-00-00') && t.date <= (scope === 'all' ? '9999-99-99' : to))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+  const list = live().filter((t) => {
+    if (!mine(t)) return false;
+    // 「全部」要包含无日期的补录记录：空字符串比任何日期都小，不能用日期下界过滤
+    if (scope === 'all') return true;
+    return t.date >= from && t.date <= to;
+  }).sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
   const lines = [`【${name}】${from ? from + ' ~ ' + to : '全部'}`];
-  let last = '';
+  // null 而不是 ''：补录记录的日期也是空字符串，否则第一组「历史记录」不会打标题
+  let last = null;
   for (const t of list) {
     const mark = t.done ? '✅' : t.notDone ? '❌' : '⭕';
     const actual = t.actualMinutes ? `（实际 ${t.actualMinutes} 分钟）` : '';
@@ -997,7 +1008,9 @@ function gptText(scope) {
     const score = typeof t.score === 'number' ? ` · 得分 ${t.score}/${t.scoreMax || 10}` : '';
     lines.push(`${mark} ${t.title} · ${t.type}${mins}${score}${actual}${t.note ? ' · 备注：' + t.note : ''}`);
   }
-  const s = rangeStats(from || (list[0]?.date || today()), to);
+  const s = scope === 'all'
+    ? { list, done: list.filter((t) => t.done) }
+    : rangeStats(from, to);
   const p = progress();
   lines.push(`— 合计：完成 ${s.done.length}/${s.list.length} 项`);
   lines.push(`— 进度：还剩 ${p.count} 项，到考试 ${p.days} 天${p.behind ? '（落后）' : ''}`);
@@ -1152,7 +1165,8 @@ document.addEventListener('click', async (e) => {
   if (a === 'year') { openYear(Number(el.dataset.year), el.dataset.kind || ''); return; }
   if (a === 'year-add') {
     const year = el.dataset.year, kind = el.dataset.kind;
-    openSheet({ date: year + '-12-01', title: year + ' ', type: KIND_TYPE[kind] || '阅读', minutes: 30 });
+    // 年份面板加的是「现在要做的这一年真题」，不能落在那一年的 12 月，否则会被每日整理当成逾期搬走
+    openSheet({ date: today(), title: year + ' ', type: KIND_TYPE[kind] || '阅读', minutes: 30 });
     return;
   }
   if (a === 'backfill') { openSheet({ date: shift(today(), -1), title: '', type: '阅读', minutes: 30 }); return; }
@@ -1261,7 +1275,10 @@ document.addEventListener('click', async (e) => {
     state.prefs.token = $('#pref-token').value.trim();
     if ($('#pref-review')) state.prefs.autoReview = $('#pref-review').checked;
     save();
-    try { await pull(); toast('已连接云端'); } catch { toast('连接失败，检查口令'); }
+    if (!state.prefs.token) { syncState = 'idle'; render(); toast('未连接云端'); return; }
+    // pull() 内部会吞掉网络错误，只能看 syncState 判断这次是否真的连上
+    try { await pull(); } catch {}
+    toast(syncState === 'error' ? '连接失败，检查口令' : '已连接云端');
     return;
   }
   if (a === 'undo') { undoLast(); schedulePush(); return; }
