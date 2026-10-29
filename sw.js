@@ -1,6 +1,6 @@
 /* 极简离线缓存：只缓存外壳，数据在 localStorage。 */
-const CACHE = 'banya-v2-49';  // 前端资源变了就 +1，手机才会换新缓存
-const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './assets/apple-touch-icon.png'];
+const CACHE = 'banya-v2-50';  // 前端资源变了就 +1，手机才会换新缓存
+const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
