@@ -646,17 +646,8 @@ function politicsStatsView() {
     </section>`;
 }
 
-function statsFooter() {
-  const s = rangeStats(shift(today(), -6), today());
-  return `<section class="card">
-      <h2>近 7 天</h2>
-      <p class="week-summary"><b>${s.done.length}/${s.list.length}</b> 项完成 <span>·</span> 日均 ${Math.round(s.actualMinutes / 7)} 分钟</p>
-      <button class="ghost wide" data-action="copy" data-scope="week">复制近 7 天记录</button>
-    </section>`;
-}
-
 function statsView() {
-  return (subject === 'english' ? englishStats() : politicsStatsView()) + statsFooter();
+  return subject === 'english' ? englishStats() : politicsStatsView();
 }
 
 function meView() {
@@ -694,7 +685,8 @@ function meView() {
       <h2>计划与记录</h2>
       <button class="cta" data-action="import">导入计划或记录</button>
       <button class="ghost wide" data-action="import-progress">同步最新完成记录</button>
-      <button class="ghost wide" data-action="export">备份当前科目</button>
+      <button class="ghost wide" data-action="export">下载当前科目完整备份</button>
+      <button class="ghost wide" data-action="copy" data-scope="week">复制近 7 天学习记录</button>
     </section>
     <details class="card details-card">
       <summary><span>学习与外观</span></summary>
@@ -943,10 +935,19 @@ function gptText(scope) {
 }
 
 function exportAll() {
-  const list = live().filter(mine).sort((a, b) => a.date.localeCompare(b.date));
-  const lines = ['| 日期 | 任务 | 类型 | 分钟 | 状态 |', '| --- | --- | --- | --- | --- |'];
-  for (const t of list) lines.push(`| ${t.date} | ${t.title.replace(/\|/g, '/')} | ${t.type} | ${t.minutes} | ${t.done ? '完成' : t.notDone ? '不做' : ''} |`);
-  copyText(lines.join('\n'), '全部计划');
+  // JSON 备份保留得分、完成状态和实际用时，绝不包含同步口令。
+  const tasks = live().filter(mine);
+  const payload = JSON.stringify({ format: 'banya-v2-backup', exportedAt: new Date().toISOString(), tasks }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = '板牙考研-' + (subject === 'english' ? '英语二' : '政治') + '-' + today() + '.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  toast('已导出 ' + tasks.length + ' 条记录（含得分与状态）');
 }
 
 /* ---------------- 同步 ---------------- */
