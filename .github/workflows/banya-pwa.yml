@@ -46,7 +46,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (
-        (github.event_name == 'push' && (vars.BANYA_AUTO_DEPLOY == 'true' || contains(github.event.head_commit.message, '[publish-ui-20261030]'))) ||
+        (github.event_name == 'push' && vars.BANYA_AUTO_DEPLOY == 'true') ||
         (github.event_name == 'workflow_dispatch' && inputs.deploy_now == true)
       )
     runs-on: ubuntu-24.04
