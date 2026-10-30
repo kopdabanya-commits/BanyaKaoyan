@@ -20,7 +20,7 @@ const API_BASE = (() => {
 const EXAM_DATE = '2026-12-19';
 const DEFAULTS = () => ({
   tasks: [], rev: 0, dirty: false, undo: [], lastReview: '',
-  prefs: { subject: 'english', apiBase: API_BASE, token: '', autoReview: true, theme: 'auto' }
+  prefs: { subject: 'english', apiBase: API_BASE, token: '', autoReview: false, theme: 'auto' }
 });
 
 let state = load();
@@ -100,7 +100,7 @@ function undoLast() {
 const live = () => state.tasks.filter((t) => !t.deleted);
 const mine = (t) => t.subject === subject;
 const ofDate = (date) => live().filter((t) => mine(t) && t.date === date)
-  .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.title.localeCompare(b.title));
+  .sort((a, b) => Number(!openTask(a)) - Number(!openTask(b))); // 保留导入顺序，完成/不做移到底部
 const openTask = (t) => !t.done && !t.notDone;
 const sum = (list, key) => list.reduce((n, t) => n + Number(t[key] || 0), 0);
 
@@ -667,7 +667,7 @@ function meView() {
     : '未连接';
   const theme = state.prefs.theme || 'auto';
   return `<section class="card">
-      <h2>计划概况</h2>
+      <h2>学习概况</h2>
       <div class="profile-metrics">
         <div><b>${p.count}</b><span>待做任务</span></div>
         <div><b>${p.remain}</b><span>待做分钟</span></div>
@@ -692,7 +692,8 @@ function meView() {
     </section>
     <section class="card">
       <h2>计划与记录</h2>
-      <button class="cta" data-action="import">导入计划或学习记录</button>
+      <button class="cta" data-action="import">导入计划或记录</button>
+      <button class="ghost wide" data-action="import-progress">同步最新完成记录</button>
       <button class="ghost wide" data-action="export">备份当前科目</button>
     </section>
     <details class="card details-card">
@@ -710,13 +711,7 @@ function meView() {
         </div>
       </div>
     </details>
-    <details class="card details-card">
-      <summary><span>高级数据管理</span></summary>
-      <div class="details-body">
-        <button class="ghost wide" data-action="clear-records">清空无日期补录</button>
-        <button class="danger wide" data-action="clear">清空当前科目</button>
-      </div>
-    </details>`;
+`;
 }
 
 /* ---------------- 编辑 ---------------- */
@@ -785,11 +780,25 @@ function parsePlan(text) {
   if (!body) return [];
   if (body.startsWith('[') || body.startsWith('{')) {
     const data = JSON.parse(body);
-    const list = Array.isArray(data) ? data : data.tasks || data.plan || [];
-    return list.map((x) => ({ id: x.id || uid(), subject: x.subject || subject, date: normalizeDate(x.date),
-      title: String(x.title || '任务'), type: TYPES.includes(x.type) ? x.type : '其他',
-      minutes: Number(x.minutes) || 30, done: !!x.done, notDone: !!x.notDone,
-      note: x.note || '', actualMinutes: x.actualMinutes ?? null, updatedAt: Date.now() }));
+    const list = Array.isArray(data) ? data : (data.tasks || data.plan || []);
+    if (!Array.isArray(list)) throw new Error('任务列表格式错误');
+    return list.filter((x) => x && typeof x === 'object' && String(x.title || '').trim()).map((x) => {
+      const rawScore = x.score;
+      const score = rawScore === '' || rawScore === null || rawScore === undefined ? null : Number(rawScore);
+      const scoreMax = Number(x.scoreMax) > 0 ? Number(x.scoreMax) : 10;
+      if (score !== null && (!Number.isFinite(score) || score < 0 || score > scoreMax)) throw new Error('得分超出范围');
+      const done = !!x.done || score !== null;
+      return {
+        id: x.id || uid(), subject: ['english', 'politics'].includes(x.subject) ? x.subject : subject,
+        date: x.date === '' ? '' : normalizeDate(x.date), title: String(x.title).trim(),
+        type: TYPES.includes(x.type) ? x.type : '其他',
+        minutes: Number(x.minutes) > 0 ? Number(x.minutes) : 30,
+        done, notDone: !done && !!x.notDone, score, scoreMax,
+        round: x.round === 1 || x.round === 2 ? x.round : undefined,
+        note: String(x.note || ''), actualMinutes: x.actualMinutes === null || x.actualMinutes === undefined ? null : Number(x.actualMinutes),
+        updatedAt: Date.now()
+      };
+    });
   }
   const out = [];
   for (const line of body.split(/\r?\n/)) {
@@ -819,16 +828,69 @@ function parsePlan(text) {
   return out;
 }
 
+function progressKey(t) {
+  const title = String(t.title || '');
+  const year = (title.match(/\b20\d{2}\b/) || [])[0];
+  if (!year || t.subject !== 'english') return '';
+  const kind = kindOf(t);
+  if (!kind) return '';
+  const round = roundOf(t);
+  if (kind === '阅') {
+    const m = title.match(/\b(?:text|t)\s*([1-4])\b/i);
+    if (!m) return '';
+    return t.subject + '|' + year + '|' + kind + '|T' + m[1] + '|' + round;
+  }
+  return t.subject + '|' + year + '|' + kind + '|' + round;
+}
+
+function mergeProgress(records) {
+  let added = 0, updated = 0, unchanged = 0;
+  for (const rec of records) {
+    if (!rec.done) continue;
+    const key = progressKey(rec);
+    const pool = live().filter((t) => t.subject === rec.subject);
+    const exact = pool.filter((t) => t.date === rec.date && t.title === rec.title);
+    const similar = key ? pool.filter((t) => progressKey(t) === key) : [];
+    const candidates = exact.length ? exact : similar;
+    // 不覆盖已经由用户打卡的日期，优先合并未完成的原计划。
+    const same = candidates.find((t) => !t.done && !t.notDone) || candidates.find((t) => t.done) || candidates[0];
+    if (!same) {
+      state.tasks.push(rec);
+      added++;
+      continue;
+    }
+    const patch = { done: true, notDone: false };
+    if (!same.done && rec.date) patch.date = rec.date;
+    if (typeof rec.score === 'number' && (typeof same.score !== 'number' || same.score !== rec.score)) {
+      patch.score = rec.score;
+      patch.scoreMax = rec.scoreMax || 10;
+    }
+    if (rec.actualMinutes !== null && Number.isFinite(rec.actualMinutes) && same.actualMinutes == null) {
+      patch.actualMinutes = rec.actualMinutes;
+    }
+    if (rec.note && !same.note) patch.note = rec.note;
+    const changed = Object.entries(patch).some(([k, v]) => same[k] !== v);
+    if (changed) {
+      Object.assign(same, patch);
+      touch(same);
+      updated++;
+    } else unchanged++;
+  }
+  return { added, updated, unchanged };
+}
+
 function openImport(preset) {
   $('#modal').hidden = false;
   $('#modal').innerHTML = `<div class="sheet">
     <header><h2>导入计划</h2><button data-action="close">×</button></header>
-    <p class="note">表格、每行一条或 JSON。</p>
+    <p class="note">支持粘贴或选择本机文件。已完成记录请选「同步进度」。</p>
+    <label class="field"><span>从手机选择 JSON / TXT</span><input id="import-file" type="file" accept=".json,.txt,text/plain,application/json"></label>
     <textarea id="import-text" rows="8" placeholder="| 2026-10-21 | 阅读真题 2021 T1 | 阅读 | 40 |&#10;2026-10-22 翻译 长难句 30分钟"></textarea>
     <div class="modes">
       <label><input type="radio" name="import-mode" value="range"${preset === 'range' ? ' checked' : ''}><span><b>按日期覆盖</b><em>替换导入日期内的待做安排</em></span></label>
       <label><input type="radio" name="import-mode" value="merge"${preset === 'merge' || !preset ? ' checked' : ''}><span><b>只添加</b><em>重复记录自动跳过</em></span></label>
-      <label><input type="radio" name="import-mode" value="records"${preset === 'records' ? ' checked' : ''}><span><b>补录记录</b><em>只有年份、没有日期，只进统计</em></span></label>
+      <label><input type="radio" name="import-mode" value="progress"${preset === 'progress' ? ' checked' : ''}><span><b>同步学习进度</b><em>匹配原任务，更新完成状态和得分，不删除计划</em></span></label>
+      <label><input type="radio" name="import-mode" value="records"${preset === 'records' ? ' checked' : ''}><span><b>补录旧题</b><em>没有日期的真题历史记录</em></span></label>
     </div>
     <details class="subsettings">
       <summary>补录轮次设置</summary>
@@ -988,6 +1050,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'edit') { openSheet(findTask(el.dataset.id)); return; }
   if (a === 'add') { openSheet({ date: selected }); return; }
   if (a === 'import-records') { openImport('records'); return; }
+  if (a === 'import-progress') { openImport('progress'); return; }
   if (a === 'clear-records') {
     const hit = state.tasks.filter((t) => !t.deleted && !t.date);
     if (!hit.length) return toast('没有补录记录');
@@ -1087,6 +1150,14 @@ document.addEventListener('click', async (e) => {
       toast('新增 ' + added + (updated ? ' · 更新 ' + updated : ''));
       return;
     }
+    if (mode === 'progress') {
+      if (!parsed.every((t) => t.done)) return toast('同步进度只能导入已完成记录');
+      const result = mergeProgress(parsed);
+      if (result.added || result.updated) { state.dirty = true; save(); schedulePush(); }
+      closeSheet(); render();
+      toast('进度已合并 · 新增 ' + result.added + ' · 更新 ' + result.updated + ' · 已存在 ' + result.unchanged);
+      return;
+    }
     if (mode === 'range') {
       const dates = new Set(parsed.map((t) => t.date));
       for (const t of state.tasks) {
@@ -1145,7 +1216,14 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-document.addEventListener('change', (e) => {
+document.addEventListener('change', async (e) => {
+  if (e.target.id === 'import-file') {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) return toast('文件超过 1 MB，请拆分导入');
+    try { $('#import-text').value = await file.text(); } catch { toast('文件读取失败'); }
+    return;
+  }
   if (e.target.id === 'pref-review') {
     state.prefs.autoReview = e.target.checked;
     save();
