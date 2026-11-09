@@ -1,18 +1,20 @@
-/* 极简离线缓存：只缓存外壳，数据在 localStorage。 */
-const CACHE = 'banya-v2-51';  // 前端资源变了就 +1，手机才会换新缓存
-const ASSETS = ['./', './index.html', './assets/app.js', './assets/style.css', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+const CACHE='banya-archive-cache-v1';
+const CORE=['./','./index.html','./manifest.webmanifest','./assets/icon.svg'];
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
 });
-self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+self.addEventListener('activate',event=>{
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('banya-archive-cache-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
 });
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
-  if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.includes('/api/')) return;
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || fetch(e.request).then((res) => {
-    const copy = res.clone();
-    caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-    return res;
-  }).catch(() => caches.match('./index.html'))));
+self.addEventListener('fetch',event=>{
+  const request=event.request;
+  if(request.method!=='GET'||new URL(request.url).origin!==self.location.origin)return;
+  if(request.mode==='navigate'){
+    event.respondWith(fetch(request).then(res=>{
+      if(res.ok){const copy=res.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy)).catch(()=>{});}
+      return res;
+    }).catch(()=>caches.match('./index.html')));
+    return;
+  }
+  event.respondWith(fetch(request).catch(()=>caches.match(request)));
 });
