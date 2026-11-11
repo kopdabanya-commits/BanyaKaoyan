@@ -1,374 +1,368 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#f7f8f7" />
-<meta name="color-scheme" content="light" />
-<title>板牙考研 · 学习档案</title>
-<link rel="manifest" href="./manifest.webmanifest" />
-<link rel="icon" type="image/svg+xml" href="./assets/icon.svg" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f8f6">
+<meta name="color-scheme" content="light">
+<title>板牙考研 · 英语二真题进度</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
 <style>
-:root{--bg:#f7f8f7;--paper:#fff;--ink:#172126;--sub:#68767b;--line:#e5eae8;--teal:#126d67;--teal-bg:#e8f5f1;--orange:#a9642d;--orange-bg:#fff1e4;--shadow:0 8px 30px rgba(18,40,40,.045);font-synthesis:none}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;-webkit-tap-highlight-color:transparent}button,input,select,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #92c9c5;outline-offset:2px}button:disabled{opacity:.45;cursor:not-allowed}
-.wrap{max-width:920px;margin:auto;padding:20px 18px 105px}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:5px 0 19px}.brandrow{display:flex;align-items:center;gap:10px}.brand{width:37px;height:37px;border-radius:12px;background:#163b3a;display:grid;place-items:center;color:white;font-size:18px;font-weight:900;letter-spacing:-2px}.brandname{font-size:18px;letter-spacing:-.7px;font-weight:800}.subline{font-size:12px;color:var(--sub);margin-top:3px}.top-actions{display:flex;gap:7px}.icon-btn{border:1px solid var(--line);background:white;min-height:36px;border-radius:11px;color:var(--ink);padding:0 11px;font-size:12px;font-weight:650;box-shadow:var(--shadow)}.icon-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
-.tabs{display:flex;gap:5px;background:#ebefed;border-radius:13px;padding:4px;margin-bottom:20px}.tab{border:0;background:transparent;color:#637074;min-height:39px;border-radius:10px;flex:1;font-size:13px;font-weight:650;white-space:nowrap}.tab.active{background:white;color:#173b37;box-shadow:0 1px 6px rgba(15,30,30,.07)}
-.sectiontitle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:23px 0 12px}.sectiontitle h2{font-size:15px;font-weight:800;margin:0;letter-spacing:-.3px}.sectiontitle small{color:var(--sub);font-size:12px}.intro{margin:-5px 0 16px;color:var(--sub);font-size:12px;line-height:1.65}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stat{border:1px solid var(--line);border-radius:15px;background:var(--paper);padding:17px 12px 14px;box-shadow:var(--shadow)}.statlabel{color:var(--sub);font-size:11px}.statval{font-size:25px;font-weight:850;letter-spacing:-1.2px;margin-top:7px;font-variant-numeric:tabular-nums}.statval span{font-size:13px;color:var(--sub);font-weight:550;letter-spacing:0}.statfoot{font-size:11px;margin-top:7px;color:var(--sub)}
-.card{border:1px solid var(--line);border-radius:16px;background:white;box-shadow:var(--shadow);padding:16px;margin-bottom:11px}.line{display:flex;align-items:center;justify-content:space-between;gap:10px}.label{font-size:12px;color:var(--sub)}.maintext{font-size:15px;font-weight:750}.hint{color:var(--sub);font-size:12px;line-height:1.7}.tag{font-size:11px;border-radius:7px;padding:4px 8px;background:#f0f3f2;color:#62716d;display:inline-block;white-space:nowrap}.tag.green{background:var(--teal-bg);color:var(--teal)}.tag.orange{background:var(--orange-bg);color:var(--orange)}.accent-left{border-left:3px solid #1a8178}.notice{border:1px solid #e5ede9;border-radius:13px;padding:12px 13px;color:#5b6e69;font-size:12px;line-height:1.7;background:#f4f8f6}.progressline{display:flex;gap:5px;margin-top:13px}.segment{height:6px;border-radius:8px;background:#e8eeeb;flex:1}.segment.done{background:#318d7e}
-.scrollbox{overflow-x:auto;border:1px solid var(--line);background:white;border-radius:15px;box-shadow:var(--shadow);scrollbar-width:thin}.matrix{border-collapse:separate;border-spacing:0;min-width:650px;width:100%;font-size:12px;text-align:center}.matrix th,.matrix td{height:39px;padding:0 8px;border-bottom:1px solid #edf1ef;white-space:nowrap}.matrix th{font-weight:700;color:#697570;background:#f8faf9;position:sticky;top:0;z-index:1}.matrix th:first-child,.matrix td:first-child{position:sticky;left:0;z-index:2;background:#fff;text-align:left;font-weight:750;min-width:73px}.matrix th:first-child{background:#f8faf9;z-index:3}.matrix tr:last-child td{border-bottom:none}.matrix tbody tr{cursor:pointer}.matrix tbody tr:hover td{background:#fafcfb}.matrix tbody tr:hover td:first-child{background:#fafcfb}.yes{color:#137568;font-weight:800}.none{color:#c4cfca}.partial{color:#ad6a2e;font-weight:750}.footnote{font-size:11px;color:#7d8782;margin:10px 2px 0;line-height:1.6}
-.pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}.pill{border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 13px;color:#697570;font-size:12px;font-weight:700}.pill.active{border-color:#b7d8ce;background:var(--teal-bg);color:var(--teal)}.linkbtn{padding:5px 0;border:0;background:transparent;color:var(--teal);font-size:12px;font-weight:750}.yearlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.yearcard{border:1px solid var(--line);background:white;border-radius:13px;padding:12px 12px 11px;min-width:0}.yearcard .line{margin-bottom:12px}.year{font-size:15px;font-weight:850;font-variant-numeric:tabular-nums}.yearmeta{font-size:11px;color:#7a8781}.blocks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.block{border:1px solid #e6ece9;background:#f7f9f8;color:#98a7a2;height:42px;border-radius:9px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.block.done{border-color:#b6d9cf;background:var(--teal-bg);color:var(--teal);font-weight:750}.block .tiny{font-size:9px;font-weight:550;opacity:.88}.yearactions{display:flex;gap:6px;flex-wrap:wrap}.typecard{padding:15px 13px}.typegrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:13px}.typecell{min-width:0;border:1px solid #e9eeeb;border-radius:8px;min-height:55px;padding:6px 2px;background:#fafbfa;color:#92a09a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px}.typecell.done{background:#edf7f3;color:var(--teal);border-color:#c6e5db}.typecell .value{font-size:12px;font-weight:800}.typecell span:first-child{white-space:nowrap;font-size:10px}.simple-card{display:flex;justify-content:space-between;align-items:center;gap:10px}.text-btn{border:none;background:none;padding:4px 0;color:var(--teal);font-size:12px;font-weight:750;text-align:left}
-.fieldlabel{font-size:12px;display:block;color:#53655d;margin:13px 0 7px;font-weight:700}.field{width:100%;padding:12px 11px;border-radius:10px;border:1px solid #dce5e0;background:#fff;color:#1a2623;min-height:43px;appearance:auto}.field::placeholder{color:#a4afaa}textarea.field{resize:vertical;min-height:86px;line-height:1.6}.rowfields{display:grid;grid-template-columns:1fr 1fr;gap:11px}.buttons{display:flex;gap:9px;margin-top:17px}.btn{border:1px solid #dce4df;padding:11px 16px;border-radius:10px;background:#fff;color:#2a3a34;font-weight:720;font-size:13px;min-height:42px}.btn.filled{border-color:var(--teal);color:white;background:var(--teal)}.btn.danger{color:#b24b42;border-color:#f0dad7}.btn.full{width:100%}.spacer8{height:7px}
-.dataactions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dataactions .btn{font-size:12px;padding:12px 6px}.fineprint{color:#74827b;font-size:12px;line-height:1.8;margin:10px 0}.stack{display:flex;flex-direction:column;gap:10px}.statusbar{display:flex;gap:7px;align-items:center;font-size:11px;color:#6d8176;margin:17px 1px 0}.dot{height:7px;width:7px;border-radius:100%;background:#299579}.empty{color:#84918b;font-size:12px;padding:22px 8px;text-align:center;background:white;border:1px dashed #dce5df;border-radius:12px}
-.overlay{position:fixed;inset:0;background:rgba(9,23,20,.43);z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:0}.overlay[hidden]{display:none}.sheet{background:#fff;width:100%;max-width:560px;max-height:min(92dvh,850px);overflow:auto;border-radius:21px 21px 0 0;padding:21px 19px calc(23px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px #121b1b1a}.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.sheet-head h2{font-size:17px;margin:0}.x{border:0;background:#f2f5f3;font-size:18px;width:30px;height:30px;border-radius:9px;color:#567}.hidden{display:none!important}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);border-radius:12px;padding:11px 15px;background:#1b3834;color:white;font-size:12px;font-weight:650;box-shadow:0 6px 24px #0002;z-index:50;max-width:90%;text-align:center;pointer-events:none}
-@media(min-width:750px){.wrap{padding-top:30px}.yearlist{grid-template-columns:repeat(4,minmax(0,1fr))}.sheet{border-radius:21px;align-self:center;padding-bottom:24px}.overlay{padding:25px}.stats{gap:13px}.stat{padding:20px}}@media(max-width:370px){.wrap{padding-left:13px;padding-right:13px}.stat{padding:13px 9px}.statval{font-size:22px}.yearlist{gap:7px}.yearcard{padding:10px 8px}.typecell span:first-child{font-size:9px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-
-/* 手机版布局：可触控、无横向溢出、底部固定导航 */
-:root{--bg:#f5f7f6;--ink:#1c2c29;--sub:#71827c;--teal:#14766e;--line:#e5ebe7;--shadow:0 3px 16px rgba(30,48,41,.035)}
-body{font-size:15px;line-height:1.45}button,input,textarea,select{touch-action:manipulation}
-.wrap{max-width:960px;padding:24px 20px 85px}.top{align-items:center;margin:2px 0 20px}
-.brand{flex:none;width:39px;height:39px;font-size:18px;border-radius:13px;background:#17463f}
-.brandrow{min-width:0;gap:10px}.brandrow>div:last-child{min-width:0}.brandname{font-size:17px;letter-spacing:-.5px;white-space:nowrap}.header-mode{font-size:14px;font-weight:620;letter-spacing:-.2px;color:#4d625a}.header-dot{color:#a2b4ac;margin:0 4px}.subline{font-size:11px;margin-top:3px}.top-actions{flex:none;gap:8px}
-.icon-btn{display:flex;align-items:center;justify-content:center;gap:5px;border-radius:11px;font-size:13px;min-height:39px;padding:0 13px;white-space:nowrap}.icon-btn svg,.tab svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.tabs{background:#edf1ef;padding:4px;gap:4px;margin-bottom:18px}.tab{display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;min-height:42px}
-.sectiontitle{margin:23px 0 11px}.sectiontitle h2{font-size:16px}.sectiontitle small{font-size:12px}.intro{font-size:13px;line-height:1.75;margin:0 0 15px}
-.stats{gap:11px}.stat{border-radius:16px;padding:17px 14px}.statlabel{font-size:12px}.statval{font-size:27px;margin-top:7px}.statfoot{font-size:11px;line-height:1.5;margin-top:6px}
-.card{padding:17px;border-radius:16px}.maintext{font-size:16px}.hint{font-size:13px;line-height:1.7}.label{font-size:12px}.yearlist{gap:11px}.yearcard{padding:14px}.year{font-size:16px}.yearmeta{font-size:12px}.block{height:48px;font-size:13px}.block .tiny{font-size:10px}.typecell{min-height:62px;font-size:13px}.typecell span:first-child{font-size:12px}.typecell .value{font-size:13px}.pills{gap:7px}.pill{font-size:13px;min-height:41px;padding:9px 14px}.text-btn,.linkbtn{font-size:13px;min-height:36px}
-.fieldlabel{font-size:13px;margin:13px 0 7px}.field{min-height:47px;font-size:16px;border-radius:11px}.field:focus{border-color:#3c9a89;outline:2px solid #c6e8dc;outline-offset:0}.btn{min-height:46px;font-size:14px;border-radius:12px}.dataactions .btn{font-size:14px;min-height:53px;padding:12px 10px}
-.sheet{max-height:94dvh;overscroll-behavior:contain}.sheet-head h2{font-size:17px}.x{width:36px;height:36px}.toast{bottom:calc(30px + env(safe-area-inset-bottom));font-size:13px;line-height:1.5;padding:12px 15px}
-/* 手机总览用纵向年份卡替代宽表，避免横向滚动 */
-.year-overview{display:none}.overview-year{display:grid;grid-template-columns:60px minmax(0,1fr) 17px;align-items:center;gap:10px;width:100%;min-height:70px;text-align:left;background:#fff;border:1px solid var(--line);padding:11px 14px;border-radius:13px;color:var(--ink)}
-.ov-year-num{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}.ov-labels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.ov-label{font-size:11px;color:var(--sub);white-space:nowrap}.ov-val{display:block;font-size:13px;font-weight:750;color:var(--ink);margin-top:2px}.ov-val.isdone{color:var(--teal)}.ov-chevron{font-size:20px;color:#9aaba5;text-align:right}
-.save-hero{padding:18px;border:1px solid #d9e8e2;background:#f3faf7;border-radius:17px}.save-hero h3{font-size:16px;margin:0 0 6px}.save-hero p{font-size:13px;color:#637b71;line-height:1.7;margin:0 0 13px}.backup-main{width:100%;min-height:49px;font-size:15px}.backup-secondary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.backup-secondary button{min-height:51px}.backup-advice{font-size:12px;color:#6c7f76;line-height:1.7;margin-top:12px}.danger-zone{margin-top:20px;border-top:1px solid var(--line);padding-top:15px}
-@media(min-width:750px){.wrap{padding-top:28px}.yearlist{grid-template-columns:repeat(4,minmax(0,1fr))}.sheet{max-width:580px;padding:23px 23px 26px}.stat{padding:20px}.toast{bottom:30px}}
-@media(max-width:749px){
- .wrap{padding:15px 15px calc(100px + env(safe-area-inset-bottom))}.top{margin:0 0 17px}.brandname{font-size:16px}.header-mode{font-size:13px}.icon-btn{min-height:41px;padding:0 11px;font-size:12px}.icon-btn svg{width:16px;height:16px}
- .tabs{position:fixed;left:0;right:0;bottom:0;z-index:12;display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0;padding:8px max(12px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-right));border-radius:17px 17px 0 0;background:#fff;border-top:1px solid #e6ece8;box-shadow:0 -9px 24px rgba(36,62,52,.055)}
- .tab{min-width:0;min-height:51px;flex-direction:column;gap:4px;font-size:11px;font-weight:650;color:#82908a}.tab svg{width:19px;height:19px}.tab.active{background:var(--teal-bg);box-shadow:none;color:var(--teal)}
- .sectiontitle{margin:22px 0 10px}.sectiontitle small{max-width:52%;text-align:right;font-size:11px}
- .stats{gap:8px}.stat{padding:13px 11px;border-radius:13px}.statlabel{font-size:11px}.statval{font-size:25px;margin-top:7px}.statval span{font-size:11px}.statfoot{font-size:10px;line-height:1.4;min-height:28px}
- .scrollbox.home-table{display:none}.year-overview{display:grid;gap:8px}
- .yearlist{grid-template-columns:1fr;gap:9px}.yearcard{padding:13px 14px}.yearcard .line{margin-bottom:10px}.blocks{gap:7px}.block{height:49px;font-size:13px}.block .tiny{font-size:10px}
- .typegrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.typecell{min-height:61px}.typecell span:first-child{font-size:12px}
- .sheet{padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0}.rowfields{gap:8px}
- .buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons>span{display:none}.buttons .btn.filled{grid-column:1 / -1;grid-row:1}.buttons .btn{min-width:0}
- .statusbar{font-size:11px;padding-bottom:5px}.toast{bottom:calc(80px + env(safe-area-inset-bottom))}
+:root{--bg:#f5f8f6;--paper:#fff;--ink:#192c26;--muted:#677d74;--line:#e2eae5;--green:#247a62;--green-soft:#e2f3e9;--off:#eff2ef;--shadow:0 2px 12px #173a2510}
+*{box-sizing:border-box}
+html{min-width:0;-webkit-text-size-adjust:100%}
+body{margin:0;min-width:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit}button{cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+button:disabled{opacity:.28;cursor:not-allowed}
+.app{width:100%;max-width:610px;margin:0 auto;padding:18px 14px calc(36px + env(safe-area-inset-bottom));min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:20px}
+.brandline{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:35px;height:35px;display:grid;place-items:center;flex:none;border-radius:11px;background:#204d3e;color:#fff;font-weight:800;font-size:17px}
+.title{font-size:17px;font-weight:800;letter-spacing:-.4px;white-space:nowrap}
+.mini{font-size:11px;color:var(--muted);margin-top:1px}
+.actions{display:flex;gap:7px;align-items:center;flex:none}
+.small-btn{min-height:36px;border-radius:10px;border:1px solid var(--line);padding:0 11px;background:#fff;color:var(--ink);font-size:12px;font-weight:700}
+.small-btn.main{background:var(--green);color:#fff;border-color:var(--green)}
+.page-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.page-title h1{margin:0;font-size:21px;line-height:1.3;letter-spacing:-.5px}
+.count{font-size:12px;color:var(--muted);white-space:nowrap}
+.legend{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.65}
+.matrix{width:100%;min-width:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:var(--shadow)}
+.matrix-head,.matrix-row{display:grid;grid-template-columns:45px 52px 52px repeat(5,minmax(0,1fr));column-gap:2px;align-items:center;width:100%;min-width:0}
+.matrix-head{height:36px;padding:0 9px;background:#edf3ef;border-bottom:1px solid var(--line);color:#647b70;font-size:11px;font-weight:750;text-align:center}
+.matrix-head span{min-width:0;white-space:nowrap}
+.matrix-head span:first-child{text-align:left}
+.matrix-row{padding:0 9px;height:52px;border:0;border-bottom:1px solid #eaf0eb;background:#fff;text-align:center;color:var(--ink);border-radius:0}
+.matrix-row:last-child{border-bottom:0}
+.matrix-row:hover{background:#f8fbf9}.matrix-row:active{background:#edf6ef}
+.matrix-row .yr{font-size:13px;font-weight:790;text-align:left;font-variant-numeric:tabular-nums}
+.cel{display:flex;min-width:0;align-items:center;justify-content:center;height:31px}
+.dots{display:flex;gap:3px;align-items:center;justify-content:center;min-width:0}
+.dots i{display:block;width:7px;height:11px;border-radius:3px;background:#e4e9e5}
+.dots i.yes{background:#31866c}
+.flag{display:grid;place-items:center;height:26px;width:26px;border-radius:8px;background:#f2f4f2;color:#adb9b0;font-size:16px;font-weight:700}
+.flag.yes{background:var(--green-soft);color:var(--green)}
+.matrix-hint{font-size:11px;color:#8a9b91;margin:12px 3px 0;line-height:1.65}
+.back{background:none;border:none;padding:7px 0;color:var(--green);font-weight:700;font-size:13px;min-height:37px}
+.detail-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 18px}
+.detail-top h1{font-size:27px;line-height:1.25;letter-spacing:-.6px;margin:0}
+.year-nav{display:flex;gap:7px}
+.year-nav button{border:1px solid var(--line);background:white;width:40px;height:40px;border-radius:10px;color:var(--ink);font-size:25px;line-height:1}
+.detail-group{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin:0 0 10px}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.group-head h2{font-size:14px;margin:0;font-weight:780}
+.group-head small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.exercise-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.exercise{min-width:0;min-height:59px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;border:1px solid #e5eae6;border-radius:11px;background:#fafbf9;color:#8b9d93;padding:6px 3px}
+.exercise b{font-size:13px;font-weight:730;color:inherit}
+.exercise small{font-size:10px;font-weight:650}
+.exercise.done{border-color:#c5e3d4;background:#eaf7ef;color:#26765d}
+.exercise-grid.other{grid-template-columns:repeat(3,minmax(0,1fr))}
+.exercise-grid.other .exercise{min-height:60px}
+.extra-pass summary{cursor:pointer;padding:11px 4px;color:var(--green);font-size:13px;font-weight:750}
+.note{font-size:12px;color:var(--muted);line-height:1.65;margin:10px 2px}
+.data-card{background:#fff;padding:18px;border-radius:16px;border:1px solid var(--line);margin-bottom:12px}
+.data-card h2{font-size:16px;margin:0 0 7px}
+.data-card p{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.7}
+.data-stack{display:grid;gap:9px}
+.btn{display:grid;place-items:center;border:1px solid var(--line);min-height:45px;padding:9px 13px;background:#fff;border-radius:11px;font-weight:750;color:var(--ink);font-size:13px}
+.btn.main{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{color:#b4504e;border-color:#f1d6d4}
+.btn.light{background:#fff}
+.small-note{font-size:11px;color:var(--muted);line-height:1.7}
+.overlay{position:fixed;inset:0;background:#0b231ca1;display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.overlay[hidden]{display:none}
+.sheet{width:100%;max-width:560px;max-height:94dvh;overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:21px 21px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sheet-top h2{font-size:17px;font-weight:790;margin:0}
+.x{border:0;border-radius:9px;background:#edf2ee;width:35px;height:35px;font-size:20px;color:#576b5f}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;font-weight:700;color:#4b6558;margin:10px 0 5px}
+.field{width:100%;min-width:0;min-height:43px;border:1px solid #dce5de;border-radius:10px;background:#fff;padding:10px 11px;font-size:16px;color:var(--ink)}
+textarea.field{min-height:66px;resize:vertical}
+#moreFields{margin:10px 0}
+#moreFields summary{font-size:13px;color:var(--green);font-weight:750;cursor:pointer;padding:9px 0}
+.form-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.form-actions .btn.main{grid-column:1/-1;grid-row:1}
+.form-actions .btn{min-width:0}
+.preview{font-size:13px;font-weight:720;padding:10px 12px;border-radius:11px;background:#edf7f0;color:#356d52}
+.toast{position:fixed;z-index:40;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#243d31;color:#fff;display:flex;gap:14px;align-items:center;white-space:nowrap;max-width:95vw;border-radius:12px;box-shadow:0 8px 25px #0003;padding:11px 14px;font-size:12px}
+.toast button{border:0;background:none;color:#bdf2cd;font-weight:800;padding:3px}
+@media(min-width:760px){.app{padding:30px 22px 45px}.sheet{border-radius:21px;align-self:center;padding:25px}.overlay{padding:20px}}
+@media(max-width:365px){
+.app{padding:14px 9px calc(28px + env(safe-area-inset-bottom))}
+.matrix-head,.matrix-row{grid-template-columns:43px 46px 46px repeat(5,minmax(0,1fr));column-gap:1px;padding-left:6px;padding-right:6px}
+.matrix-head{font-size:10px}.matrix-row .yr{font-size:12px}.dots{gap:2px}.dots i{width:6px;height:10px}.flag{height:24px;width:23px;border-radius:7px}
+.title{font-size:16px}.small-btn{padding:0 9px}.detail-group{padding:12px}
 }
-@media(max-width:385px){.wrap{padding-left:12px;padding-right:12px}.brand{width:36px;height:36px}.brandrow{gap:7px}.brandname{font-size:15px}.header-mode{font-size:12px}.subline{font-size:10px}.top-actions{gap:5px}.icon-btn{font-size:12px;padding:0 9px}.icon-btn svg{width:15px;height:15px}.stat{padding:12px 8px}.statval{font-size:23px}.statfoot{font-size:10px}}
-@media(max-width:320px){.brandname{font-size:14px}.header-mode{display:none}.icon-btn{padding:0 8px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stats .stat:last-child{grid-column:1/-1}.ov-label{font-size:10px}}
-
-/* English-only UI upgrade */
-.hero-panel{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;background:linear-gradient(135deg,#0f6d67 0%,#1f8b83 100%);color:#fff;border-radius:24px;padding:18px 16px;box-shadow:0 14px 38px rgba(16,85,79,.18);margin-bottom:14px}
-.hero-panel h1{margin:5px 0 6px;font-size:27px;line-height:1.15}.hero-panel p{margin:0;color:rgba(255,255,255,.88)}
-.hero-eyebrow{font-size:12px;opacity:.86;letter-spacing:.06em}.hero-stack{display:flex;flex-direction:column;gap:10px;align-self:end}
-.hero-chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(2px);padding:10px 12px;border-radius:16px;font-size:12px;line-height:1.45}
-.hero-chip strong{display:block;font-size:14px;margin-bottom:2px}.hero-chip.soft{background:rgba(255,255,255,.11)}
-.metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px}.metric-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 13px;box-shadow:var(--shadow)}
-.metric-label{font-size:12px;color:var(--sub)}.metric-value{font-size:26px;font-weight:800;margin:4px 0 3px;color:var(--ink)}.metric-value span{font-size:13px;font-weight:600;color:var(--sub);margin-left:4px}.metric-foot{font-size:11px;color:var(--sub)}
-.viz-grid{display:grid;gap:12px}.chart-card{padding:14px 14px 12px}.chart-title{font-weight:800;font-size:15px;margin-bottom:2px}.chart-sub{font-size:12px;color:var(--sub);margin-bottom:12px}
-.barrow+.barrow{margin-top:12px}.barhead{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px}.barhead strong{font-size:12px;color:var(--sub);font-weight:700}.bar{height:10px;background:#edf1f0;border-radius:999px;overflow:hidden;position:relative}.bar i{display:block;height:100%;background:linear-gradient(90deg,#14716a,#23a195);border-radius:inherit}.bar.orange i{background:linear-gradient(90deg,#b7692f,#e79b3f)}.bar.slate i{background:linear-gradient(90deg,#557e90,#6ca7bd)}.bar.violet i{background:linear-gradient(90deg,#6558a7,#8c7be8)}.barfoot{margin-top:5px;color:var(--sub);font-size:11px}
-.timeline{display:grid;gap:10px}.timeline-row{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center;width:100%;text-align:left;border:none;background:var(--paper);border-radius:18px;padding:12px 12px;box-shadow:var(--shadow);border:1px solid var(--line)}
-.timeline-row:active{transform:scale(.995)}.timeline-year{font-weight:800;color:var(--ink)}.timeline-meta{font-size:11px;color:var(--sub);text-align:right;white-space:nowrap}.timeline-bars{display:grid;gap:5px}.mini-track{height:7px;background:#eef2f1;border-radius:999px;overflow:hidden;position:relative}.mini-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#126d67,#21a596)}.mini-track.orange i{background:linear-gradient(90deg,#b56b34,#f1a450)}.mini-track.slate i{background:linear-gradient(90deg,#628596,#7ab3c4)}.mini-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);line-height:1}
-.yearcard{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 12px;box-shadow:var(--shadow)}.yearcard+.yearcard{margin-top:10px}.card-progress{margin:8px 0 12px}.card-progress .bar{height:8px}
-.type-summary{display:grid;gap:10px}.type-summary .typegrid{margin-top:0}.subgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.backline{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.tiny-note{font-size:11px;color:var(--sub)}
-.empty.cardlike{padding:18px;border-radius:16px;background:var(--paper);border:1px dashed var(--line)}
-@media (max-width:760px){.hero-panel{grid-template-columns:1fr}.hero-stack{align-self:stretch}.timeline-row{grid-template-columns:54px 1fr}.timeline-meta{grid-column:2/4;text-align:left}.metric-grid,.subgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:430px){.hero-panel{padding:16px 14px;border-radius:20px}.hero-panel h1{font-size:24px}.metric-grid,.subgrid{gap:8px}.metric-card{padding:12px 11px}.timeline-row{padding:11px}.barhead{font-size:12px}}
-
-
-/* Archive v3: mobile-first, compact progress, clear hierarchy */
-:root{--bg:#f6f8f7;--paper:#fff;--ink:#20312e;--sub:#627873;--teal:#126e65;--line:#e1eae6;--shadow:0 3px 14px rgba(25,59,49,.035)}
-body{line-height:1.5}
-.wrap{max-width:990px}
-.hero-panel{grid-template-columns:minmax(0,1fr) auto;align-items:center;background:#fff;border:1px solid #d8e7df;box-shadow:var(--shadow);color:var(--ink);padding:20px 21px;border-radius:20px;gap:18px}
-.hero-panel h1{font-size:24px;line-height:1.35;margin:8px 0 5px;color:var(--ink);letter-spacing:-.5px}
-.hero-panel h1 em{font-style:normal;color:var(--teal)}
-.hero-panel p{color:var(--sub);font-size:12px}
-.hero-eyebrow{font-weight:800;letter-spacing:0;color:var(--teal);font-size:12px;opacity:1}
-.hero-action{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:11px 15px;border:0;border-radius:12px;color:#fff;background:var(--teal);white-space:nowrap;font-size:13px;font-weight:750;min-height:43px}
-.hero-action:active,.btn:active,.block:active,.typecell:active{transform:scale(.98)}
-.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px}
-.metric-card{padding:14px 15px;border-radius:15px}
-.metric-label{font-size:12px}
-.metric-value{font-size:24px;letter-spacing:-.6px}
-.metric-foot{font-size:11px;line-height:1.5}
-.timeline{gap:7px}
-.timeline-row{grid-template-columns:54px minmax(0,1fr) 16px;gap:12px;padding:12px 14px;border-radius:13px;min-height:66px;box-shadow:none}
-.timeline-row:hover{border-color:#b6d8cd}
-.timeline-bars{min-width:0;gap:5px}
-.timeline-meta{grid-column:auto;align-self:center;font-size:21px;font-weight:400;color:#91a29b}
-.mini-labels{font-size:11px;gap:5px}
-.mini-track{height:5px}
-.fold-card{padding:0;overflow:hidden}
-.fold-card summary{cursor:pointer;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:15px 16px;font-weight:750;font-size:14px;list-style:none}
-.fold-card summary::-webkit-details-marker{display:none}
-.fold-card summary::after{content:"⌄";font-size:19px;line-height:1;color:var(--sub);transition:transform .15s}
-.fold-card[open] summary::after{transform:rotate(180deg)}
-.fold-body{padding:0 16px 15px}
-.summary-inline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
-.summary-inline strong{color:var(--teal);font-size:20px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
-.summary-inline span{font-size:12px;color:var(--sub)}
-.summary-inline .grow{flex:1}
-.summary-inline .text-btn{white-space:nowrap}
-.pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;scrollbar-width:none}
-.pills::-webkit-scrollbar{display:none}
-.pill{white-space:nowrap;flex:none;padding:9px 13px}
-.yearlist{gap:10px}
-.yearcard{margin:0!important}
-.yearcard .block,.typecell{transition:background .15s,border-color .15s}
-.yearcard .block:focus-visible,.typecell:focus-visible{outline:3px solid #69b9aa;outline-offset:2px}
-.yearcard .block{height:52px;min-width:0}
-.yearcard .block.done{border-color:#b5d9cf}
-.yearcard .block .tiny{font-size:11px}
-.detail-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:7px 0 14px}
-.detail-header h2{font-size:23px;letter-spacing:-.6px;margin:0}
-.year-pager{display:flex;gap:8px}
-.year-pager button{width:41px;height:41px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:23px;line-height:1}
-.detail-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
-.detail-tag{background:#edf4f0;color:#43685c;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:700}
-.third-pass{margin:12px 0}
-.third-pass summary{font-size:13px;color:var(--teal);font-weight:700;cursor:pointer;padding:8px 0}
-.record-preview{padding:11px 13px;background:#edf7f3;color:#31574a;border-radius:12px;margin-bottom:12px;font-size:13px;font-weight:700}
-.extra-details{border-top:1px solid var(--line);margin:15px 0 6px;padding-top:11px}
-.extra-details summary{cursor:pointer;color:var(--teal);font-weight:750;font-size:13px;list-style:initial;min-height:32px}
-.sheet-head{margin-bottom:13px}
-.sheet{box-shadow:0 -8px 30px #0c2d2026}
-.btn.filled{background:var(--teal);border-color:var(--teal)}
-.btn:focus-visible,.icon-btn:focus-visible,.tab:focus-visible{outline:3px solid #78cabb;outline-offset:2px}
-.statusbar{font-size:11px;line-height:1.4}
-@media(min-width:750px){.yearlist{grid-template-columns:repeat(3,minmax(0,1fr))}.hero-panel{padding:22px 24px}.timeline{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}.wrap{padding-bottom:85px}}
-@media(max-width:749px){
- .wrap{padding-top:14px}
- .hero-panel{display:flex;align-items:flex-start;flex-direction:column;padding:16px;border-radius:17px;gap:13px;margin-bottom:10px}
- .hero-panel h1{font-size:22px;line-height:1.4}
- .hero-action{width:100%;min-height:43px}
- .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:12px}
- .metric-card{padding:11px 9px;min-width:0}
- .metric-label{font-size:11px}
- .metric-value{font-size:22px}
- .metric-value span{font-size:11px}
- .metric-foot{font-size:10px;min-height:0;line-height:1.45}
- .timeline-row{grid-template-columns:48px minmax(0,1fr) 13px;gap:9px;padding:10px 11px;min-height:65px}
- .timeline-meta{grid-column:auto;font-size:18px}
- .mini-labels{font-size:10px}
- .yearlist{grid-template-columns:1fr}
- .yearcard{padding:13px}
- .typegrid{grid-template-columns:repeat(3,minmax(0,1fr))}
- .detail-header h2{font-size:21px}
- .detail-tags{margin-bottom:11px}
- .sheet{padding:17px 16px calc(19px + env(safe-area-inset-bottom));max-height:91dvh}
- .buttons .btn.filled{grid-row:1;grid-column:1/-1}
- .buttons .btn.danger{grid-column:1}
-}
-@media(max-width:350px){.hero-panel h1{font-size:20px}.metric-value{font-size:19px}.metric-label{font-size:10px}.metric-foot{font-size:9px}.mini-labels{font-size:9px}.tabs{padding-left:8px;padding-right:8px}}
-@media(prefers-reduced-motion:reduce){.fold-card summary::after,.yearcard .block,.typecell{transition:none}}
-
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
-<script type="application/json" id="seed-data">{"schema": 2, "updatedAt": "2026-11-09T00:00:00+08:00", "items": {"en:reading:2010:1:1": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2010:1:2": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2010:1:3": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2010:1:4": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2011:1:1": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2011:1:2": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2011:1:3": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2011:1:4": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2012:1:1": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2012:1:2": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2012:1:3": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2012:1:4": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2013:1:1": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2013:1:2": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2013:1:3": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2013:1:4": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2014:1:1": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2014:1:2": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2014:1:3": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2014:1:4": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2015:1:1": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2015:1:2": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2015:1:3": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2015:1:4": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2016:1:1": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2016:1:2": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2016:1:3": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2016:1:4": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2017:1:1": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2017:1:2": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2017:1:3": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2017:1:4": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2018:1:1": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2018:1:2": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2018:1:3": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2018:1:4": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2019:1:1": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2019:1:2": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2019:1:3": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2019:1:4": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2020:1:1": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2020:1:2": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2020:1:3": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2020:1:4": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2021:1:1": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2021:1:2": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2021:1:3": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2021:1:4": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2022:1:1": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2022:1:2": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2022:1:3": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2022:1:4": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2023:1:1": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2023:1:2": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2023:1:3": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2023:1:4": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2010:2:1": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2010:2:2": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2010:2:3": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:reading:2010:2:4": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 4}, "en:reading:2011:2:1": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2011:2:2": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2011:2:3": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:reading:2011:2:4": {"type": "reading", "year": 2011, "done": true, "score": 6, "minutes": null, "date": "2026-10-16", "note": "错2题；由每篇5题、总分10分换算", "pass": 2, "text": 4}, "en:reading:2012:2:1": {"type": "reading", "year": 2012, "done": true, "score": 2, "minutes": 40, "date": "2026-10-20", "note": "", "pass": 2, "text": 1}, "en:reading:2012:2:2": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": 10, "date": "2026-10-21", "note": "", "pass": 2, "text": 2}, "en:reading:2012:2:3": {"type": "reading", "year": 2012, "done": true, "score": 8, "minutes": 20, "date": "2026-10-22", "note": "", "pass": 2, "text": 3}, "en:reading:2012:2:4": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 4}, "en:reading:2013:2:1": {"type": "reading", "year": 2013, "done": true, "score": 10, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2013:2:2": {"type": "reading", "year": 2013, "done": true, "score": 6, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2013:2:3": {"type": "reading", "year": 2013, "done": true, "score": 8, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:cloze:2010": {"type": "cloze", "year": 2010, "done": true, "score": 5.5, "minutes": null, "date": null, "note": ""}, "en:cloze:2011": {"type": "cloze", "year": 2011, "done": true, "score": 7.5, "minutes": null, "date": null, "note": ""}, "en:cloze:2012": {"type": "cloze", "year": 2012, "done": true, "score": 5, "minutes": null, "date": null, "note": ""}, "en:cloze:2014": {"type": "cloze", "year": 2014, "done": true, "score": 8.5, "minutes": 17, "date": "2026-10-20", "note": ""}, "en:cloze:2015": {"type": "cloze", "year": 2015, "done": true, "score": 7, "minutes": null, "date": "2026-10-22", "note": ""}, "en:newtype:2010": {"type": "newtype", "year": 2010, "done": true, "score": 6, "minutes": null, "date": null, "note": ""}, "en:newtype:2011": {"type": "newtype", "year": 2011, "done": true, "score": 4, "minutes": null, "date": null, "note": ""}, "en:newtype:2012": {"type": "newtype", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "完成已确认；历史记录中的错题数有冲突，因此暂不填分"}, "en:newtype:2013": {"type": "newtype", "year": 2013, "done": true, "score": 6, "minutes": null, "date": null, "note": ""}, "en:newtype:2014": {"type": "newtype", "year": 2014, "done": true, "score": 8, "minutes": null, "date": "2026-10-16", "note": ""}, "en:newtype:2015": {"type": "newtype", "year": 2015, "done": true, "score": 10, "minutes": null, "date": null, "note": "5题全对"}, "en:newtype:2016": {"type": "newtype", "year": 2016, "done": true, "score": 10, "minutes": null, "date": null, "note": ""}, "en:newtype:2017": {"type": "newtype", "year": 2017, "done": true, "score": 10, "minutes": null, "date": null, "note": ""}, "en:translation:2010": {"type": "translation", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:translation:2011": {"type": "translation", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:translation:2012": {"type": "translation", "year": 2012, "done": true, "score": null, "minutes": 20, "date": "2026-10-22", "note": ""}, "en:small:2010": {"type": "small", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:small:2011": {"type": "small", "year": 2011, "done": true, "score": null, "minutes": 20, "date": "2026-10-16", "note": ""}, "en:small:2012": {"type": "small", "year": 2012, "done": true, "score": null, "minutes": null, "date": "2026-10-20", "note": ""}, "en:large:2010": {"type": "large", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:large:2012": {"type": "large", "year": 2012, "done": true, "score": null, "minutes": null, "date": "2026-10-29", "note": "已独立成篇并修改"}}, "meta": {"baseline": "此前聊天中明确确认的已完成进度；不把计划当已完成", "earlierReading": "2005—2009 年阅读练习一刷也做过（不计入英语二年份统计）", "uncertain": "2013年完形等存在相互矛盾的历史信息，暂不计已完成；2013年大作文只确认安排过，未确认实际完成。"}}</script>
-<div class="wrap">
- <header class="top">
-  <div class="brandrow"><div class="brand" aria-hidden="true">牙</div><div><div class="brandname">板牙考研<span class="header-dot">·</span><span class="header-mode">学习档案</span></div><div class="subline">只记录已做 · 手机离线可用</div></div></div>
-  <div class="top-actions"><button class="icon-btn" id="quickBackup" title="下载 JSON 备份文件" aria-label="导出备份文件"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>备份</span></button><button class="icon-btn primary" id="addBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>补录</span></button></div>
- </header>
- <nav class="tabs" aria-label="页面切换">
-  <button class="tab active" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>总览</span></button>
-  <button class="tab" data-tab="english"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.4C8.7 4.4 5.8 4.4 3 5v14c3-.8 6-.5 9 1 3-1.5 6-1.8 9-1V5c-2.8-.6-5.7-.6-9 1.4ZM12 6.4V20"/></svg><span>真题</span></button>
-  <button class="tab" data-tab="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg><span>数据</span></button>
- </nav>
- <main id="content" aria-live="polite"></main>
- <div class="statusbar"><span class="dot"></span><span id="statusText">无需登录 · 离线可用</span></div>
+<script type="application/json" id="seed-data">{"schema":2,"updatedAt":"2026-11-09T00:00:00+08:00","items":{"en:reading:2010:1:1":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2010:1:2":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2010:1:3":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2010:1:4":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2011:1:1":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2011:1:2":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2011:1:3":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2011:1:4":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2012:1:1":{"type":"reading","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2012:1:2":{"type":"reading","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2012:1:3":{"type":"reading","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2012:1:4":{"type":"reading","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2013:1:1":{"type":"reading","year":2013,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2013:1:2":{"type":"reading","year":2013,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2013:1:3":{"type":"reading","year":2013,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2013:1:4":{"type":"reading","year":2013,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2014:1:1":{"type":"reading","year":2014,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2014:1:2":{"type":"reading","year":2014,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2014:1:3":{"type":"reading","year":2014,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2014:1:4":{"type":"reading","year":2014,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2015:1:1":{"type":"reading","year":2015,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2015:1:2":{"type":"reading","year":2015,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2015:1:3":{"type":"reading","year":2015,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2015:1:4":{"type":"reading","year":2015,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2016:1:1":{"type":"reading","year":2016,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2016:1:2":{"type":"reading","year":2016,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2016:1:3":{"type":"reading","year":2016,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2016:1:4":{"type":"reading","year":2016,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2017:1:1":{"type":"reading","year":2017,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2017:1:2":{"type":"reading","year":2017,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2017:1:3":{"type":"reading","year":2017,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2017:1:4":{"type":"reading","year":2017,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2018:1:1":{"type":"reading","year":2018,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2018:1:2":{"type":"reading","year":2018,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2018:1:3":{"type":"reading","year":2018,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2018:1:4":{"type":"reading","year":2018,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2019:1:1":{"type":"reading","year":2019,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2019:1:2":{"type":"reading","year":2019,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2019:1:3":{"type":"reading","year":2019,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2019:1:4":{"type":"reading","year":2019,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2020:1:1":{"type":"reading","year":2020,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2020:1:2":{"type":"reading","year":2020,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2020:1:3":{"type":"reading","year":2020,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2020:1:4":{"type":"reading","year":2020,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2021:1:1":{"type":"reading","year":2021,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2021:1:2":{"type":"reading","year":2021,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2021:1:3":{"type":"reading","year":2021,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2021:1:4":{"type":"reading","year":2021,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2022:1:1":{"type":"reading","year":2022,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2022:1:2":{"type":"reading","year":2022,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2022:1:3":{"type":"reading","year":2022,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2022:1:4":{"type":"reading","year":2022,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2023:1:1":{"type":"reading","year":2023,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":1},"en:reading:2023:1:2":{"type":"reading","year":2023,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":2},"en:reading:2023:1:3":{"type":"reading","year":2023,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":3},"en:reading:2023:1:4":{"type":"reading","year":2023,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":1,"text":4},"en:reading:2010:2:1":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":1},"en:reading:2010:2:2":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":2},"en:reading:2010:2:3":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":3},"en:reading:2010:2:4":{"type":"reading","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":4},"en:reading:2011:2:1":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":1},"en:reading:2011:2:2":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":2},"en:reading:2011:2:3":{"type":"reading","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":3},"en:reading:2011:2:4":{"type":"reading","year":2011,"done":true,"score":6,"minutes":null,"date":"2026-10-16","note":"错2题；由每篇5题、总分10分换算","pass":2,"text":4},"en:reading:2012:2:1":{"type":"reading","year":2012,"done":true,"score":2,"minutes":40,"date":"2026-10-20","note":"","pass":2,"text":1},"en:reading:2012:2:2":{"type":"reading","year":2012,"done":true,"score":null,"minutes":10,"date":"2026-10-21","note":"","pass":2,"text":2},"en:reading:2012:2:3":{"type":"reading","year":2012,"done":true,"score":8,"minutes":20,"date":"2026-10-22","note":"","pass":2,"text":3},"en:reading:2012:2:4":{"type":"reading","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"","pass":2,"text":4},"en:reading:2013:2:1":{"type":"reading","year":2013,"done":true,"score":10,"minutes":null,"date":null,"note":"","pass":2,"text":1},"en:reading:2013:2:2":{"type":"reading","year":2013,"done":true,"score":6,"minutes":null,"date":null,"note":"","pass":2,"text":2},"en:reading:2013:2:3":{"type":"reading","year":2013,"done":true,"score":8,"minutes":null,"date":null,"note":"","pass":2,"text":3},"en:cloze:2010":{"type":"cloze","year":2010,"done":true,"score":5.5,"minutes":null,"date":null,"note":""},"en:cloze:2011":{"type":"cloze","year":2011,"done":true,"score":7.5,"minutes":null,"date":null,"note":""},"en:cloze:2012":{"type":"cloze","year":2012,"done":true,"score":5,"minutes":null,"date":null,"note":""},"en:cloze:2014":{"type":"cloze","year":2014,"done":true,"score":8.5,"minutes":17,"date":"2026-10-20","note":""},"en:cloze:2015":{"type":"cloze","year":2015,"done":true,"score":7,"minutes":null,"date":"2026-10-22","note":""},"en:newtype:2010":{"type":"newtype","year":2010,"done":true,"score":6,"minutes":null,"date":null,"note":""},"en:newtype:2011":{"type":"newtype","year":2011,"done":true,"score":4,"minutes":null,"date":null,"note":""},"en:newtype:2012":{"type":"newtype","year":2012,"done":true,"score":null,"minutes":null,"date":null,"note":"完成已确认；历史记录中的错题数有冲突，因此暂不填分"},"en:newtype:2013":{"type":"newtype","year":2013,"done":true,"score":6,"minutes":null,"date":null,"note":""},"en:newtype:2014":{"type":"newtype","year":2014,"done":true,"score":8,"minutes":null,"date":"2026-10-16","note":""},"en:newtype:2015":{"type":"newtype","year":2015,"done":true,"score":10,"minutes":null,"date":null,"note":"5题全对"},"en:newtype:2016":{"type":"newtype","year":2016,"done":true,"score":10,"minutes":null,"date":null,"note":""},"en:newtype:2017":{"type":"newtype","year":2017,"done":true,"score":10,"minutes":null,"date":null,"note":""},"en:translation:2010":{"type":"translation","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":""},"en:translation:2011":{"type":"translation","year":2011,"done":true,"score":null,"minutes":null,"date":null,"note":""},"en:translation:2012":{"type":"translation","year":2012,"done":true,"score":null,"minutes":20,"date":"2026-10-22","note":""},"en:small:2010":{"type":"small","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":""},"en:small:2011":{"type":"small","year":2011,"done":true,"score":null,"minutes":20,"date":"2026-10-16","note":""},"en:small:2012":{"type":"small","year":2012,"done":true,"score":null,"minutes":null,"date":"2026-10-20","note":""},"en:large:2010":{"type":"large","year":2010,"done":true,"score":null,"minutes":null,"date":null,"note":""},"en:large:2012":{"type":"large","year":2012,"done":true,"score":null,"minutes":null,"date":"2026-10-29","note":"已独立成篇并修改"}},"meta":{"baseline":"此前聊天中明确确认的已完成进度；不把计划当已完成","earlierReading":"2005—2009 年阅读练习一刷也做过（不计入英语二年份统计）","uncertain":"2013年完形等存在相互矛盾的历史信息，暂不计已完成；2013年大作文只确认安排过，未确认实际完成。"}}</script>
+<div class="app">
+<header class="top">
+<div class="brandline"><span class="logo" aria-hidden="true">牙</span><div><div class="title">板牙考研 <span style="font-weight:500;color:#91a39a">·</span> 英语二</div><div class="mini">真题完成记录</div></div></div>
+<div class="actions"><button class="small-btn" id="backupBtn">备份</button><button class="small-btn main" id="addBtn">＋ 补录</button></div>
+</header>
+<main id="view"></main>
 </div>
 <div class="overlay" id="overlay" hidden><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
- <div class="sheet-head"><h2 id="dialogTitle">记录已完成内容</h2><button class="x" id="closeDlg" aria-label="关闭">×</button></div>
- <form id="recordForm">
-   <div id="recordPreview" class="record-preview" aria-live="polite">只记录真正完成的内容</div>
-   <div class="rowfields"><div><label class="fieldlabel" for="fYear">真题年份</label><select id="fYear" class="field"></select></div><div><label class="fieldlabel" for="fType">题型</label><select id="fType" class="field"><option value="reading">阅读</option><option value="cloze">完形</option><option value="newtype">新题型</option><option value="translation">翻译</option><option value="small">小作文</option><option value="large">大作文</option></select></div></div>
-   <div class="rowfields" id="readingFields"><div><label class="fieldlabel" for="fPass">第几刷</label><select id="fPass" class="field"><option value="1">一刷</option><option value="2">二刷</option><option value="3">三刷</option></select></div><div><label class="fieldlabel" for="fText">文章</label><select id="fText" class="field"><option value="1">Text 1</option><option value="2">Text 2</option><option value="3">Text 3</option><option value="4">Text 4</option></select></div></div>
-   <label class="fieldlabel" for="fScore">得分（可不填，满分 10）</label><input id="fScore" class="field" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="没有分数就留空" />
-   <details id="extraDetails" class="extra-details"><summary>用时 / 日期 / 备注（选填）</summary>
-     <label class="fieldlabel" for="fMins">实际用时（分钟）</label><input id="fMins" class="field" type="number" min="1" max="999" inputmode="numeric" placeholder="如 20" />
-     <label class="fieldlabel" for="fDate">完成日期</label><input id="fDate" class="field" type="date" />
-     <label class="fieldlabel" for="fNote">备注</label><textarea id="fNote" class="field" rows="2" placeholder="如：错 2 题、长难句卡住"></textarea>
-   </details>
-   <div class="buttons"><button type="button" class="btn danger" id="deleteRecord">删除记录</button><span style="flex:1"></span><button type="button" class="btn" id="cancelDlg">取消</button><button type="submit" class="btn filled" id="submitRecord">标记已完成</button></div>
-  </form>
+<div class="sheet-top"><h2 id="dialogTitle">补录完成情况</h2><button class="x" id="closeDialog" aria-label="关闭">×</button></div>
+<form id="form">
+<div id="preview" class="preview"></div>
+<div id="choices">
+<div class="form-row"><div><label for="fYear">年份</label><select class="field" id="fYear"></select></div><div><label for="fType">题型</label><select class="field" id="fType"><option value="reading">阅读</option><option value="cloze">完形</option><option value="newtype">新题型</option><option value="translation">翻译</option><option value="small">小作文</option><option value="large">大作文</option></select></div></div>
+<div class="form-row" id="readingChoices"><div><label for="fPass">第几刷</label><select class="field" id="fPass"><option value="1">一刷</option><option value="2">二刷</option><option value="3">三刷</option></select></div><div><label for="fText">文章</label><select class="field" id="fText"><option value="1">Text 1</option><option value="2">Text 2</option><option value="3">Text 3</option><option value="4">Text 4</option></select></div></div>
+</div>
+<details id="moreFields"><summary>分数、日期和备注（可不填）</summary>
+<div class="form-row"><div><label for="fScore">得分 /10</label><input class="field" id="fScore" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="如 8.5"></div><div><label for="fMinutes">用时（分钟）</label><input class="field" id="fMinutes" type="number" min="1" max="999" inputmode="numeric" placeholder="选填"></div></div>
+<label for="fDate">完成日期</label><input class="field" id="fDate" type="date">
+<label for="fNote">备注</label><textarea class="field" id="fNote" rows="2" placeholder="选填"></textarea>
+</details>
+<div class="form-actions"><button class="btn danger" type="button" id="deleteBtn">删除记录</button><button class="btn light" type="button" id="cancelBtn">取消</button><button class="btn main" type="submit" id="submitBtn">标记已完成</button></div>
+</form>
 </section></div>
-<input type="file" id="importFile" accept="application/json,text/html,.json,.html,.htm" hidden />
+<input type="file" id="fileInput" accept=".json,.html,.htm,application/json,text/html" hidden>
 <script>
-(()=>{'use strict';
-const KEY='banya-offline-learning-archive-v2'+(document.documentElement.getAttribute('data-archive-id')?'-'+document.documentElement.getAttribute('data-archive-id'):''), YEARS=Array.from({length:16},(_,i)=>2010+i), TYPES=[['cloze','完形'],['newtype','新题型'],['translation','翻译'],['small','小作文'],['large','大作文']];
-const $=id=>document.getElementById(id);const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const initial=JSON.parse($('seed-data').textContent);let state,storageOK=true;
-function validate(s){
-if(!s||s.schema!==2||!s.items||typeof s.items!=='object'||Array.isArray(s.items))throw Error('数据格式不匹配');
-let clean={schema:2,updatedAt:s.updatedAt||'',items:{},meta:{...initial.meta,...(s.meta&&typeof s.meta==='object'?s.meta:{})}};
-for(const [k,v] of Object.entries(s.items)){
-  if(!/^en:(reading|cloze|newtype|translation|small|large):\d{4}(?::[123]:[1-4])?$/.test(k)||!v||typeof v!=='object'||v.done!==true)continue;
-  const yr=Number(v.year),t=String(v.type||'');
-  if(yr<2005||yr>2026||!['reading','cloze','newtype','translation','small','large'].includes(t))continue;
-  const p=Number(v.pass),tx=Number(v.text);
-  if(k!==makeKey(t,yr,p,tx))continue;
-  let score=v.score===null||v.score===''||v.score===undefined?null:Number(v.score);
-  if(score!==null&&(!Number.isFinite(score)||score<0||score>10))score=null;
-  clean.items[k]={type:t,year:yr,done:true,score,minutes:v.minutes===null||v.minutes===''?null:(Number(v.minutes)>0?Math.min(Number(v.minutes),999):null),date:typeof v.date==='string'?v.date.slice(0,10):null,note:String(v.note||'').slice(0,1500)};
-  if(t==='reading'){clean.items[k].pass=p;clean.items[k].text=tx}
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var TYPES=[['cloze','完形'],['newtype','新题'],['translation','翻译'],['small','小作'],['large','大作']];
+var YEARS=Array.from({length:16},function(_,i){return 2010+i});
+var KEY='banya-offline-learning-archive-v2'+(document.documentElement.getAttribute('data-archive-id')?'-'+document.documentElement.getAttribute('data-archive-id'):'');
+var CLOUD_KEY='banya-archive-published-base-v2';
+var original=JSON.parse($('seed-data').textContent);
+function keyFor(type,year,pass,text){return type==='reading'?'en:reading:'+year+':'+pass+':'+text:'en:'+type+':'+year}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function validate(src){
+ if(!src||src.schema!==2||!src.items||typeof src.items!=='object'||Array.isArray(src.items))throw Error('不是有效的学习档案');
+ var clean={schema:2,updatedAt:src.updatedAt||'',items:{},meta:Object.assign({},original.meta,src.meta||{})};
+ Object.entries(src.items).forEach(function(entry){
+  var k=entry[0],v=entry[1];if(!v||v.done!==true||!/^en:(reading|cloze|newtype|translation|small|large):\d{4}(?::[123]:[1-4])?$/.test(k))return;
+  var y=Number(v.year),t=v.type,p=Number(v.pass),n=Number(v.text);
+  if(y<2005||y>2026||!['reading','cloze','newtype','translation','small','large'].includes(t)||k!==keyFor(t,y,p,n))return;
+  var sc=v.score==null||v.score===''?null:Number(v.score);
+  if(sc!==null&&(!Number.isFinite(sc)||sc<0||sc>10))sc=null;
+  var m=v.minutes==null||v.minutes===''?null:Number(v.minutes);
+  if(!Number.isFinite(m)||m<1||m>999)m=null;
+  clean.items[k]={type:t,year:y,done:true,score:sc,minutes:m,date:typeof v.date==='string'?v.date.slice(0,10):null,note:String(v.note||'').slice(0,1500)};
+  if(t==='reading'){clean.items[k].pass=p;clean.items[k].text=n}
+ });
+ return clean;
 }
-return clean}
-
-function makeKey(t,y,p,tx){return t==='reading'?`en:reading:${y}:${p}:${tx}`:`en:${t}:${y}`}
-try{let saved=localStorage.getItem(KEY);state=saved?validate(JSON.parse(saved)):validate(initial)}catch(e){state=validate(initial);storageOK=false;}
-let activeTab='home',readMode='2',showAll=false,homeAllYears=false,focusedYear=null,detailOrigin='home',editingKey=null,toastTimer=null,lastDialogTrigger=null;
-function store(){state.updatedAt=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}catch(e){storageOK=false}render();toast(storageOK?'已记录在本机':'浏览器未开放本机存储，请导出网页副本保存')}
-function toast(msg){document.querySelector('.toast')?.remove();let d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.append(d);clearTimeout(toastTimer);toastTimer=setTimeout(()=>d.remove(),2600)}
-function record(t,y,p,tx){return state.items[makeKey(t,y,p,tx)]}
-function done(t,y,p,tx){return !!record(t,y,p,tx)}
-function count(t){return Object.values(state.items).filter(v=>v.type===t).length}
-function rcount(p){return Object.values(state.items).filter(v=>v.type==='reading'&&v.pass===p).length}
-function scoreTxt(r){return r&&r.score!==null?`${r.score}/10`:'✓'}
-function section(text,side=''){return `<div class="sectiontitle"><h2>${text}</h2>${side?`<small>${side}</small>`:''}</div>`}
-function stat(label,num,unit,foot){return `<div class="stat"><div class="statlabel">${label}</div><div class="statval">${num}<span>${unit}</span></div><div class="statfoot">${foot}</div></div>`}
-
-function progressLimit(){const rs=Object.values(state.items).filter(r=>r.type==='reading'&&r.pass===2);if(!rs.length)return '尚无二刷完成记录';rs.sort((a,b)=>b.year-a.year||b.text-a.text);let newest=rs[0];return `${newest.year} 年 Text ${newest.text}`}
-function scoreList(filterFn){return Object.values(state.items).filter(r=>r.score!==null&&(!filterFn||filterFn(r))).map(r=>Number(r.score)).filter(Number.isFinite)}
-function averageScore(filterFn){const arr=scoreList(filterFn);return arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—'}
-function yearReadingCount(y,p){return Array.from({length:4},(_,i)=>done('reading',y,p,i+1)).filter(Boolean).length}
-function yearOtherCount(y){return TYPES.filter(([t])=>done(t,y)).length}
-function fullYears(pass){return YEARS.filter(y=>yearReadingCount(y,pass)===4).length}
-function metric(label,value,unit='',foot=''){return `<div class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${value}${unit?`<span>${unit}</span>`:''}</div><div class="metric-foot">${foot}</div></div>`}
-function barRow(label,done,total,meta='',tone=''){const pct=total?Math.max(0,Math.min(100,done/total*100)):0;return `<div class="barrow"><div class="barhead"><span>${label}</span><strong>${done}/${total}</strong></div><div class="bar ${tone}"><i style="width:${pct}%"></i></div>${meta?`<div class="barfoot">${meta}</div>`:''}</div>`}
-function yearTimelineRow(y){const a=yearReadingCount(y,1),b=yearReadingCount(y,2),c=yearOtherCount(y);return `<button class="timeline-row" type="button" data-year="${y}" aria-label="查看${y}年记录，一刷${a}篇，二刷${b}篇，其他${c}项"><div class="timeline-year">${y}</div><div class="timeline-bars"><div class="mini-labels"><span>一刷 ${a}/4</span><span>二刷 ${b}/4</span><span>其他 ${c}/5</span></div><div class="mini-track"><i style="width:${a/4*100}%"></i></div><div class="mini-track slate"><i style="width:${b/4*100}%"></i></div><div class="mini-track orange"><i style="width:${c/5*100}%"></i></div></div><span class="timeline-meta" aria-hidden="true">›</span></button>`}
-function home(){
- const total=Object.keys(state.items).length,other=TYPES.reduce((sum,[t])=>sum+count(t),0),read1=rcount(1),read2=rcount(2),read3=rcount(3);
- const populated=YEARS.filter(y=>yearReadingCount(y,1)+yearReadingCount(y,2)+yearReadingCount(y,3)+yearOtherCount(y)>0);
- const displayed=homeAllYears?YEARS:populated;
- return `
- <section class="hero-panel" aria-label="当前已完成进度"><div><div class="hero-eyebrow">英语二 · 完成进度</div><h1>阅读二刷 <em>${escapeHTML(progressLimit())}</em></h1><p>这是已确认记录中年份最靠后的阅读二刷位置</p></div><button class="hero-action" type="button" data-goto="english">查看每篇记录 <span aria-hidden="true">›</span></button></section>
- <div class="metric-grid">${metric('阅读一刷',read1,'篇','2010—2025 年') }${metric('阅读二刷',read2,'篇','完整 '+fullYears(2)+' 年')}${metric('其他题型',other,'项','五类题型')}</div>
- <div class="card chart-card"><div class="chart-title">阅读完成量</div><div class="chart-sub">每年 4 篇，2010—2025 年共 64 篇 / 每刷。只统计已做。</div>${barRow('一刷',read1,YEARS.length*4)}${barRow('二刷',read2,YEARS.length*4,'','slate')}${read3?barRow('三刷',read3,YEARS.length*4,'','violet'):''}</div>
- <details class="card fold-card"><summary>其他题型完成分布 <span class="tag">${other} 项</span></summary><div class="fold-body">${TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,'',i%2?'orange':'')).join('')}</div></details>
- <div class="sectiontitle"><h2>逐年完成情况</h2><button class="linkbtn" id="homeAllYears">${homeAllYears?'只看有记录年份':'显示全部年份'}</button></div>
- <div class="timeline">${displayed.map(yearTimelineRow).join('')}</div>
- <p class="footnote">绿色为阅读一刷，蓝色为二刷，橙色为其他题型。点击年份查看具体篇目；空白代表尚未确认完成，不代表没有学习。</p>`
+var state,storageOK=true;
+try{var saved=localStorage.getItem(KEY);state=saved?validate(JSON.parse(saved)):validate(original)}catch(_){state=validate(original);storageOK=false}
+var page='list',selectedYear=2013,editingKey=null,toastTimer=null,undoAction=null,lastScroll=0,previousFocus=null,choiceMode=false;
+function record(t,y,p,n){return state.items[keyFor(t,y,p,n)]}
+function numRead(y,p){var n=0;for(var i=1;i<=4;i++)if(record('reading',y,p,i))n++;return n}
+function numOther(y){return TYPES.filter(function(t){return !!record(t[0],y)}).length}
+function scoreText(r){return r.score!==null?r.score+'/10':'已做'}
+function count(){return Object.keys(state.items).length}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function dots(y,p){
+ var out='<span class="cel dots" aria-label="'+y+'年阅读'+p+'刷已完成'+numRead(y,p)+'篇">';
+ for(var i=1;i<=4;i++)out+='<i class="'+(record('reading',y,p,i)?'yes':'')+'"></i>';
+ return out+'</span>';
 }
-function readingCard(y,p){let n=yearReadingCount(y,p), avg=averageScore(r=>r.type==='reading'&&r.year===y&&r.pass===p);return `<div class="yearcard"><div class="line"><span class="year">${y} · 阅读${p}刷</span><span class="yearmeta">${n}/4 篇</span></div><div class="card-progress"><div class="bar ${p===2?'slate':p===3?'violet':''}"><i style="width:${n/4*100}%"></i></div><div class="tiny-note" style="margin-top:6px">${avg!=='—'?'已记录均分 '+avg+'/10':'暂无分数均值'}</div></div><div class="blocks">${Array.from({length:4},(_,i)=>{let tx=i+1,r=record('reading',y,p,tx);return `<button class="block ${r?'done':''}" data-edit="${makeKey('reading',y,p,tx)}"><span>T${tx}</span><span class="tiny">${r?(r.score!==null?r.score+'/10':'已做'):'＋'}</span></button>`}).join('')}</div></div>`}
-function yearDetail(y){
- const typeDone=yearOtherCount(y);
- return `<div class="backline"><button class="text-btn" type="button" data-back-year>← 返回${detailOrigin==='home'?'总览':'真题'}</button><span class="tiny-note">点击已做或空白格编辑</span></div>
- <div class="detail-header"><h2>${y} 年真题</h2><div class="year-pager"><button type="button" data-switch-year="${y-1}" ${y===YEARS[0]?'disabled':''} aria-label="上一年">‹</button><button type="button" data-switch-year="${y+1}" ${y===YEARS[YEARS.length-1]?'disabled':''} aria-label="下一年">›</button></div></div>
- <div class="detail-tags"><span class="detail-tag">一刷 ${yearReadingCount(y,1)}/4</span><span class="detail-tag">二刷 ${yearReadingCount(y,2)}/4</span><span class="detail-tag">其他 ${typeDone}/5</span></div>
- <div class="yearlist">${readingCard(y,1)}${readingCard(y,2)}</div>
- <details class="third-pass" ${yearReadingCount(y,3)?'open':''}><summary>三刷记录（需要时展开）</summary>${readingCard(y,3)}</details>
- ${section('其他题型','点击方格补录或修改')}
- <div class="card typecard"><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}" aria-label="${y}年${name}：${r?scoreTxt(r):'未记录'}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`
+function flag(t,y){
+ return '<span class="cel"><span class="flag '+(record(t,y)?'yes':'')+'">'+(record(t,y)?'✓':'–')+'</span></span>';
 }
-function english(){
- if(focusedYear!==null)return yearDetail(focusedYear);
- const readable=readMode==='other'?'其他题型':`阅读${readMode}刷`;
- const old=readMode==='other'?YEARS.filter(y=>TYPES.some(([t])=>done(t,y))):YEARS.filter(y=>Array.from({length:4},(_,i)=>done('reading',y,Number(readMode),i+1)).some(Boolean));
- const shown=showAll?YEARS:old;
- const totalCount=readMode==='other'?TYPES.reduce((n,[t])=>n+count(t),0):rcount(Number(readMode));
- const possible=readMode==='other'?YEARS.length*5:YEARS.length*4;
- const scoreAvg=readMode==='other'?averageScore(r=>r.type!=='reading'):averageScore(r=>r.type==='reading'&&r.pass===Number(readMode));
- return `${section('真题完成记录','只记录已做过的题')}
- <div class="pills"><button class="pill ${readMode==='2'?'active':''}" data-read="2">阅读二刷</button><button class="pill ${readMode==='1'?'active':''}" data-read="1">阅读一刷</button><button class="pill ${readMode==='other'?'active':''}" data-read="other">其他题型</button><button class="pill ${readMode==='3'?'active':''}" data-read="3">阅读三刷</button></div>
- <div class="summary-inline"><strong>${totalCount}<span> / ${possible}</span></strong><span>${readable}已记录${totalCount}${readMode==='other'?'项':'篇'}</span><span class="grow"></span><span>${scoreAvg==='—'?'未填得分':'已填得分均值 '+scoreAvg+'/10'}</span></div>
- <div class="sectiontitle"><h2>按年份查看</h2><button id="allYears" class="linkbtn">${showAll?'只看有记录年份':'显示全部年份'}</button></div>
- ${readMode==='other'?`<div class="type-summary stack">${shown.map(y=>`<div class="card typecard" style="margin:0"><div class="line"><span class="year">${y}</span><span class="yearmeta">${yearOtherCount(y)}/5 项</span></div><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}" aria-label="${y}年${name}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`).join('')}</div>`:`<div class="yearlist">${shown.map(y=>readingCard(y,Number(readMode))).join('')}</div>`}
- ${shown.length?'':`<div class="empty cardlike">此分类暂无确认完成的记录。点击右上角「补录」，或展开全部年份。</div>`}
- <details class="card fold-card" style="margin-top:13px"><summary>查看按年完成量图表</summary><div class="fold-body">${readMode==='other'?TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,'',i%2?'orange':'')).join(''):YEARS.filter(y=>showAll||yearReadingCount(y,Number(readMode))>0).map(y=>barRow(y+' 年',yearReadingCount(y,Number(readMode)),4,'',readMode==='2'?'slate':readMode==='3'?'violet':'')).join('')}</div></details>
- <p class="footnote">2005—2009 年早期阅读练习另有记录，不算入 2010—2025 年英语二统计。未填写分数不等于零分。</p>`
+function renderList(){
+ var result='<div class="page-title"><h1>真题进度</h1><span class="count">'+count()+' 条已记录</span></div>';
+ result+='<p class="legend">绿色已完成，灰色未记录。点击年份查看具体篇目并补录。</p>';
+ result+='<div class="matrix" role="group" aria-label="英语二按年份、题型的完成进度">';
+ result+='<div class="matrix-head"><span>年份</span><span>一刷</span><span>二刷</span><span>完形</span><span>新题</span><span>翻译</span><span>小作</span><span>大作</span></div>';
+ YEARS.forEach(function(y){
+  var label=y+'年，阅读一刷'+numRead(y,1)+'篇，阅读二刷'+numRead(y,2)+'篇，其他题型'+numOther(y)+'项，打开详情';
+  result+='<button type="button" class="matrix-row" data-year="'+y+'" aria-label="'+label+'"><span class="yr">'+y+'</span>'+dots(y,1)+dots(y,2)+TYPES.map(function(t){return flag(t[0],y)}).join('')+'</button>';
+ });
+ result+='</div><p class="matrix-hint">一刷、二刷各有 4 个小格，对应 Text 1—4。灰色表示未确认做过，不等于一定没做。</p>';
+ return result;
 }
-function dataPage(){const n=Object.keys(state.items).length;return `${section('备份与恢复')}
-<div class="save-hero"><h3>把英语进度存成文件</h3><p>已经有 <strong>${n}</strong> 条英语完成记录。网页会在本机自动保存，联网可接收已发布的新英语记录；本机补录不会自动上传，清理数据或换手机前请备份。</p><button class="btn filled backup-main" id="saveJSON">↓ 导出备份文件（JSON）</button><div class="backup-secondary"><button class="btn" id="loadJSON">↑ 导入备份</button><button class="btn" id="saveHTML">↓ 导出离线网页</button></div><div class="backup-advice">JSON：用于换手机、恢复和继续补录。<br>HTML：把此刻的全部英语记录打包成一个独立网页。</div></div>
-${section('当前数据')}<div class="card"><div class="line"><span class="maintext">英语二学习档案</span><span class="tag green">无需服务器</span></div><div class="hint" style="margin-top:8px">${n} 条英语记录</div><div class="statusbar"><span class="dot"></span>${storageOK?'本机自动保存正常':'自动保存不可用，补录后请导出文件'}</div></div>
-${section('使用说明')}<div class="card"><div class="hint">手机上点击「导出备份文件」，会下载一个 .json 文件，通常在系统「下载」目录。需要恢复时，重新打开网页，进入「数据」→「导入备份」选择文件即可。支持导入本工具以前导出的 JSON 文件或完整 HTML 网页副本。</div></div>
-<details class="danger-zone"><summary class="text-btn">更多操作与数据说明</summary><div style="margin-top:13px"><div class="notice">${escapeHTML(state.meta.baseline||'')}${state.meta.uncertain?'<div style="margin-top:5px">'+escapeHTML(state.meta.uncertain)+'</div>':''}</div><button class="btn danger full" id="resetData" style="margin-top:12px">恢复本文件的初始记录</button><p class="footnote">此操作会清除在当前浏览器中后续补录的修改，执行前请先备份。</p></div></details>
-<p class="footnote">没有账号和服务器。联网时会获取已发布的英语进度更新，但不会上传手机本地记录。备份只保存在你选择的位置，勿分享含私人备注的文件。</p>`}
-function render(){document.querySelectorAll('.tab').forEach(b=>{let a=b.dataset.tab===activeTab;b.classList.toggle('active',a);b.setAttribute('aria-current',a?'page':'false')});const views={home,english,data:dataPage};if(!views[activeTab])activeTab='home';$('content').innerHTML=views[activeTab]();$('statusText').textContent=storageOK?'已自动存入本机 · 支持离线查看':'本机保存受限 · 请导出备份';}
-function pushRoute(){try{history.pushState({banya:true,tab:activeTab,year:focusedYear,origin:detailOrigin},'',location.pathname+location.search+'#'+(focusedYear===null?activeTab:'year-'+focusedYear))}catch(_){}}
-function goto(tab){activeTab=tab;focusedYear=null;pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
-function openYear(y){detailOrigin=activeTab;focusedYear=y;activeTab='english';pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
-function switchYear(y){if(!YEARS.includes(y))return;focusedYear=y;activeTab='english';pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
-window.addEventListener('popstate',e=>{if(!e.state?.banya)return;activeTab=e.state.tab||'home';focusedYear=e.state.year??null;detailOrigin=e.state.origin||'home';render();window.scrollTo(0,0)});
-
-function openDialog(k){
- lastDialogTrigger=document.activeElement;editingKey=k||null;
- const r=k?state.items[k]:null,md=k?.match(/^en:(reading|cloze|newtype|translation|small|large):(\d{4})(?::([123]):([1-4]))?$/);
- const latest=Object.values(state.items).filter(v=>v.type==='reading'&&v.pass===2).sort((a,b)=>b.year-a.year||b.text-a.text)[0];
- $('dialogTitle').textContent=r?'编辑完成记录':'补录已做内容';
- $('fYear').value=String(md?md[2]:(focusedYear??latest?.year??2013));
- $('fType').value=md?md[1]:(readMode==='other'?'cloze':'reading');
- $('fPass').value=md&&md[3]?md[3]:/^[123]$/.test(readMode)?readMode:'2';
- $('fText').value=md&&md[4]?md[4]:'1';
+function exercise(t,y,p,n,title){
+ var k=keyFor(t,y,p,n),r=state.items[k],caption=r?(r.score!==null?r.score+'/10':'✓ 已做'):'＋ 未做';
+ return '<button type="button" class="exercise '+(r?'done':'')+'" data-key="'+k+'" aria-label="'+y+'年'+title+'：'+(r?'已完成':'未记录')+'"><b>'+title+'</b><small>'+caption+'</small></button>';
+}
+function readingGroup(y,p){
+ var countNow=numRead(y,p),parts='';
+ for(var i=1;i<=4;i++)parts+=exercise('reading',y,p,i,'Text '+i);
+ return '<section class="detail-group"><div class="group-head"><h2>阅读 · '+p+'刷</h2><small>'+countNow+' / 4</small></div><div class="exercise-grid">'+parts+'</div></section>';
+}
+function renderYear(y){
+ var s='<button type="button" class="back" id="backBtn">‹ 全部年份</button>';
+ s+='<div class="detail-top"><h1>'+y+' 年真题</h1><div class="year-nav"><button data-neighbor="'+(y-1)+'" '+(y<=2010?'disabled':'')+' aria-label="上一年">‹</button><button data-neighbor="'+(y+1)+'" '+(y>=2025?'disabled':'')+' aria-label="下一年">›</button></div></div>';
+ s+=readingGroup(y,1)+readingGroup(y,2);
+ s+='<section class="detail-group"><div class="group-head"><h2>其他题型</h2><small>'+numOther(y)+' / 5</small></div><div class="exercise-grid other">';
+ TYPES.forEach(function(t){var title={'cloze':'完形','newtype':'新题型','translation':'翻译','small':'小作文','large':'大作文'}[t[0]];s+=exercise(t[0],y,0,0,title)});
+ s+='</div></section>';
+ var three=numRead(y,3);
+ s+='<details class="extra-pass" '+(three?'open':'')+'><summary>阅读三刷'+(three?' · '+three+'/4':'（如有）')+'</summary>'+readingGroup(y,3)+'</details>';
+ s+='<p class="note">点「＋ 未做」直接标记完成；点绿色「已做」可编辑分数、备注或删除。</p>';
+ return s;
+}
+function renderData(){
+ return '<button class="back" id="backBtn">‹ 返回进度</button><div class="page-title"><h1>备份档案</h1></div>'+
+ '<section class="data-card"><h2>保存当前记录</h2><p>当前共 '+count()+' 条。补录自动存到本机浏览器；换手机或清理浏览器前请导出备份。</p><div class="data-stack"><button class="btn main" id="saveJson">下载备份文件（JSON）</button><button class="btn" id="loadJson">导入备份文件</button><button class="btn" id="saveHtml">导出独立离线网页</button></div></section>'+
+ '<p class="small-note">网页可离线打开。联网时可以获取 GitHub 上新发布的记录，本机修改不会自动上传。备份不要误分享。</p>';
+}
+function render(){
+ $('view').innerHTML=page==='list'?renderList():page==='year'?renderYear(selectedYear):renderData();
+ $('backupBtn').setAttribute('aria-current',page==='data'?'page':'false');
+}
+function view(next,y){
+ if(page==='list')lastScroll=window.scrollY||0;
+ page=next;if(typeof y==='number')selectedYear=y;
+ try{history.pushState({banya:true,page:page,year:selectedYear},'',location.pathname+location.search+'#'+(page==='year'?'year-'+selectedYear:page))}catch(_){}
+ render();window.scrollTo(0,0);
+}
+function goBack(){
+ if(page==='list')return;
+ try{history.back()}catch(_){page='list';render();window.scrollTo(0,lastScroll)}
+}
+window.addEventListener('popstate',function(e){
+ if(!e.state||!e.state.banya){page='list'}else{page=e.state.page;selectedYear=e.state.year||2013}
+ render();window.scrollTo(0,page==='list'?lastScroll:0);
+});
+function save(notify){
+ state.updatedAt=new Date().toISOString();
+ try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}catch(_){storageOK=false}
+ render();
+ if(notify)toast(storageOK?'已保存':'存储受限，请导出备份');
+}
+function toast(message,undo){
+ var old=document.querySelector('.toast');if(old)old.remove();
+ if(toastTimer)clearTimeout(toastTimer);
+ var box=document.createElement('div');box.className='toast';
+ var span=document.createElement('span');span.textContent=message;box.appendChild(span);
+ if(undo){var b=document.createElement('button');b.type='button';b.textContent='撤销';b.addEventListener('click',function(){box.remove();undo();});box.appendChild(b)}
+ document.body.appendChild(box);toastTimer=setTimeout(function(){box.remove()},3500);
+}
+function parseKey(k){var m=k.match(/^en:(reading|cloze|newtype|translation|small|large):(\d{4})(?::([123]):([1-4]))?$/);return m?{type:m[1],year:Number(m[2]),pass:Number(m[3]||1),text:Number(m[4]||1)}:null}
+function blank(t,y,p,n){var v={type:t,year:y,done:true,score:null,minutes:null,date:null,note:''};if(t==='reading'){v.pass=p;v.text=n}return v}
+function quickDone(k){
+ var x=parseKey(k);if(!x)return;
+ if(state.items[k]){openEditor(k,false);return}
+ state.items[k]=blank(x.type,x.year,x.pass,x.text);save(false);
+ toast('已标记完成',function(){if(state.items[k]&&state.items[k].score===null&&state.items[k].note===''){delete state.items[k];save(false);toast('已撤销')}})
+}
+function setReading(){ $('readingChoices').style.display=$('fType').value==='reading'?'grid':'none'}
+function openEditor(k,standalone){
+ previousFocus=document.activeElement;choiceMode=!!standalone;editingKey=k||null;
+ var x=parseKey(k||'')||{type:'reading',year:selectedYear,pass:2,text:1};
+ var r=k?state.items[k]:null;
+ $('dialogTitle').textContent=r?'编辑已完成记录':'补录已完成内容';
+ $('choices').style.display=standalone?'block':'none';
+ $('fYear').value=String(x.year);$('fType').value=x.type;$('fPass').value=String(x.pass);$('fText').value=String(x.text);
+ $('preview').textContent=standalone?'选择已经做完的真题':x.year+' 年 · '+(x.type==='reading'?'阅读 '+x.pass+'刷 Text '+x.text:({'cloze':'完形','newtype':'新题型','translation':'翻译','small':'小作文','large':'大作文'}[x.type]));
  $('fScore').value=r&&r.score!==null?r.score:'';
- $('fMins').value=r&&r.minutes!==null?r.minutes:'';
- $('fDate').value=r?.date||'';$('fNote').value=r?.note||'';
- $('recordPreview').textContent=r?'这条内容已完成，可修改分数或备注':'确认做完后点「标记已完成」，不必填写分数';
- $('submitRecord').textContent=r?'保存修改':'标记已完成';
- $('deleteRecord').classList.toggle('hidden',!r);
- $('extraDetails').open=Boolean(r&&(r.minutes!==null||r.date||r.note));
- toggleReadFields();$('overlay').hidden=false;document.body.style.overflow='hidden';
+ $('fMinutes').value=r&&r.minutes!==null?r.minutes:'';
+ $('fDate').value=r&&r.date?r.date:'';
+ $('fNote').value=r?r.note:'';
+ $('moreFields').open=Boolean(r&&(r.score!==null||r.minutes!==null||r.date||r.note));
+ $('deleteBtn').style.visibility=r?'visible':'hidden';
+ $('submitBtn').textContent=r?'保存修改':'标记已完成';
+ setReading();$('overlay').hidden=false;document.body.style.overflow='hidden';
 }
-function toggleReadFields(){$('readingFields').classList.toggle('hidden',$('fType').value!=='reading')}
-function closeDialog(){$('overlay').hidden=true;document.body.style.overflow='';if(lastDialogTrigger?.isConnected)lastDialogTrigger.focus({preventScroll:true});lastDialogTrigger=null}
-
-function download(name,body,type){let blob=new Blob([body],{type});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
-function snapshot(){const c=document.documentElement.cloneNode(true);c.setAttribute('data-archive-id','snapshot-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8));c.querySelector('#seed-data').textContent=JSON.stringify(state).replace(/</g,String.fromCharCode(92)+'u003c');const overlay=c.querySelector('#overlay');overlay.setAttribute('hidden','');c.querySelector('body').style.overflow='';c.querySelector('#content').innerHTML='';c.querySelector('#importFile').value='';return '<!doctype html>\n'+c.outerHTML}
-function dateSlug(){const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`}
-function exportHTML(){download('板牙考研-学习档案-'+dateSlug()+'.html',snapshot(),'text/html;charset=utf-8');toast('已开始下载完整网页，请在下载目录确认保存')}
-function exportJSON(){download('板牙考研-进度备份-'+dateSlug()+'.json',JSON.stringify(state,null,2),'application/json;charset=utf-8');toast('已开始下载 JSON 备份，请在下载目录确认保存')}
-for(let y=2005;y<=2026;y++){let o=document.createElement('option');o.value=y;o.textContent=y;$('fYear').append(o)}
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>goto(b.dataset.tab)));
-$('addBtn').addEventListener('click',()=>openDialog(null));$('quickBackup').addEventListener('click',exportJSON);$('closeDlg').addEventListener('click',closeDialog);$('cancelDlg').addEventListener('click',closeDialog);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeDialog()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDialog()});$('fType').addEventListener('change',toggleReadFields);
-$('recordForm').addEventListener('submit',e=>{e.preventDefault();const t=$('fType').value,y=Number($('fYear').value),p=Number($('fPass').value),tx=Number($('fText').value),k=makeKey(t,y,p,tx);let sc=$('fScore').value.trim(),mins=$('fMins').value.trim();if(sc!==''&&(!Number.isFinite(Number(sc))||Number(sc)<0||Number(sc)>10)){toast('得分只能是 0—10');return}if(mins!==''&&(Number(mins)<1||Number(mins)>999)){toast('用时只能填 1—999 分钟');return}let val={type:t,year:y,done:true,score:sc===''?null:Number(sc),minutes:mins===''?null:Number(mins),date:$('fDate').value||null,note:$('fNote').value.trim().slice(0,1500)};if(t==='reading'){val.pass=p;val.text=tx}if(state.items[k]&&k!==editingKey&&!confirm('这个年份和题型已经有一条记录，确定覆盖吗？'))return;if(editingKey&&editingKey!==k)delete state.items[editingKey];state.items[k]=val;closeDialog();store()});
-$('deleteRecord').addEventListener('click',()=>{if(!editingKey)return;if(!confirm('确定删除这条完成记录？'))return;delete state.items[editingKey];closeDialog();store()});
-$('content').addEventListener('click',e=>{let target=e.target.closest('[data-edit], [data-goto], [data-read], [data-year], [data-back-year], [data-switch-year], #homeAllYears, #allYears, #saveHTML, #saveJSON, #loadJSON, #resetData');if(!target)return;if(target.dataset.edit){openDialog(target.dataset.edit)}else if(target.dataset.goto){goto(target.dataset.goto)}else if(target.dataset.read){focusedYear=null;readMode=target.dataset.read;showAll=false;render()}else if(target.dataset.year){openYear(Number(target.dataset.year))}else if(target.dataset.switchYear){switchYear(Number(target.dataset.switchYear))}else if(target.hasAttribute('data-back-year')){history.back()}else if(target.id==='homeAllYears'){homeAllYears=!homeAllYears;render()}else if(target.id==='allYears'){showAll=!showAll;render()}else if(target.id==='saveHTML'){exportHTML()}else if(target.id==='saveJSON'){exportJSON()}else if(target.id==='loadJSON'){$('importFile').click()}else if(target.id==='resetData'){if(confirm('确定恢复最初整理的学习档案？这会覆盖当前补录的数据。建议先导出备份。')){state=validate(initial);store();toast('已恢复初始档案')}}});
-$('content').addEventListener('submit',e=>{return;});
-$('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>10*1024*1024)throw Error('文件超过 10 MB');const raw=await file.text();let parsed;if(/^\s*<(?:!doctype|html)/i.test(raw)){const doc=new DOMParser().parseFromString(raw,'text/html');const seed=doc.getElementById('seed-data');if(!seed)throw Error('未找到离线档案数据');parsed=JSON.parse(seed.textContent)}else{parsed=JSON.parse(raw)}const imported=validate(parsed);if(!confirm('导入将替换本机当前进度，建议先备份。确定继续？'))return;state=imported;store();toast('已成功恢复备份')}catch(err){alert('无法导入：'+(err.message||'文件格式错误'))}finally{e.target.value=''}});
-const CLOUD_BASE_KEY='banya-archive-published-base-v2';
-let cloudChecking=false;
-async function checkPublishedUpdates(){
-  if(cloudChecking||location.protocol!=='https:')return;
-  cloudChecking=true;
-  try{
-    const reply=await fetch('./data/progress.json?fresh='+Date.now(),{cache:'no-store'});
-    if(!reply.ok)return;
-    const published=validate(await reply.json());
-    let last;
-    try{const raw=localStorage.getItem(CLOUD_BASE_KEY);last=raw?validate(JSON.parse(raw)):validate(initial)}
-    catch(_){last=validate(initial)}
-    const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-    let changed=false;
-    const keys=new Set([...Object.keys(last.items),...Object.keys(published.items)]);
-    for(const key of keys){
-      const before=last.items[key],after=published.items[key];
-      if(!same(before,after)&&same(state.items[key],before)){
-        if(after===undefined)delete state.items[key];else state.items[key]=after;
-        changed=true;
-      }
-    }
-    for(const key of Object.keys(published.meta)){
-      if(!same(last.meta[key],published.meta[key])&&same(state.meta[key],last.meta[key])){
-        state.meta[key]=published.meta[key];changed=true;
-      }
-    }
-    try{localStorage.setItem(CLOUD_BASE_KEY,JSON.stringify(published));}catch(_){}
-    if(changed){
-      state.updatedAt=new Date().toISOString();
-      try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}catch(_){storageOK=false}
-      render();toast('已获取新发布的学习进度');
-    }
-  }catch(_){}finally{cloudChecking=false}
+function closeEditor(){
+ $('overlay').hidden=true;document.body.style.overflow='';
+ if(previousFocus&&previousFocus.isConnected)previousFocus.focus({preventScroll:true});
+ previousFocus=null;
 }
-
-try{history.replaceState({banya:true,tab:'home',year:null,origin:'home'},'',location.href)}catch(_){}
-render();
-checkPublishedUpdates();
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkPublishedUpdates()});
-window.addEventListener('online',checkPublishedUpdates);
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+function download(name,body,type){
+ var blob=new Blob([body],{type:type}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},30000);
+}
+function slug(){var x=new Date();return x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0')}
+function exportJson(){download('板牙考研-进度-'+slug()+'.json',JSON.stringify(state,null,2),'application/json;charset=utf-8');toast('已开始下载备份')}
+function exportHtml(){
+ var c=document.documentElement.cloneNode(true);
+ c.setAttribute('data-archive-id','snapshot-'+Date.now().toString(36));
+ c.querySelector('#seed-data').textContent=JSON.stringify(state).replace(/</g,'\\u003c');
+ var overlay=c.querySelector('#overlay');overlay.setAttribute('hidden','');
+ c.querySelector('#view').innerHTML='';
+ download('板牙考研-离线档案-'+slug()+'.html','<!doctype html>\n'+c.outerHTML,'text/html;charset=utf-8');
+ toast('已开始下载离线网页');
+}
+function applyImport(file){
+ if(!file)return;
+ if(file.size>10*1024*1024){toast('文件过大');return}
+ file.text().then(function(raw){
+  var value;
+  if(/^\s*<(?:!doctype|html)/i.test(raw)){
+   var doc=new DOMParser().parseFromString(raw,'text/html'),seed=doc.getElementById('seed-data');
+   if(!seed)throw Error('未找到档案');
+   value=JSON.parse(seed.textContent);
+  }else value=JSON.parse(raw);
+  var result=validate(value);
+  if(!confirm('导入会替换本机目前的记录，确认导入？'))return;
+  state=result;save(false);toast('备份已恢复');
+ }).catch(function(err){alert('导入失败：'+(err.message||'格式错误'))}).finally(function(){$('fileInput').value=''});
+}
+for(var y=2005;y<=2026;y++){var opt=document.createElement('option');opt.value=y;opt.textContent=y;$('fYear').appendChild(opt)}
+$('fType').addEventListener('change',setReading);
+$('backupBtn').addEventListener('click',function(){view('data')});
+$('addBtn').addEventListener('click',function(){openEditor(null,true)});
+$('closeDialog').addEventListener('click',closeEditor);
+$('cancelBtn').addEventListener('click',closeEditor);
+$('overlay').addEventListener('click',function(e){if(e.target===$('overlay'))closeEditor()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('overlay').hidden)closeEditor()});
+$('view').addEventListener('click',function(e){
+ var t=e.target.closest('[data-year],[data-neighbor],[data-key],#backBtn,#saveJson,#loadJson,#saveHtml');
+ if(!t)return;
+ if(t.dataset.year){view('year',Number(t.dataset.year));return}
+ if(t.dataset.neighbor){var v=Number(t.dataset.neighbor);if(v>=2010&&v<=2025)view('year',v);return}
+ if(t.dataset.key){quickDone(t.dataset.key);return}
+ if(t.id==='backBtn'){goBack();return}
+ if(t.id==='saveJson'){exportJson();return}
+ if(t.id==='loadJson'){$('fileInput').click();return}
+ if(t.id==='saveHtml'){exportHtml();return}
+});
+$('form').addEventListener('submit',function(e){
+ e.preventDefault();
+ var x=choiceMode?{type:$('fType').value,year:Number($('fYear').value),pass:Number($('fPass').value),text:Number($('fText').value)}:parseKey(editingKey);
+ if(!x)return;
+ var k=keyFor(x.type,x.year,x.pass,x.text),sc=$('fScore').value.trim(),minutes=$('fMinutes').value.trim();
+ if(sc!==''&&(!Number.isFinite(Number(sc))||Number(sc)<0||Number(sc)>10)){toast('分数应在 0—10 之间');return}
+ if(minutes!==''&&(!Number.isInteger(Number(minutes))||Number(minutes)<1||Number(minutes)>999)){toast('用时应在 1—999 分钟');return}
+ if(state.items[k]&&k!==editingKey&&!confirm('已有该题记录，确认覆盖？'))return;
+ var value=blank(x.type,x.year,x.pass,x.text);
+ value.score=sc===''?null:Number(sc);value.minutes=minutes===''?null:Number(minutes);value.date=$('fDate').value||null;value.note=$('fNote').value.slice(0,1500);
+ if(editingKey&&editingKey!==k)delete state.items[editingKey];
+ state.items[k]=value;closeEditor();save(true);
+});
+$('deleteBtn').addEventListener('click',function(){
+ if(!editingKey||!state.items[editingKey])return;
+ if(!confirm('确定删除这条完成记录？'))return;
+ delete state.items[editingKey];closeEditor();save(true);
+});
+$('fileInput').addEventListener('change',function(e){applyImport(e.target.files&&e.target.files[0])});
+async function publishedUpdate(){
+ if(location.protocol!=='https:'||document.documentElement.hasAttribute('data-archive-id'))return;
+ try{
+  var response=await fetch('./data/progress.json?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)return;
+  var published=validate(await response.json()),base;
+  try{var v=localStorage.getItem(CLOUD_KEY);base=v?validate(JSON.parse(v)):validate(original)}catch(_){base=validate(original)}
+  var same=function(a,b){return JSON.stringify(a)===JSON.stringify(b)};
+  var changed=false,keys=new Set(Object.keys(base.items).concat(Object.keys(published.items)));
+  keys.forEach(function(k){
+   var before=base.items[k],after=published.items[k];
+   if(!same(before,after)&&same(state.items[k],before)){
+    if(after===undefined)delete state.items[k];else state.items[k]=after;changed=true;
+   }
+  });
+  try{localStorage.setItem(CLOUD_KEY,JSON.stringify(published))}catch(_){}
+  if(changed){save(false);toast('已获取最新发布记录')}
+ }catch(_){}
+}
+try{history.replaceState({banya:true,page:'list',year:selectedYear},'',location.href)}catch(_){}
+render();publishedUpdate();
+document.addEventListener('visibilitychange',function(){if(!document.hidden)publishedUpdate()});
+window.addEventListener('online',publishedUpdate);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(function(){});
 })();
 </script>
 </body>
