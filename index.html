@@ -245,7 +245,7 @@ function home(){
  const displayed=homeAllYears?YEARS:populated;
  return `
  <section class="hero-panel" aria-label="当前已完成进度"><div><div class="hero-eyebrow">英语二 · 完成进度</div><h1>阅读二刷 <em>${escapeHTML(progressLimit())}</em></h1><p>这是已确认记录中年份最靠后的阅读二刷位置</p></div><button class="hero-action" type="button" data-goto="english">查看每篇记录 <span aria-hidden="true">›</span></button></section>
- <div class="metric-grid">${metric('阅读一刷',read1,'篇','2010—2025 年') }${metric('阅读二刷',read2,'篇','完整 ${fullYears(2)} 年')}${metric('其他题型',other,'项','五类题型')}</div>
+ <div class="metric-grid">${metric('阅读一刷',read1,'篇','2010—2025 年') }${metric('阅读二刷',read2,'篇','完整 '+fullYears(2)+' 年')}${metric('其他题型',other,'项','五类题型')}</div>
  <div class="card chart-card"><div class="chart-title">阅读完成量</div><div class="chart-sub">每年 4 篇，2010—2025 年共 64 篇 / 每刷。只统计已做。</div>${barRow('一刷',read1,YEARS.length*4)}${barRow('二刷',read2,YEARS.length*4,'','slate')}${read3?barRow('三刷',read3,YEARS.length*4,'','violet'):''}</div>
  <details class="card fold-card"><summary>其他题型完成分布 <span class="tag">${other} 项</span></summary><div class="fold-body">${TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,'',i%2?'orange':'')).join('')}</div></details>
  <div class="sectiontitle"><h2>逐年完成情况</h2><button class="linkbtn" id="homeAllYears">${homeAllYears?'只看有记录年份':'显示全部年份'}</button></div>
