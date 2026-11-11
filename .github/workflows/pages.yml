@@ -32,6 +32,23 @@ jobs:
           if ! gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
             gh api -X POST "repos/$GITHUB_REPOSITORY/pages" -f build_type=workflow || echo 'Pages activation may require Settings > Pages > GitHub Actions.'
           fi
+      - name: Validate archive before publishing
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          html = pathlib.Path("index.html").read_text(encoding="utf-8")
+          published = json.loads(pathlib.Path("data/progress.json").read_text(encoding="utf-8"))
+          seed = re.search(r'<script type="application/json" id="seed-data">([\s\S]*?)</script>', html)
+          assert seed, "Missing offline archive seed"
+          assert json.loads(seed.group(1)) == published, "Offline archive differs from published progress"
+          assert published["schema"] == 2 and isinstance(published["items"], dict)
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          assert len(scripts) == 1, "Expected exactly one application script"
+          assert "function home()" in scripts[0] and "function yearDetail(y)" in scripts[0]
+          pathlib.Path("/tmp/banya-archive.js").write_text(scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/banya-archive.js
+          node --check sw.js
       - uses: actions/configure-pages@v5
       - name: Package only current website
         run: |
