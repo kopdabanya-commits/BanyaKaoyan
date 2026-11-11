@@ -44,7 +44,7 @@ jobs:
           assert published["schema"] == 2 and isinstance(published["items"], dict)
           scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
           assert len(scripts) == 1, "Expected exactly one application script"
-          assert "function home()" in scripts[0] and "function yearDetail(y)" in scripts[0]
+          assert "function renderList()" in scripts[0] and "function renderYear(y)" in scripts[0], "Missing compact matrix views"
           pathlib.Path("/tmp/banya-archive.js").write_text(scripts[0], encoding="utf-8")
           PY
           node --check /tmp/banya-archive.js
