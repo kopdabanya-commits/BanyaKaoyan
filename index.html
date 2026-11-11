@@ -75,18 +75,106 @@ body{font-size:15px;line-height:1.45}button,input,textarea,select{touch-action:m
 @media (max-width:760px){.hero-panel{grid-template-columns:1fr}.hero-stack{align-self:stretch}.timeline-row{grid-template-columns:54px 1fr}.timeline-meta{grid-column:2/4;text-align:left}.metric-grid,.subgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:430px){.hero-panel{padding:16px 14px;border-radius:20px}.hero-panel h1{font-size:24px}.metric-grid,.subgrid{gap:8px}.metric-card{padding:12px 11px}.timeline-row{padding:11px}.barhead{font-size:12px}}
 
+
+/* Archive v3: mobile-first, compact progress, clear hierarchy */
+:root{--bg:#f6f8f7;--paper:#fff;--ink:#20312e;--sub:#627873;--teal:#126e65;--line:#e1eae6;--shadow:0 3px 14px rgba(25,59,49,.035)}
+body{line-height:1.5}
+.wrap{max-width:990px}
+.hero-panel{grid-template-columns:minmax(0,1fr) auto;align-items:center;background:#fff;border:1px solid #d8e7df;box-shadow:var(--shadow);color:var(--ink);padding:20px 21px;border-radius:20px;gap:18px}
+.hero-panel h1{font-size:24px;line-height:1.35;margin:8px 0 5px;color:var(--ink);letter-spacing:-.5px}
+.hero-panel h1 em{font-style:normal;color:var(--teal)}
+.hero-panel p{color:var(--sub);font-size:12px}
+.hero-eyebrow{font-weight:800;letter-spacing:0;color:var(--teal);font-size:12px;opacity:1}
+.hero-action{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:11px 15px;border:0;border-radius:12px;color:#fff;background:var(--teal);white-space:nowrap;font-size:13px;font-weight:750;min-height:43px}
+.hero-action:active,.btn:active,.block:active,.typecell:active{transform:scale(.98)}
+.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px}
+.metric-card{padding:14px 15px;border-radius:15px}
+.metric-label{font-size:12px}
+.metric-value{font-size:24px;letter-spacing:-.6px}
+.metric-foot{font-size:11px;line-height:1.5}
+.timeline{gap:7px}
+.timeline-row{grid-template-columns:54px minmax(0,1fr) 16px;gap:12px;padding:12px 14px;border-radius:13px;min-height:66px;box-shadow:none}
+.timeline-row:hover{border-color:#b6d8cd}
+.timeline-bars{min-width:0;gap:5px}
+.timeline-meta{grid-column:auto;align-self:center;font-size:21px;font-weight:400;color:#91a29b}
+.mini-labels{font-size:11px;gap:5px}
+.mini-track{height:5px}
+.fold-card{padding:0;overflow:hidden}
+.fold-card summary{cursor:pointer;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:15px 16px;font-weight:750;font-size:14px;list-style:none}
+.fold-card summary::-webkit-details-marker{display:none}
+.fold-card summary::after{content:"⌄";font-size:19px;line-height:1;color:var(--sub);transition:transform .15s}
+.fold-card[open] summary::after{transform:rotate(180deg)}
+.fold-body{padding:0 16px 15px}
+.summary-inline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.summary-inline strong{color:var(--teal);font-size:20px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.summary-inline span{font-size:12px;color:var(--sub)}
+.summary-inline .grow{flex:1}
+.summary-inline .text-btn{white-space:nowrap}
+.pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{white-space:nowrap;flex:none;padding:9px 13px}
+.yearlist{gap:10px}
+.yearcard{margin:0!important}
+.yearcard .block,.typecell{transition:background .15s,border-color .15s}
+.yearcard .block:focus-visible,.typecell:focus-visible{outline:3px solid #69b9aa;outline-offset:2px}
+.yearcard .block{height:52px;min-width:0}
+.yearcard .block.done{border-color:#b5d9cf}
+.yearcard .block .tiny{font-size:11px}
+.detail-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:7px 0 14px}
+.detail-header h2{font-size:23px;letter-spacing:-.6px;margin:0}
+.year-pager{display:flex;gap:8px}
+.year-pager button{width:41px;height:41px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:23px;line-height:1}
+.detail-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.detail-tag{background:#edf4f0;color:#43685c;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:700}
+.third-pass{margin:12px 0}
+.third-pass summary{font-size:13px;color:var(--teal);font-weight:700;cursor:pointer;padding:8px 0}
+.record-preview{padding:11px 13px;background:#edf7f3;color:#31574a;border-radius:12px;margin-bottom:12px;font-size:13px;font-weight:700}
+.extra-details{border-top:1px solid var(--line);margin:15px 0 6px;padding-top:11px}
+.extra-details summary{cursor:pointer;color:var(--teal);font-weight:750;font-size:13px;list-style:initial;min-height:32px}
+.sheet-head{margin-bottom:13px}
+.sheet{box-shadow:0 -8px 30px #0c2d2026}
+.btn.filled{background:var(--teal);border-color:var(--teal)}
+.btn:focus-visible,.icon-btn:focus-visible,.tab:focus-visible{outline:3px solid #78cabb;outline-offset:2px}
+.statusbar{font-size:11px;line-height:1.4}
+@media(min-width:750px){.yearlist{grid-template-columns:repeat(3,minmax(0,1fr))}.hero-panel{padding:22px 24px}.timeline{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}.wrap{padding-bottom:85px}}
+@media(max-width:749px){
+ .wrap{padding-top:14px}
+ .hero-panel{display:flex;align-items:flex-start;flex-direction:column;padding:16px;border-radius:17px;gap:13px;margin-bottom:10px}
+ .hero-panel h1{font-size:22px;line-height:1.4}
+ .hero-action{width:100%;min-height:43px}
+ .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:12px}
+ .metric-card{padding:11px 9px;min-width:0}
+ .metric-label{font-size:11px}
+ .metric-value{font-size:22px}
+ .metric-value span{font-size:11px}
+ .metric-foot{font-size:10px;min-height:0;line-height:1.45}
+ .timeline-row{grid-template-columns:48px minmax(0,1fr) 13px;gap:9px;padding:10px 11px;min-height:65px}
+ .timeline-meta{grid-column:auto;font-size:18px}
+ .mini-labels{font-size:10px}
+ .yearlist{grid-template-columns:1fr}
+ .yearcard{padding:13px}
+ .typegrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .detail-header h2{font-size:21px}
+ .detail-tags{margin-bottom:11px}
+ .sheet{padding:17px 16px calc(19px + env(safe-area-inset-bottom));max-height:91dvh}
+ .buttons .btn.filled{grid-row:1;grid-column:1/-1}
+ .buttons .btn.danger{grid-column:1}
+}
+@media(max-width:350px){.hero-panel h1{font-size:20px}.metric-value{font-size:19px}.metric-label{font-size:10px}.metric-foot{font-size:9px}.mini-labels{font-size:9px}.tabs{padding-left:8px;padding-right:8px}}
+@media(prefers-reduced-motion:reduce){.fold-card summary::after,.yearcard .block,.typecell{transition:none}}
+
 </style>
 </head>
 <body>
 <script type="application/json" id="seed-data">{"schema": 2, "updatedAt": "2026-11-09T00:00:00+08:00", "items": {"en:reading:2010:1:1": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2010:1:2": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2010:1:3": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2010:1:4": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2011:1:1": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2011:1:2": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2011:1:3": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2011:1:4": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2012:1:1": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2012:1:2": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2012:1:3": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2012:1:4": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2013:1:1": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2013:1:2": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2013:1:3": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2013:1:4": {"type": "reading", "year": 2013, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2014:1:1": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2014:1:2": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2014:1:3": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2014:1:4": {"type": "reading", "year": 2014, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2015:1:1": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2015:1:2": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2015:1:3": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2015:1:4": {"type": "reading", "year": 2015, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2016:1:1": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2016:1:2": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2016:1:3": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2016:1:4": {"type": "reading", "year": 2016, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2017:1:1": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2017:1:2": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2017:1:3": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2017:1:4": {"type": "reading", "year": 2017, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2018:1:1": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2018:1:2": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2018:1:3": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2018:1:4": {"type": "reading", "year": 2018, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2019:1:1": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2019:1:2": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2019:1:3": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2019:1:4": {"type": "reading", "year": 2019, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2020:1:1": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2020:1:2": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2020:1:3": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2020:1:4": {"type": "reading", "year": 2020, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2021:1:1": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2021:1:2": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2021:1:3": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2021:1:4": {"type": "reading", "year": 2021, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2022:1:1": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2022:1:2": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2022:1:3": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2022:1:4": {"type": "reading", "year": 2022, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2023:1:1": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 1}, "en:reading:2023:1:2": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 2}, "en:reading:2023:1:3": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 3}, "en:reading:2023:1:4": {"type": "reading", "year": 2023, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 1, "text": 4}, "en:reading:2010:2:1": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2010:2:2": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2010:2:3": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:reading:2010:2:4": {"type": "reading", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 4}, "en:reading:2011:2:1": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2011:2:2": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2011:2:3": {"type": "reading", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:reading:2011:2:4": {"type": "reading", "year": 2011, "done": true, "score": 6, "minutes": null, "date": "2026-10-16", "note": "错2题；由每篇5题、总分10分换算", "pass": 2, "text": 4}, "en:reading:2012:2:1": {"type": "reading", "year": 2012, "done": true, "score": 2, "minutes": 40, "date": "2026-10-20", "note": "", "pass": 2, "text": 1}, "en:reading:2012:2:2": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": 10, "date": "2026-10-21", "note": "", "pass": 2, "text": 2}, "en:reading:2012:2:3": {"type": "reading", "year": 2012, "done": true, "score": 8, "minutes": 20, "date": "2026-10-22", "note": "", "pass": 2, "text": 3}, "en:reading:2012:2:4": {"type": "reading", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "", "pass": 2, "text": 4}, "en:reading:2013:2:1": {"type": "reading", "year": 2013, "done": true, "score": 10, "minutes": null, "date": null, "note": "", "pass": 2, "text": 1}, "en:reading:2013:2:2": {"type": "reading", "year": 2013, "done": true, "score": 6, "minutes": null, "date": null, "note": "", "pass": 2, "text": 2}, "en:reading:2013:2:3": {"type": "reading", "year": 2013, "done": true, "score": 8, "minutes": null, "date": null, "note": "", "pass": 2, "text": 3}, "en:cloze:2010": {"type": "cloze", "year": 2010, "done": true, "score": 5.5, "minutes": null, "date": null, "note": ""}, "en:cloze:2011": {"type": "cloze", "year": 2011, "done": true, "score": 7.5, "minutes": null, "date": null, "note": ""}, "en:cloze:2012": {"type": "cloze", "year": 2012, "done": true, "score": 5, "minutes": null, "date": null, "note": ""}, "en:cloze:2014": {"type": "cloze", "year": 2014, "done": true, "score": 8.5, "minutes": 17, "date": "2026-10-20", "note": ""}, "en:cloze:2015": {"type": "cloze", "year": 2015, "done": true, "score": 7, "minutes": null, "date": "2026-10-22", "note": ""}, "en:newtype:2010": {"type": "newtype", "year": 2010, "done": true, "score": 6, "minutes": null, "date": null, "note": ""}, "en:newtype:2011": {"type": "newtype", "year": 2011, "done": true, "score": 4, "minutes": null, "date": null, "note": ""}, "en:newtype:2012": {"type": "newtype", "year": 2012, "done": true, "score": null, "minutes": null, "date": null, "note": "完成已确认；历史记录中的错题数有冲突，因此暂不填分"}, "en:newtype:2013": {"type": "newtype", "year": 2013, "done": true, "score": 6, "minutes": null, "date": null, "note": ""}, "en:newtype:2014": {"type": "newtype", "year": 2014, "done": true, "score": 8, "minutes": null, "date": "2026-10-16", "note": ""}, "en:newtype:2015": {"type": "newtype", "year": 2015, "done": true, "score": 10, "minutes": null, "date": null, "note": "5题全对"}, "en:newtype:2016": {"type": "newtype", "year": 2016, "done": true, "score": 10, "minutes": null, "date": null, "note": ""}, "en:newtype:2017": {"type": "newtype", "year": 2017, "done": true, "score": 10, "minutes": null, "date": null, "note": ""}, "en:translation:2010": {"type": "translation", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:translation:2011": {"type": "translation", "year": 2011, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:translation:2012": {"type": "translation", "year": 2012, "done": true, "score": null, "minutes": 20, "date": "2026-10-22", "note": ""}, "en:small:2010": {"type": "small", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:small:2011": {"type": "small", "year": 2011, "done": true, "score": null, "minutes": 20, "date": "2026-10-16", "note": ""}, "en:small:2012": {"type": "small", "year": 2012, "done": true, "score": null, "minutes": null, "date": "2026-10-20", "note": ""}, "en:large:2010": {"type": "large", "year": 2010, "done": true, "score": null, "minutes": null, "date": null, "note": ""}, "en:large:2012": {"type": "large", "year": 2012, "done": true, "score": null, "minutes": null, "date": "2026-10-29", "note": "已独立成篇并修改"}}, "meta": {"baseline": "此前聊天中明确确认的已完成进度；不把计划当已完成", "earlierReading": "2005—2009 年阅读练习一刷也做过（不计入英语二年份统计）", "uncertain": "2013年完形等存在相互矛盾的历史信息，暂不计已完成；2013年大作文只确认安排过，未确认实际完成。"}}</script>
 <div class="wrap">
  <header class="top">
-  <div class="brandrow"><div class="brand" aria-hidden="true">牙</div><div><div class="brandname">板牙考研<span class="header-dot">·</span><span class="header-mode">学习档案</span></div><div class="subline">只看已完成 · 可离线使用</div></div></div>
+  <div class="brandrow"><div class="brand" aria-hidden="true">牙</div><div><div class="brandname">板牙考研<span class="header-dot">·</span><span class="header-mode">学习档案</span></div><div class="subline">只记录已做 · 手机离线可用</div></div></div>
   <div class="top-actions"><button class="icon-btn" id="quickBackup" title="下载 JSON 备份文件" aria-label="导出备份文件"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>备份</span></button><button class="icon-btn primary" id="addBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>补录</span></button></div>
  </header>
  <nav class="tabs" aria-label="页面切换">
   <button class="tab active" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>总览</span></button>
-  <button class="tab" data-tab="english"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.4C8.7 4.4 5.8 4.4 3 5v14c3-.8 6-.5 9 1 3-1.5 6-1.8 9-1V5c-2.8-.6-5.7-.6-9 1.4ZM12 6.4V20"/></svg><span>英语二</span></button>
+  <button class="tab" data-tab="english"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.4C8.7 4.4 5.8 4.4 3 5v14c3-.8 6-.5 9 1 3-1.5 6-1.8 9-1V5c-2.8-.6-5.7-.6-9 1.4ZM12 6.4V20"/></svg><span>真题</span></button>
   <button class="tab" data-tab="data"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg><span>数据</span></button>
  </nav>
  <main id="content" aria-live="polite"></main>
@@ -95,13 +183,17 @@ body{font-size:15px;line-height:1.45}button,input,textarea,select{touch-action:m
 <div class="overlay" id="overlay" hidden><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
  <div class="sheet-head"><h2 id="dialogTitle">记录已完成内容</h2><button class="x" id="closeDlg" aria-label="关闭">×</button></div>
  <form id="recordForm">
-  <div class="rowfields"><div><label class="fieldlabel" for="fYear">真题年份</label><select id="fYear" class="field"></select></div><div><label class="fieldlabel" for="fType">题型</label><select id="fType" class="field"><option value="reading">阅读</option><option value="cloze">完形</option><option value="newtype">新题型</option><option value="translation">翻译</option><option value="small">小作文</option><option value="large">大作文</option></select></div></div>
-  <div class="rowfields" id="readingFields"><div><label class="fieldlabel" for="fPass">第几刷</label><select id="fPass" class="field"><option value="1">一刷</option><option value="2">二刷</option><option value="3">三刷</option></select></div><div><label class="fieldlabel" for="fText">篇号</label><select id="fText" class="field"><option value="1">Text 1</option><option value="2">Text 2</option><option value="3">Text 3</option><option value="4">Text 4</option></select></div></div>
-  <div class="rowfields"><div><label class="fieldlabel" for="fScore">得分（满分 10，可不填）</label><input id="fScore" class="field" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="如 8.5" /></div><div><label class="fieldlabel" for="fMins">实际用时（分钟，可不填）</label><input id="fMins" class="field" type="number" min="1" max="999" inputmode="numeric" placeholder="如 20" /></div></div>
-  <label class="fieldlabel" for="fDate">完成日期（可不填）</label><input id="fDate" class="field" type="date" />
-  <label class="fieldlabel" for="fNote">备注（可不填）</label><textarea id="fNote" class="field" rows="2" placeholder="比如：错2题、翻译不流畅……"></textarea>
-  <div class="buttons"><button type="button" class="btn danger" id="deleteRecord">删除记录</button><span style="flex:1"></span><button type="button" class="btn" id="cancelDlg">取消</button><button type="submit" class="btn filled">保存完成记录</button></div>
- </form>
+   <div id="recordPreview" class="record-preview" aria-live="polite">只记录真正完成的内容</div>
+   <div class="rowfields"><div><label class="fieldlabel" for="fYear">真题年份</label><select id="fYear" class="field"></select></div><div><label class="fieldlabel" for="fType">题型</label><select id="fType" class="field"><option value="reading">阅读</option><option value="cloze">完形</option><option value="newtype">新题型</option><option value="translation">翻译</option><option value="small">小作文</option><option value="large">大作文</option></select></div></div>
+   <div class="rowfields" id="readingFields"><div><label class="fieldlabel" for="fPass">第几刷</label><select id="fPass" class="field"><option value="1">一刷</option><option value="2">二刷</option><option value="3">三刷</option></select></div><div><label class="fieldlabel" for="fText">文章</label><select id="fText" class="field"><option value="1">Text 1</option><option value="2">Text 2</option><option value="3">Text 3</option><option value="4">Text 4</option></select></div></div>
+   <label class="fieldlabel" for="fScore">得分（可不填，满分 10）</label><input id="fScore" class="field" type="number" min="0" max="10" step="0.5" inputmode="decimal" placeholder="没有分数就留空" />
+   <details id="extraDetails" class="extra-details"><summary>用时 / 日期 / 备注（选填）</summary>
+     <label class="fieldlabel" for="fMins">实际用时（分钟）</label><input id="fMins" class="field" type="number" min="1" max="999" inputmode="numeric" placeholder="如 20" />
+     <label class="fieldlabel" for="fDate">完成日期</label><input id="fDate" class="field" type="date" />
+     <label class="fieldlabel" for="fNote">备注</label><textarea id="fNote" class="field" rows="2" placeholder="如：错 2 题、长难句卡住"></textarea>
+   </details>
+   <div class="buttons"><button type="button" class="btn danger" id="deleteRecord">删除记录</button><span style="flex:1"></span><button type="button" class="btn" id="cancelDlg">取消</button><button type="submit" class="btn filled" id="submitRecord">标记已完成</button></div>
+  </form>
 </section></div>
 <input type="file" id="importFile" accept="application/json,text/html,.json,.html,.htm" hidden />
 <script>
@@ -127,7 +219,7 @@ return clean}
 
 function makeKey(t,y,p,tx){return t==='reading'?`en:reading:${y}:${p}:${tx}`:`en:${t}:${y}`}
 try{let saved=localStorage.getItem(KEY);state=saved?validate(JSON.parse(saved)):validate(initial)}catch(e){state=validate(initial);storageOK=false;}
-let activeTab='home',readMode='2',showAll=false,focusedYear=null,editingKey=null,toastTimer=null;
+let activeTab='home',readMode='2',showAll=false,homeAllYears=false,focusedYear=null,detailOrigin='home',editingKey=null,toastTimer=null,lastDialogTrigger=null;
 function store(){state.updatedAt=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true}catch(e){storageOK=false}render();toast(storageOK?'已记录在本机':'浏览器未开放本机存储，请导出网页副本保存')}
 function toast(msg){document.querySelector('.toast')?.remove();let d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.append(d);clearTimeout(toastTimer);toastTimer=setTimeout(()=>d.remove(),2600)}
 function record(t,y,p,tx){return state.items[makeKey(t,y,p,tx)]}
@@ -137,7 +229,7 @@ function rcount(p){return Object.values(state.items).filter(v=>v.type==='reading
 function scoreTxt(r){return r&&r.score!==null?`${r.score}/10`:'✓'}
 function section(text,side=''){return `<div class="sectiontitle"><h2>${text}</h2>${side?`<small>${side}</small>`:''}</div>`}
 function stat(label,num,unit,foot){return `<div class="stat"><div class="statlabel">${label}</div><div class="statval">${num}<span>${unit}</span></div><div class="statfoot">${foot}</div></div>`}
-function firstUnconfirmed(){for(const y of YEARS){for(let i=1;i<=4;i++)if(!done('reading',y,2,i))return `${y} 年 Text ${i}`;}return '暂无缺口'}
+
 function progressLimit(){const rs=Object.values(state.items).filter(r=>r.type==='reading'&&r.pass===2);if(!rs.length)return '尚无二刷完成记录';rs.sort((a,b)=>b.year-a.year||b.text-a.text);let newest=rs[0];return `${newest.year} 年 Text ${newest.text}`}
 function scoreList(filterFn){return Object.values(state.items).filter(r=>r.score!==null&&(!filterFn||filterFn(r))).map(r=>Number(r.score)).filter(Number.isFinite)}
 function averageScore(filterFn){const arr=scoreList(filterFn);return arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1):'—'}
@@ -146,48 +238,82 @@ function yearOtherCount(y){return TYPES.filter(([t])=>done(t,y)).length}
 function fullYears(pass){return YEARS.filter(y=>yearReadingCount(y,pass)===4).length}
 function metric(label,value,unit='',foot=''){return `<div class="metric-card"><div class="metric-label">${label}</div><div class="metric-value">${value}${unit?`<span>${unit}</span>`:''}</div><div class="metric-foot">${foot}</div></div>`}
 function barRow(label,done,total,meta='',tone=''){const pct=total?Math.max(0,Math.min(100,done/total*100)):0;return `<div class="barrow"><div class="barhead"><span>${label}</span><strong>${done}/${total}</strong></div><div class="bar ${tone}"><i style="width:${pct}%"></i></div>${meta?`<div class="barfoot">${meta}</div>`:''}</div>`}
-function yearTimelineRow(y){const a=yearReadingCount(y,1),b=yearReadingCount(y,2),c=yearOtherCount(y);return `<button class="timeline-row" data-year="${y}"><div class="timeline-year">${y}</div><div class="timeline-bars"><div class="mini-labels"><span>一刷 ${a}/4</span><span>二刷 ${b}/4</span><span>其他 ${c}/5</span></div><div class="mini-track"><i style="width:${a/4*100}%"></i></div><div class="mini-track slate"><i style="width:${b/4*100}%"></i></div><div class="mini-track orange"><i style="width:${c/5*100}%"></i></div></div><div class="timeline-meta">点击查看详情</div></button>`}
+function yearTimelineRow(y){const a=yearReadingCount(y,1),b=yearReadingCount(y,2),c=yearOtherCount(y);return `<button class="timeline-row" type="button" data-year="${y}" aria-label="查看${y}年记录，一刷${a}篇，二刷${b}篇，其他${c}项"><div class="timeline-year">${y}</div><div class="timeline-bars"><div class="mini-labels"><span>一刷 ${a}/4</span><span>二刷 ${b}/4</span><span>其他 ${c}/5</span></div><div class="mini-track"><i style="width:${a/4*100}%"></i></div><div class="mini-track slate"><i style="width:${b/4*100}%"></i></div><div class="mini-track orange"><i style="width:${c/5*100}%"></i></div></div><span class="timeline-meta" aria-hidden="true">›</span></button>`}
 function home(){
- const total=Object.keys(state.items).length, other=TYPES.reduce((sum,[t])=>sum+count(t),0), read1=rcount(1), read2=rcount(2), read3=rcount(3);
- const scored=scoreList(), yspan=YEARS.filter(y=>yearReadingCount(y,1)).length?`${YEARS.filter(y=>yearReadingCount(y,1))[0]}—${YEARS.filter(y=>yearReadingCount(y,1)).slice(-1)[0]}`:'暂无记录';
+ const total=Object.keys(state.items).length,other=TYPES.reduce((sum,[t])=>sum+count(t),0),read1=rcount(1),read2=rcount(2),read3=rcount(3);
+ const populated=YEARS.filter(y=>yearReadingCount(y,1)+yearReadingCount(y,2)+yearReadingCount(y,3)+yearOtherCount(y)>0);
+ const displayed=homeAllYears?YEARS:populated;
  return `
- <div class="hero-panel"><div><div class="hero-eyebrow">板牙考研 · 英语二学习档案</div><h1>${total} 条已完成记录</h1><p>只保留你已经做完的英语内容。没有每日任务，打开就知道做到哪里了。</p></div><div class="hero-stack"><div class="hero-chip"><strong>最新二刷</strong>${escapeHTML(progressLimit())}</div><div class="hero-chip soft"><strong>下一处缺口</strong>${escapeHTML(firstUnconfirmed())}</div></div></div>
- <div class="metric-grid">${metric('阅读一刷',read1,'篇',yspan)}${metric('阅读二刷',read2,'篇','完整年份 '+fullYears(2)+' 个')}${metric('其他题型',other,'项','完形 · 新题型 · 翻译 · 写作')}${metric('已记录得分均值',averageScore(),' /10',scored.length?`${scored.length} 条带分数记录`:'暂无分数记录')}</div>
- ${section('英语进度可视化','总览')}
- <div class="viz-grid"><div class="card chart-card"><div class="chart-title">阅读刷题进度</div><div class="chart-sub">以 2010—2025 年英语二真题为主，阅读按每年 4 篇统计。</div>${barRow('阅读一刷',read1,YEARS.length*4,'已做年份跨度：'+yspan)}${barRow('阅读二刷',read2,YEARS.length*4,'最新：'+progressLimit(),'slate')}${barRow('阅读三刷',read3,YEARS.length*4,read3?'已开始三刷':'暂未记录三刷','violet')}</div><div class="card chart-card"><div class="chart-title">题型覆盖情况</div><div class="chart-sub">其他题型按年份记录，一年最多 5 项。</div>${TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,name+' 已记录 '+count(t)+' 年',i%2?'orange':'' )).join('')}</div></div>
- ${section('逐年完成情况','点击年份查看详情 / 补录')}
- <div class="timeline">${YEARS.map(yearTimelineRow).join('')}</div>
- <div class="notice">已预置的是此前聊天里明确确认过的完成情况。没有确认完成的内容，不会被自动算进去。</div>`}
+ <section class="hero-panel" aria-label="当前已完成进度"><div><div class="hero-eyebrow">英语二 · 完成进度</div><h1>阅读二刷 <em>${escapeHTML(progressLimit())}</em></h1><p>这是已确认记录中年份最靠后的阅读二刷位置</p></div><button class="hero-action" type="button" data-goto="english">查看每篇记录 <span aria-hidden="true">›</span></button></section>
+ <div class="metric-grid">${metric('阅读一刷',read1,'篇','2010—2025 年') }${metric('阅读二刷',read2,'篇','完整 ${fullYears(2)} 年')}${metric('其他题型',other,'项','五类题型')}</div>
+ <div class="card chart-card"><div class="chart-title">阅读完成量</div><div class="chart-sub">每年 4 篇，2010—2025 年共 64 篇 / 每刷。只统计已做。</div>${barRow('一刷',read1,YEARS.length*4)}${barRow('二刷',read2,YEARS.length*4,'','slate')}${read3?barRow('三刷',read3,YEARS.length*4,'','violet'):''}</div>
+ <details class="card fold-card"><summary>其他题型完成分布 <span class="tag">${other} 项</span></summary><div class="fold-body">${TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,'',i%2?'orange':'')).join('')}</div></details>
+ <div class="sectiontitle"><h2>逐年完成情况</h2><button class="linkbtn" id="homeAllYears">${homeAllYears?'只看有记录年份':'显示全部年份'}</button></div>
+ <div class="timeline">${displayed.map(yearTimelineRow).join('')}</div>
+ <p class="footnote">绿色为阅读一刷，蓝色为二刷，橙色为其他题型。点击年份查看具体篇目；空白代表尚未确认完成，不代表没有学习。</p>`
+}
 function readingCard(y,p){let n=yearReadingCount(y,p), avg=averageScore(r=>r.type==='reading'&&r.year===y&&r.pass===p);return `<div class="yearcard"><div class="line"><span class="year">${y} · 阅读${p}刷</span><span class="yearmeta">${n}/4 篇</span></div><div class="card-progress"><div class="bar ${p===2?'slate':p===3?'violet':''}"><i style="width:${n/4*100}%"></i></div><div class="tiny-note" style="margin-top:6px">${avg!=='—'?'已记录均分 '+avg+'/10':'暂无分数均值'}</div></div><div class="blocks">${Array.from({length:4},(_,i)=>{let tx=i+1,r=record('reading',y,p,tx);return `<button class="block ${r?'done':''}" data-edit="${makeKey('reading',y,p,tx)}"><span>T${tx}</span><span class="tiny">${r?(r.score!==null?r.score+'/10':'已做'):'＋'}</span></button>`}).join('')}</div></div>`}
-function yearDetail(y){const typeDone=yearOtherCount(y), scored=averageScore(r=>r.year===y);return `${section(`${y} 年 · 完成记录`)}<div class="backline"><button class="text-btn" data-back-year>← 返回年份列表</button><div class="tiny-note">点击方格可补录、修改、删除</div></div><div class="subgrid">${metric('阅读一刷',yearReadingCount(y,1),' /4','按篇记录')}${metric('阅读二刷',yearReadingCount(y,2),' /4','按篇记录')}${metric('阅读三刷',yearReadingCount(y,3),' /4','如有可继续补录')}${metric('其他题型',typeDone,' /5',scored!=='—'?'本年均分 '+scored+'/10':'本年暂无分数均值')}</div><div class="yearlist">${readingCard(y,1)}${readingCard(y,2)}${readingCard(y,3)}</div>${section('其他题型')}<div class="card typecard"><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`}
+function yearDetail(y){
+ const typeDone=yearOtherCount(y);
+ return `<div class="backline"><button class="text-btn" type="button" data-back-year>← 返回${detailOrigin==='home'?'总览':'真题'}</button><span class="tiny-note">点击已做或空白格编辑</span></div>
+ <div class="detail-header"><h2>${y} 年真题</h2><div class="year-pager"><button type="button" data-switch-year="${y-1}" ${y===YEARS[0]?'disabled':''} aria-label="上一年">‹</button><button type="button" data-switch-year="${y+1}" ${y===YEARS[YEARS.length-1]?'disabled':''} aria-label="下一年">›</button></div></div>
+ <div class="detail-tags"><span class="detail-tag">一刷 ${yearReadingCount(y,1)}/4</span><span class="detail-tag">二刷 ${yearReadingCount(y,2)}/4</span><span class="detail-tag">其他 ${typeDone}/5</span></div>
+ <div class="yearlist">${readingCard(y,1)}${readingCard(y,2)}</div>
+ <details class="third-pass" ${yearReadingCount(y,3)?'open':''}><summary>三刷记录（需要时展开）</summary>${readingCard(y,3)}</details>
+ ${section('其他题型','点击方格补录或修改')}
+ <div class="card typecard"><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}" aria-label="${y}年${name}：${r?scoreTxt(r):'未记录'}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`
+}
 function english(){
  if(focusedYear!==null)return yearDetail(focusedYear);
  const readable=readMode==='other'?'其他题型':`阅读${readMode}刷`;
  const old=readMode==='other'?YEARS.filter(y=>TYPES.some(([t])=>done(t,y))):YEARS.filter(y=>Array.from({length:4},(_,i)=>done('reading',y,Number(readMode),i+1)).some(Boolean));
  const shown=showAll?YEARS:old;
  const totalCount=readMode==='other'?TYPES.reduce((n,[t])=>n+count(t),0):rcount(Number(readMode));
+ const possible=readMode==='other'?YEARS.length*5:YEARS.length*4;
  const scoreAvg=readMode==='other'?averageScore(r=>r.type!=='reading'):averageScore(r=>r.type==='reading'&&r.pass===Number(readMode));
- const totalPossible=readMode==='other'?YEARS.length*5:YEARS.length*4;
- const coverage=readMode==='other'?Math.round(totalCount/totalPossible*100):Math.round(totalCount/totalPossible*100);
- const focusNote=readMode==='other'?'按年记录各题型是否完成':'按篇记录阅读真题完成情况';
- return `${section('英语二 · 完成记录')}<p class="intro">现在只保留英语二。点击已完成格子可以查看得分、修改记录；点「＋」继续补录。</p>
- <div class="pills"><button class="pill ${readMode==='2'?'active':''}" data-read="2">阅读二刷</button><button class="pill ${readMode==='1'?'active':''}" data-read="1">阅读一刷</button><button class="pill ${readMode==='3'?'active':''}" data-read="3">阅读三刷</button><button class="pill ${readMode==='other'?'active':''}" data-read="other">其他题型</button></div>
- <div class="metric-grid">${metric(readable,totalCount,'条',focusNote)}${metric('覆盖率',coverage,'%',showAll?'当前显示全部年份':'当前默认只看有记录年份')}${metric('已记录均分',scoreAvg,' /10',scoreAvg==='—'?'暂无带分数记录':'仅统计已填写分数的记录')}${metric('完整年份',readMode==='other'?YEARS.filter(y=>yearOtherCount(y)===5).length:fullYears(Number(readMode)),'个',readMode==='other'?'5 项齐全算完整':'4 篇齐全算完整')}</div>
- <div class="card chart-card"><div class="line" style="align-items:flex-start"><div><div class="chart-title">${readable} 进度图</div><div class="chart-sub">${showAll?'当前显示全部年份':'默认只显示有记录年份'} · ${focusNote}</div></div><button class="linkbtn" id="allYears">${showAll?'只看有记录年份':'显示全部年份'}</button></div>${readMode==='other'?TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,name+' 已记录 '+count(t)+' 年',i%2?'orange':'' )).join(''):shown.map(y=>barRow(`${y} 年`,yearReadingCount(y,Number(readMode)),4,averageScore(r=>r.type==='reading'&&r.year===y&&r.pass===Number(readMode))!=='—'?`均分 ${averageScore(r=>r.type==='reading'&&r.year===y&&r.pass===Number(readMode))}/10`:'未记录分数',readMode==='2'?'slate':readMode==='3'?'violet':'' )).join('')}</div>
- ${readMode==='other'?`<div class="type-summary stack">${shown.map(y=>`<div class="card typecard" style="margin:0"><div class="line"><span class="year">${y}</span><span class="yearmeta">${yearOtherCount(y)}/5 项</span></div><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`).join('')}</div>`:`<div class="yearlist">${shown.map(y=>readingCard(y,Number(readMode))).join('')}</div>`}
- ${shown.length?'':`<div class="empty cardlike">这里还没有记录。点击右上角「补录」添加已做内容。</div>`}
- <p class="footnote">2005—2009 年的早期阅读练习也做过一刷，未混入 2010 年起的英语二统计。未记录得分不代表零分。</p>`}
+ return `${section('真题完成记录','只记录已做过的题')}
+ <div class="pills"><button class="pill ${readMode==='2'?'active':''}" data-read="2">阅读二刷</button><button class="pill ${readMode==='1'?'active':''}" data-read="1">阅读一刷</button><button class="pill ${readMode==='other'?'active':''}" data-read="other">其他题型</button><button class="pill ${readMode==='3'?'active':''}" data-read="3">阅读三刷</button></div>
+ <div class="summary-inline"><strong>${totalCount}<span> / ${possible}</span></strong><span>${readable}已记录${totalCount}${readMode==='other'?'项':'篇'}</span><span class="grow"></span><span>${scoreAvg==='—'?'未填得分':'已填得分均值 '+scoreAvg+'/10'}</span></div>
+ <div class="sectiontitle"><h2>按年份查看</h2><button id="allYears" class="linkbtn">${showAll?'只看有记录年份':'显示全部年份'}</button></div>
+ ${readMode==='other'?`<div class="type-summary stack">${shown.map(y=>`<div class="card typecard" style="margin:0"><div class="line"><span class="year">${y}</span><span class="yearmeta">${yearOtherCount(y)}/5 项</span></div><div class="typegrid">${TYPES.map(([t,name])=>{let r=record(t,y);return `<button class="typecell ${r?'done':''}" data-edit="${makeKey(t,y)}" aria-label="${y}年${name}"><span>${name}</span><span class="value">${r?scoreTxt(r):'＋'}</span></button>`}).join('')}</div></div>`).join('')}</div>`:`<div class="yearlist">${shown.map(y=>readingCard(y,Number(readMode))).join('')}</div>`}
+ ${shown.length?'':`<div class="empty cardlike">此分类暂无确认完成的记录。点击右上角「补录」，或展开全部年份。</div>`}
+ <details class="card fold-card" style="margin-top:13px"><summary>查看按年完成量图表</summary><div class="fold-body">${readMode==='other'?TYPES.map(([t,name],i)=>barRow(name,count(t),YEARS.length,'',i%2?'orange':'')).join(''):YEARS.filter(y=>showAll||yearReadingCount(y,Number(readMode))>0).map(y=>barRow(y+' 年',yearReadingCount(y,Number(readMode)),4,'',readMode==='2'?'slate':readMode==='3'?'violet':'')).join('')}</div></details>
+ <p class="footnote">2005—2009 年早期阅读练习另有记录，不算入 2010—2025 年英语二统计。未填写分数不等于零分。</p>`
+}
 function dataPage(){const n=Object.keys(state.items).length;return `${section('备份与恢复')}
 <div class="save-hero"><h3>把英语进度存成文件</h3><p>已经有 <strong>${n}</strong> 条英语完成记录。网页会在本机自动保存，联网可接收已发布的新英语记录；本机补录不会自动上传，清理数据或换手机前请备份。</p><button class="btn filled backup-main" id="saveJSON">↓ 导出备份文件（JSON）</button><div class="backup-secondary"><button class="btn" id="loadJSON">↑ 导入备份</button><button class="btn" id="saveHTML">↓ 导出离线网页</button></div><div class="backup-advice">JSON：用于换手机、恢复和继续补录。<br>HTML：把此刻的全部英语记录打包成一个独立网页。</div></div>
 ${section('当前数据')}<div class="card"><div class="line"><span class="maintext">英语二学习档案</span><span class="tag green">无需服务器</span></div><div class="hint" style="margin-top:8px">${n} 条英语记录</div><div class="statusbar"><span class="dot"></span>${storageOK?'本机自动保存正常':'自动保存不可用，补录后请导出文件'}</div></div>
 ${section('使用说明')}<div class="card"><div class="hint">手机上点击「导出备份文件」，会下载一个 .json 文件，通常在系统「下载」目录。需要恢复时，重新打开网页，进入「数据」→「导入备份」选择文件即可。支持导入本工具以前导出的 JSON 文件或完整 HTML 网页副本。</div></div>
 <details class="danger-zone"><summary class="text-btn">更多操作与数据说明</summary><div style="margin-top:13px"><div class="notice">${escapeHTML(state.meta.baseline||'')}${state.meta.uncertain?'<div style="margin-top:5px">'+escapeHTML(state.meta.uncertain)+'</div>':''}</div><button class="btn danger full" id="resetData" style="margin-top:12px">恢复本文件的初始记录</button><p class="footnote">此操作会清除在当前浏览器中后续补录的修改，执行前请先备份。</p></div></details>
 <p class="footnote">没有账号和服务器。联网时会获取已发布的英语进度更新，但不会上传手机本地记录。备份只保存在你选择的位置，勿分享含私人备注的文件。</p>`}
-function render(){document.querySelectorAll('.tab').forEach(b=>{let a=b.dataset.tab===activeTab;b.classList.toggle('active',a);b.setAttribute('aria-selected',a?'true':'false')});const views={home,english,data:dataPage};if(!views[activeTab])activeTab='home';$('content').innerHTML=views[activeTab]();$('statusText').textContent=storageOK?'本地保存 · 联网检查新记录 · 可离线使用':'离线运行 · 请用「导出完整网页副本」保存修改';}
-function goto(tab){activeTab=tab;render();window.scrollTo({top:0,behavior:'smooth'})}
-function openDialog(k){editingKey=k||null;let r=k?state.items[k]:null;$('dialogTitle').textContent=r?'编辑已完成记录':'补录已完成内容';const md=k?.match(/^en:(reading|cloze|newtype|translation|small|large):(\d{4})(?::([123]):([1-4]))?$/);$('fYear').value=String(md?md[2]:2013);$('fType').value=md?md[1]:'reading';$('fPass').value=md&&md[3]?md[3]:'2';$('fText').value=md&&md[4]?md[4]:'1';$('fScore').value=r&&r.score!==null?r.score:'';$('fMins').value=r&&r.minutes!==null?r.minutes:'';$('fDate').value=r?.date||'';$('fNote').value=r?.note||'';$('deleteRecord').classList.toggle('hidden',!r);toggleReadFields();$('overlay').hidden=false;document.body.style.overflow='hidden'}
+function render(){document.querySelectorAll('.tab').forEach(b=>{let a=b.dataset.tab===activeTab;b.classList.toggle('active',a);b.setAttribute('aria-current',a?'page':'false')});const views={home,english,data:dataPage};if(!views[activeTab])activeTab='home';$('content').innerHTML=views[activeTab]();$('statusText').textContent=storageOK?'已自动存入本机 · 支持离线查看':'本机保存受限 · 请导出备份';}
+function pushRoute(){try{history.pushState({banya:true,tab:activeTab,year:focusedYear,origin:detailOrigin},'',location.pathname+location.search+'#'+(focusedYear===null?activeTab:'year-'+focusedYear))}catch(_){}}
+function goto(tab){activeTab=tab;focusedYear=null;pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
+function openYear(y){detailOrigin=activeTab;focusedYear=y;activeTab='english';pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
+function switchYear(y){if(!YEARS.includes(y))return;focusedYear=y;activeTab='english';pushRoute();render();window.scrollTo({top:0,behavior:'instant'})}
+window.addEventListener('popstate',e=>{if(!e.state?.banya)return;activeTab=e.state.tab||'home';focusedYear=e.state.year??null;detailOrigin=e.state.origin||'home';render();window.scrollTo(0,0)});
+
+function openDialog(k){
+ lastDialogTrigger=document.activeElement;editingKey=k||null;
+ const r=k?state.items[k]:null,md=k?.match(/^en:(reading|cloze|newtype|translation|small|large):(\d{4})(?::([123]):([1-4]))?$/);
+ const latest=Object.values(state.items).filter(v=>v.type==='reading'&&v.pass===2).sort((a,b)=>b.year-a.year||b.text-a.text)[0];
+ $('dialogTitle').textContent=r?'编辑完成记录':'补录已做内容';
+ $('fYear').value=String(md?md[2]:(focusedYear??latest?.year??2013));
+ $('fType').value=md?md[1]:(readMode==='other'?'cloze':'reading');
+ $('fPass').value=md&&md[3]?md[3]:/^[123]$/.test(readMode)?readMode:'2';
+ $('fText').value=md&&md[4]?md[4]:'1';
+ $('fScore').value=r&&r.score!==null?r.score:'';
+ $('fMins').value=r&&r.minutes!==null?r.minutes:'';
+ $('fDate').value=r?.date||'';$('fNote').value=r?.note||'';
+ $('recordPreview').textContent=r?'这条内容已完成，可修改分数或备注':'确认做完后点「标记已完成」，不必填写分数';
+ $('submitRecord').textContent=r?'保存修改':'标记已完成';
+ $('deleteRecord').classList.toggle('hidden',!r);
+ $('extraDetails').open=Boolean(r&&(r.minutes!==null||r.date||r.note));
+ toggleReadFields();$('overlay').hidden=false;document.body.style.overflow='hidden';
+}
 function toggleReadFields(){$('readingFields').classList.toggle('hidden',$('fType').value!=='reading')}
-function closeDialog(){$('overlay').hidden=true;document.body.style.overflow=''}
+function closeDialog(){$('overlay').hidden=true;document.body.style.overflow='';if(lastDialogTrigger?.isConnected)lastDialogTrigger.focus({preventScroll:true});lastDialogTrigger=null}
+
 function download(name,body,type){let blob=new Blob([body],{type});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 function snapshot(){const c=document.documentElement.cloneNode(true);c.setAttribute('data-archive-id','snapshot-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8));c.querySelector('#seed-data').textContent=JSON.stringify(state).replace(/</g,String.fromCharCode(92)+'u003c');const overlay=c.querySelector('#overlay');overlay.setAttribute('hidden','');c.querySelector('body').style.overflow='';c.querySelector('#content').innerHTML='';c.querySelector('#importFile').value='';return '<!doctype html>\n'+c.outerHTML}
 function dateSlug(){const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`}
@@ -196,9 +322,9 @@ function exportJSON(){download('板牙考研-进度备份-'+dateSlug()+'.json',J
 for(let y=2005;y<=2026;y++){let o=document.createElement('option');o.value=y;o.textContent=y;$('fYear').append(o)}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>goto(b.dataset.tab)));
 $('addBtn').addEventListener('click',()=>openDialog(null));$('quickBackup').addEventListener('click',exportJSON);$('closeDlg').addEventListener('click',closeDialog);$('cancelDlg').addEventListener('click',closeDialog);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeDialog()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDialog()});$('fType').addEventListener('change',toggleReadFields);
-$('recordForm').addEventListener('submit',e=>{e.preventDefault();const t=$('fType').value,y=Number($('fYear').value),p=Number($('fPass').value),tx=Number($('fText').value),k=makeKey(t,y,p,tx);let sc=$('fScore').value.trim(),mins=$('fMins').value.trim();if(sc!==''&&(!Number.isFinite(Number(sc))||Number(sc)<0||Number(sc)>10)){toast('得分只能是 0—10');return}if(mins!==''&&(Number(mins)<1||Number(mins)>999)){toast('用时只能填 1—999 分钟');return}let val={type:t,year:y,done:true,score:sc===''?null:Number(sc),minutes:mins===''?null:Number(mins),date:$('fDate').value||null,note:$('fNote').value.trim().slice(0,1500)};if(t==='reading'){val.pass=p;val.text=tx}if(editingKey&&editingKey!==k)delete state.items[editingKey];state.items[k]=val;closeDialog();store()});
+$('recordForm').addEventListener('submit',e=>{e.preventDefault();const t=$('fType').value,y=Number($('fYear').value),p=Number($('fPass').value),tx=Number($('fText').value),k=makeKey(t,y,p,tx);let sc=$('fScore').value.trim(),mins=$('fMins').value.trim();if(sc!==''&&(!Number.isFinite(Number(sc))||Number(sc)<0||Number(sc)>10)){toast('得分只能是 0—10');return}if(mins!==''&&(Number(mins)<1||Number(mins)>999)){toast('用时只能填 1—999 分钟');return}let val={type:t,year:y,done:true,score:sc===''?null:Number(sc),minutes:mins===''?null:Number(mins),date:$('fDate').value||null,note:$('fNote').value.trim().slice(0,1500)};if(t==='reading'){val.pass=p;val.text=tx}if(state.items[k]&&k!==editingKey&&!confirm('这个年份和题型已经有一条记录，确定覆盖吗？'))return;if(editingKey&&editingKey!==k)delete state.items[editingKey];state.items[k]=val;closeDialog();store()});
 $('deleteRecord').addEventListener('click',()=>{if(!editingKey)return;if(!confirm('确定删除这条完成记录？'))return;delete state.items[editingKey];closeDialog();store()});
-$('content').addEventListener('click',e=>{let target=e.target.closest('[data-edit], [data-goto], [data-read], [data-year], [data-back-year], #allYears, #saveHTML, #saveJSON, #loadJSON, #resetData');if(!target)return;if(target.dataset.edit){openDialog(target.dataset.edit)}else if(target.dataset.goto){goto(target.dataset.goto)}else if(target.dataset.read){focusedYear=null;readMode=target.dataset.read;showAll=false;render()}else if(target.dataset.year){focusedYear=Number(target.dataset.year);goto('english')}else if(target.hasAttribute('data-back-year')){focusedYear=null;readMode='2';showAll=false;render()}else if(target.id==='allYears'){showAll=!showAll;render()}else if(target.id==='saveHTML'){exportHTML()}else if(target.id==='saveJSON'){exportJSON()}else if(target.id==='loadJSON'){$('importFile').click()}else if(target.id==='resetData'){if(confirm('确定恢复最初整理的学习档案？这会覆盖当前补录的数据。建议先导出备份。')){state=validate(initial);store();toast('已恢复初始档案')}}});
+$('content').addEventListener('click',e=>{let target=e.target.closest('[data-edit], [data-goto], [data-read], [data-year], [data-back-year], [data-switch-year], #homeAllYears, #allYears, #saveHTML, #saveJSON, #loadJSON, #resetData');if(!target)return;if(target.dataset.edit){openDialog(target.dataset.edit)}else if(target.dataset.goto){goto(target.dataset.goto)}else if(target.dataset.read){focusedYear=null;readMode=target.dataset.read;showAll=false;render()}else if(target.dataset.year){openYear(Number(target.dataset.year))}else if(target.dataset.switchYear){switchYear(Number(target.dataset.switchYear))}else if(target.hasAttribute('data-back-year')){history.back()}else if(target.id==='homeAllYears'){homeAllYears=!homeAllYears;render()}else if(target.id==='allYears'){showAll=!showAll;render()}else if(target.id==='saveHTML'){exportHTML()}else if(target.id==='saveJSON'){exportJSON()}else if(target.id==='loadJSON'){$('importFile').click()}else if(target.id==='resetData'){if(confirm('确定恢复最初整理的学习档案？这会覆盖当前补录的数据。建议先导出备份。')){state=validate(initial);store();toast('已恢复初始档案')}}});
 $('content').addEventListener('submit',e=>{return;});
 $('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>10*1024*1024)throw Error('文件超过 10 MB');const raw=await file.text();let parsed;if(/^\s*<(?:!doctype|html)/i.test(raw)){const doc=new DOMParser().parseFromString(raw,'text/html');const seed=doc.getElementById('seed-data');if(!seed)throw Error('未找到离线档案数据');parsed=JSON.parse(seed.textContent)}else{parsed=JSON.parse(raw)}const imported=validate(parsed);if(!confirm('导入将替换本机当前进度，建议先备份。确定继续？'))return;state=imported;store();toast('已成功恢复备份')}catch(err){alert('无法导入：'+(err.message||'文件格式错误'))}finally{e.target.value=''}});
 const CLOUD_BASE_KEY='banya-archive-published-base-v2';
@@ -237,6 +363,7 @@ async function checkPublishedUpdates(){
   }catch(_){}finally{cloudChecking=false}
 }
 
+try{history.replaceState({banya:true,tab:'home',year:null,origin:'home'},'',location.href)}catch(_){}
 render();
 checkPublishedUpdates();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkPublishedUpdates()});
